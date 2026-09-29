@@ -1,0 +1,21 @@
+── 内存注入反证（真实文件，不落地）──
+  ✓ rc=0（期望 0）  控制组：不注入
+  ✓ rc=1（期望 1）  A3 根容器加回 paddingBottom（双算）  → 根容器的 `style` 里出现了 `paddingBottom` —— `TabBar` 内部已经加过 `var(--safe-botto
+  ✓ rc=1（期望 1）  A3 根容器直接写 safe-bottom  → 根容器的 `style` 里出现了 `paddingBottom` —— `TabBar` 内部已经加过 `var(--safe-botto
+  ✓ rc=1（期望 1）  A3 内容区丢 actionbar 令牌  → 内容区丢了 `pb-[var(--actionbar-bottom)]` —— 移动端必须按 `tabbar-h + safe-bottom
+  ✓ rc=1（期望 1）  A3 内容区丢桌面回退  → 内容区丢了 `lg:pb-[var(--safe-bottom)]` —— 桌面端 TabBar 被隐藏，只需让安全区（§6.2）
+  ✓ rc=1（期望 1）  A4 根容器 h-dvh → min-h-dvh  → 出现 `min-h-dvh` —— §6.3 明写「**不能**改成 `min-h-dvh` 让页面滚动」，否则丢掉「三栏各自滚动」这个核心
+  ✓ rc=1（期望 1）  A4 根容器丢 overflow-hidden  → 根容器没有 `overflow-hidden`（§6.3：三栏各自滚动、页面本身不滚动）
+  ✓ rc=1（期望 1）  A4 根容器丢 h-dvh（占位分支仍有一个）  → 根容器没有 `h-dvh`（§6.3：页面级高度不变）
+  ✓ rc=1（期望 1）  A1 少一项 Tab  → `TABS` 有 3 项，规范 §8.4 要求 4 项（实际：['工作台', '咨询', '我的案件']）
+  ✓ rc=1（期望 1）  A1 Tab 顺序对调  → Tab 名字/顺序不符：规范 工作台 / 咨询 / 我的案件 / 我的，实际 工作台 / 我的案件 / 咨询 / 我的
+  ✓ rc=1（期望 1）  A1 href 与 §4 表不符  → Tab「我的案件」的 href 是 '/my-cases'，规范 §4 要求 '/cases'
+  ✓ rc=1（期望 1）  A1 id != 一级路径段  → Tab「我的案件」的 id='case_list' != 一级路径段 'cases' ⇒ 激活态会**静默失效**（§4）
+  ✓ rc=1（期望 1）  A1 TABS 整个不存在  → `layout.tsx` 里没有 `TABS` —— TabBar 没有接上（§8.4 要求 4 项 Tab）
+  ✓ rc=1（期望 1）  A2 TabBar 丢 lg:hidden  → `TabBar.tsx` 丢了 `lg:hidden` —— §6.1 的前提是「组件自带 `lg:hidden`，im 不需要额外判断」；
+  ✓ rc=0（期望 0）  对照：注释里写 paddingBottom: var(--safe-bottom)
+  ✓ rc=0（期望 0）  对照：注释里写 min-h-dvh
+
+==================================================================================
+注入反证：16/16 通过
+==================================================================================

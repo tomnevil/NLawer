@@ -1,0 +1,158 @@
+==================================================================================
+规范覆盖率报表（只在**判据代码体**内提取节号；只统计**叶子**小节）
+==================================================================================
+门禁文件 39 个 · 纳入矩阵的规范 3 份
+
+—— 📚 文档范围（结论只对**纳入**的文档成立）——
+     纳入（3）：['design-spec.md', 'im-mobile-nav-spec.md', 'mobile-feature-integration-spec.md']
+     排除（规则 25 份）：
+       · deliverables/product-strategy/round* —— 轮次记录（记录「做过什么」，不是「要求什么」）
+       · deliverables/product-strategy/overview.md* —— 总览（索引型）
+       · deliverables/product-strategy/decisions* —— 决策记录（裁定结果，索引型）
+       · deliverables/product-strategy/competitive-analysis* —— 竞品分析（非要求）
+       · deliverables/product-strategy/incident-postmortem* —— 事故复盘（记录）
+       · deliverables/product-strategy/roadmap-update* —— 路线图（计划）
+       · deliverables/product-strategy/group1-implementation* —— 实施记录
+       · deliverables/product-strategy/backend-cooperation* —— 给后端的协作清单（不是产品要求）
+       · deliverables/product-strategy/remaining-work-inventory* —— 剩余工作清单（索引型）
+       · deliverables/product-strategy/endpoint-authz-gate* —— 门禁实施记录
+       · deliverables/ui-design/phase* —— 实施记录（做完之后写的）
+       · deliverables/ui-design/admin-gap-analysis.md* —— 审计稿（问题登记表 #1–#63）
+       · deliverables/ui-design/page-concept-audit.md* —— 本轮交付的审计稿
+       · docs/* —— 运维文档
+     排除（显式 9 份）：
+       · 律小智AI法律助手PRD_v1.0.md —— **已被 v2.0 取代**的历史版本
+       · 律小智AI法律助手PRD_v2.0.md —— **产品级 PRD**（48 个编号标题）。⚠️ **显式排除，不是遗漏**：本矩阵度量的是 **UI 设计规范**的覆盖率；PRD 的要求由**后端 pytest 基线**（756 passed）与 `verify_route_coverage.py` / `verify_endpoint_authz.py` 等**代码级**门禁承担，它们引的是各自文档的节号。⇒ 要度量 PRD 覆盖率应**另建一张矩阵**（未来工作项）。
+       · prd-contract-review-2026-09-16.md —— 合同审查**产品需求**（理由同 PRD_v2.0：产品级，非 UI 设计规范）
+       · prd-notification-realtime-push-2026-09-16.md —— 通知实时推送**产品需求**（同上）
+       · prd-notification-readpath-2026-09-16.md —— 通知已读路径**产品需求**（同上）
+       · prd-v3-gap-closure-spec-2026-09-12.md —— v3 缺口收口**需求 spec**（同上）
+       · request-text-limits-gate-2026-09-22.md —— **门禁实施记录**（「为什么是这个维度 / 口径 / 判据 / 刻意不做」）—— 记录我们自己建的探针，不是对产品的**要求**（同类：`endpoint-authz-gate*`）。
+       · request-text-limits-closure-2026-09-22.md —— **收口记录**（「两处仪器失真」+「落地取值（18 个字段）」）—— 实施记录，同上。
+       · prd-text-limit-decision-gate-2026-09-23.md —— **产品级需求 spec**（含「用户故事 / 成功指标 / 验收标准」，17 个编号标题）。⚠️ **显式排除，不是遗漏**（理由同 PRD_v2.0：本矩阵度量的是 **UI 设计规范**；产品级需求由**后端 pytest 基线** + 代码级门禁承担）。⚠️ 该文档由**并行会话**于 2026-09-23 03:42 新建 ⇒ 若其形态改变（例如转为 UI 设计规范），**必须改判**并移入 `SPEC_FILES`。
+     🚨 **扫盘发现 1 份未分类的规范类文档**（必须登记进 `SPEC_FILES` 或 `EXCLUDED_DOCS`）：
+       · deliverables/product-strategy/design-brief-b1-b2-2026-09-23.md（12 个编号标题）
+       不登记 ⇒ 它们既不在分母里，也不在「已声明排除」里 ⇒ **范围不可证伪**。
+
+—— design-spec.md：叶子小节 36 个 ——
+     v2（提到即算）覆盖 31 / 零引用 5
+     v3（判据内）  覆盖 26 / **零引用 10**
+     v4（**CI 内会跑**）覆盖 22 / **CI 内零判据 4**
+     ⚠️ 仅因「被提到」而虚增覆盖：['§2.5', '§7.4', '§7.7', '§7.8', '§8.6']
+       §0  现状诊断
+       §1  设计定位与原则
+       §2.5  旧 Token 迁移表
+       §7.4  运营驾驶舱
+       §7.7  文书工作台
+       §7.8  运营后台·案件管理（概念说明，无独立高保真稿）
+       §8.6  弱网与离线
+       §8.7  移动端概念图
+       §10.1  移动端追加要求带来的变更
+       §10.2  实施前的准备清单
+     🚨 **CI 内零判据**（有判据，但那条判据在 CI 里**从不执行**）4 个：
+       §4.1  AppShell（桌面形态）
+       §8.1  各端移动端优先度
+       §8.2  断点与布局切换
+       §9  落地路线图
+
+—— im-mobile-nav-spec.md：叶子小节 21 个 ——
+     v2（提到即算）覆盖 7 / 零引用 14
+     v3（判据内）  覆盖 5 / **零引用 16**
+     v4（**CI 内会跑**）覆盖 4 / **CI 内零判据 1**
+     ⚠️ 仅因「被提到」而虚增覆盖：['§5.1', '§5.4']
+       §0.1  我上轮把「实现成本低」说错了
+       §0.2  我上轮报的「im 零响应式断点」是**工具假阴性**
+       §0.3  `08-mobile-client.html` 的内容是**企业法务**，不是 C 端客户
+       §1  规范依据（逐条引原文）
+       §2.1  路由
+       §2.2  移动端已有形态：下钻，不是 Tab
+       §2.4  缺口的三层（由浅到深）
+       §3  目标形态（一张图）
+       §5.1  工作台 `/`（新建）
+       §5.2  咨询 `/chat`（搬迁现有实现）
+       §5.3  我的案件 `/cases`（新建）
+       §5.4  我的 `/me`（新建）
+       §6.4  ⚠️ TabBar 配色：08 稿与令牌表**冲突**（需裁决）
+       §6.5  验收（沿用本项目证据纪律）—— **已全部实测通过**
+       §7  待你拍板（3 项）
+       §8  本稿不改的东西（明确划界）
+     🚨 **CI 内零判据**（有判据，但那条判据在 CI 里**从不执行**）1 个：
+       §2.3  桌面端为什么不用 AppShell（既有决策，本稿沿用）
+
+—— mobile-feature-integration-spec.md：叶子小节 32 个 ——
+     v2（提到即算）覆盖 0 / 零引用 32
+     v3（判据内）  覆盖 0 / **零引用 32**
+     v4（**CI 内会跑**）覆盖 0 / **CI 内零判据 0**
+       §0.1  「拍照即扫」（web）在**后端冻结**的前提下做不了 —— 需后端配合
+       §0.2  SDK 现在**发不出 multipart** —— 这是硬前提，不是实现细节
+       §0.3  阶段二的「验收」验收的是**预览页**，不是产品页
+       §1.1  组件清单（`design-spec.md` §6.2）
+       §1.2  各端优先度（§8.1）
+       §1.3  通知中心移动形态（PRD NR-11）
+       §1.4  弱网与离线（§8.6，**语境是律师端**）
+       §2.1  组件接入现状（全仓精确计数）
+       §2.2  NR-11 的完成度（更正上一轮的判断）
+       §2.3  后端能力盘点（**冻结**，只读不改）
+       §2.4  §8.6 逐项盘点
+       §3  目标形态（一张图）
+       §4  落地方案 A：`CameraCapture`
+       §5  落地方案 B：`PullToRefresh` / `InfiniteList`
+       §6  落地方案 C：§8.6 离线预缓存
+       §7.1  现有门禁为什么覆盖不到
+       §7.2  新增 `evidence/verify_offline_precache.py`
+       §7.3  「组件被用」判据（防 #20 复发）—— ✅ **已实现（2026-09-20）**
+       §7.4  断点门禁（§8.2 四档 × §8.4 导航模式）—— ✅ **已实现（2026-09-20）**
+       §7.5  深色模式渲染级门禁 —— ✅ **已实现（2026-09-20）**
+       §7.6  `prefers-reduced-motion` 渲染级门禁 —— ✅ **已实现（2026-09-20）**
+       §7.7  对比度渲染级门禁（WCAG 1.4.3 × 规范 §2 的对比度列）—— ✅ **已实现（2026-09-20）**
+       §7.8  §3.3 中文排印三条硬规则门禁 —— ✅ **已实现（2026-09-20）**
+       §7.9  §4.3「焦点环统一」门禁 —— ✅ **已实现（2026-09-20）**
+       §7.10  §6.1「按钮」门禁 —— ✅ **已实现（2026-09-20）**
+       §7.11  §2.4「案件等级」门禁 —— ✅ **已实现（2026-09-20）**
+       §7.12  §3.2「字号阶梯」任意值字号门禁 —— ✅ **已实现（2026-09-20）**
+       §7.13  §4.2「间距（4pt 网格）」门禁 —— ✅ **已实现（2026-09-21）**
+       §7.14  §8.3「相邻可点元素间距 ≥ 8px」门禁 —— ✅ **已实现（2026-09-21）**
+       §7.15  §3.1「三套字体栈」门禁 —— ✅ **已实现（2026-09-21）**
+       §8  本稿不改的东西（明确划界）
+       §9  待你拍板（26 项）
+
+—— 节号只出现在 docstring / 注释里（**提到而非判**：该节**确实在矩阵内**）——
+     verify_component_refactor.py: ['§2.5', '§4.3', '§8.6']
+     verify_component_wiring.py: ['§8.1']
+     verify_dark_mode.py: ['§8']
+     verify_endpoint_authz.py: ['§4.1', '§4.2']
+     verify_focus_ring.py: ['§9']
+     verify_grade_badges.py: ['§2.1']
+     verify_im_mobile_nav.py: ['§5.1', '§5.4']
+     verify_mobile_375.py: ['§8.2']
+     verify_motion_tokens.py: ['§4.2', '§4.3']
+     verify_page_concepts.py: ['§7.4', '§7.7', '§7.8']
+     verify_provenance_tristate.py: ['§6.2']
+     verify_reduced_motion.py: ['§4.4']
+     verify_runtime_health.py: ['§8.4']
+     verify_service_tenant_param.py: ['§3.2']
+     verify_typography.py: ['§3.2']
+     含义：这一节有门禁在**管**，只是判据写在代码体之外 ⇒ 属**口径**问题，不是盲区。
+
+—— ✅ 越界节号**已被「点名矩阵外文档」解释**（6 条，见上一段）——
+     verify_route_coverage.py: ['§3.32', '§3.33']
+     verify_service_tenant_param.py: ['§3.27', '§3.28', '§3.29', '§3.29.3']
+     ⇒ 它们**不是**无主引用：节号属于该门禁自己点名的矩阵外文档。
+
+—— ⚠️ 归因到**矩阵外文档**（这些引用**不计入**规范覆盖率）——
+     admin-gap-analysis.md: ['verify_breakpoints.py', 'verify_component_wiring.py', 'verify_page_concepts.py']
+     backend-cooperation-2026-09-21.md: ['verify_component_refactor.py', 'verify_provenance_tristate.py']
+     page-concept-audit.md: ['verify_page_concepts.py']
+     phase3-implementation.md: ['verify_design_tokens.py', 'verify_provenance_tristate.py']
+     round15b-fixed-but-unguarded-sweep-2026-09-20.md: ['verify_route_coverage.py', 'verify_service_tenant_param.py']
+     说明：矩阵外的文档（我们自己的审计稿 / 实施记录）不是「有要求的规范」，
+           故不纳入分母。点名它们的门禁，其引用的**规范**归属需人工判断。
+
+—— ⚠️ 只点名矩阵外文档 ⇒ **不退化**为内容归因（否则会把节号误挂到同名节上）——
+     verify_design_tokens.py: ['§6.4', '§6.7'] （只点名矩阵外文档 ['phase3-implementation.md']）
+
+[汇总] 零引用**叶子**小节合计 **58** 个
+[汇总] **CI 内零判据**的叶子小节合计 **5** 个（判据存在、但只在 CI 从不执行的探针里）
+[汇总] CI 会执行 25 个门禁（`GATED` + `GATED_STATIC`）；另 14 个**在 CI 里从不执行**（`NOT_GATED`：缺浏览器 / dev server / 生产产物）。
+⚠️ v4 只度量「**在 CI 里**有没有判据」。`NOT_GATED` 的探针在本机跑得通、能守住那些节 —— 缺的是**环境前提**，不是判据本身。
+⚠️ 零引用 ≠ 没判据：本报表只缩小候选，落点必须读门禁判据函数再分诊。

@@ -1,0 +1,23 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# ════════════════════════════════════════════════════════════════════════
+# 依赖安全 override 的**位置**说明（第十一轮实测，别再踩）
+# ════════════════════════════════════════════════════════════════════════
+# 本仓库使用 pnpm 9.12.0。实测结论：
+#
+#   ❌ 写在本文件（pnpm-workspace.yaml）里的 `overrides:` **不生效**——
+#      pnpm 会静默忽略，锁文件里不会出现 `overrides:` 段，
+#      被 override 的包仍解析到旧版本（无任何报错，最坑的一种"没生效"）。
+#
+#   ✅ 正确位置是**根 package.json** 的 `pnpm.overrides` 字段。
+#      （pnpm 9 会在终端提示 "The pnpm field in package.json is no longer read"
+#        这条告警具有误导性——实测它**依然会读取并生效**。以锁文件为准。）
+#
+# 当前生效的 override（postcss 8.5.28，用于消除 next 内嵌的 8.4.31）
+# 见：frontend/package.json -> pnpm.overrides
+#
+# 判定"是否真的生效"的唯一可靠方法（不要看告警，看锁文件）：
+#   rm -f pnpm-lock.yaml && pnpm install --lockfile-only
+#   grep -A2 '^overrides:' pnpm-lock.yaml   # 有记录才算生效

@@ -1,0 +1,5 @@
+❌ evidence/ 里有**未分类**的 .py —— 判据 0 只按 `verify_*.py` 守，
+   所以任何**不叫 `verify_` 的真门禁**都会静默逃过（见 README 坑 46）。
+   新增脚本必须表态：是门禁 ⇒ 进 `GATED`/`NOT_GATED`；不是 ⇒ 进 `NON_GATE_SCRIPTS`：
+  · 仓库里有但没分类：_guard_control_test.py
+EXIT=1

@@ -1,0 +1,25 @@
+── 令牌层 ──
+   boxShadow.focus     = `0 0 0 3px var(--focus-ring)`
+   --focus-ring(light) = `rgba(54, 96, 176, 0.22)`
+   --focus-ring(dark)  = `rgba(110, 148, 214, 0.3)`
+   --brand-500(light)  = `54 96 176`
+   规范焦点环          = `0 0 0 3px rgba(54, 96, 176, 0.22)`
+── 源码层：焦点环取值集合 ──
+   环宽（1 种）：
+     ring-2                 → 2.0 px   × 48   例：frontend/apps/admin/app/(app)/billing/page.tsx:469
+   环色（5 种）：
+     ring-brand-500/30            → brand-500@30%        × 40   例：frontend/apps/admin/app/(app)/billing/page.tsx:469
+     ring-brand-500/40            → brand-500@40%        ×  4   例：frontend/apps/im/app/(app)/chat/page.tsx:453
+     ring-brand-500/25            → brand-500@25%        ×  2   例：frontend/apps/im/app/(app)/chat/page.tsx:750
+     ring-danger-500/30           → danger-500@30%       ×  1   例：frontend/apps/web/app/(app)/knowledge/page.tsx:405
+     ring-brand-500/20            → brand-500@20%        ×  1   例：frontend/packages/ui/src/components/LoginShell.tsx:73
+   `shadow-focus` 命中：0
+
+   [note] `boxShadow.focus` 用令牌间接表达（`0 0 0 3px var(--focus-ring)`），展开后 = `0 0 0 3px rgba(54, 96, 176, 0.22)` ⇒ 与规范**语义相等**（已按展开值比对）
+   [note] 深色档 `--focus-ring` = `rgba(110, 148, 214, 0.3)`（规范只声明了浅色档 ⇒ 深色档属**规范缺口**，本判据不判）
+   [note] 危险态焦点环（**只报不判**，规范未声明例外 ⇒ 规范缺口）：`ring-danger-500/30`(×1)
+   ✗ [F3] 焦点环环宽 `ring-2` = **2px**，规范是 **3px**（48 处）
+   ✗ [F4] 焦点环**环色不统一**：`brand-500@30%`(×40)、`brand-500@40%`(×4)、`brand-500@25%`(×2)、`brand-500@20%`(×1) —— 规范要求全站一种（`brand-500@22%`）
+   ✗ [F5] 规范焦点环令牌 `shadow-focus` **调用点 0 处** —— preset 里定义了 `0 0 0 3px var(--focus-ring)`，却没人用它
+
+── 令牌/源码层：覆盖率 96，缺陷 3 条

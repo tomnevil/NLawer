@@ -1,0 +1,28 @@
+[ENV] 规范：deliverables/ui-design/design-spec.md
+[ENV] §5 解析出 5 条使用规则；规则 2 点名 3 页：问答页、文书页、案件详情页
+      规则 1 · 穷尽性
+      规则 2 · 全局图例
+      规则 3 · 状态可迁移
+      规则 4 · 导出保留
+      规则 5 · 颜色不可独立承载语义
+[ENV] 扫描 99 个源码文件
+
+=== 判据 ===
+  ✓ F1 §5 规则 5 三重编码：3 态 × (label+icon+color) 齐全且互不相同
+  ✓ F2 图例：问答页（frontend/apps/web/app/(app)/qa/page.tsx）已挂 `ProvenanceLegend`
+  ✓ F2 图例：案件详情页（frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx）已挂 `ProvenanceLegend`
+
+  ── 已登记欠账（棘轮，不阻断 CI；修好必须删豁免）──
+  • [F2:文书页] §5 规则 2 点名「文书页」顶栏常驻三态图例，但 `frontend/apps/web/app/(app)/documents/page.tsx` 里 `<ProvenanceLegend` **0 处**（该页徽章 1 处 ⇒ 是文书页缺图例，不是没内容）
+      登记：任务 **#45**。§5 规则 2 点名三页，文书页 `<ProvenanceLegend` **0 处**（而 `<ProvenanceBadge` **1 处**，:400）⇒ 缺全局图例。待用户拍板接法（顶栏常驻 vs 结果卡片头部）。
+  • [F3:frontend/apps/web/app/(app)/contract-review/types.ts] 三态联合**手抄**在 `frontend/apps/web/app/(app)/contract-review/types.ts:140` 而没 import `ProvenanceState`：`provenance: "ai" | "verified" | "pending";` ⇒ 新增第 4 态时此处静默不跟随（窄联合仍可赋给宽联合，TS 不报错）
+      登记：任务 **#46**。`BannerSpec.provenance` **手抄**了三态联合（:140）而没 import `ProvenanceState`。今天两者一致 ⇒ **潜伏**风险，不是线上缺陷；但若 `provenanceStates` 新增第 4 态，手抄副本**不会跟着变且 TS 不报错**（窄联合仍可赋给宽联合）⇒ 规则 1「穷尽性」静默失效。改法是一行 import。
+  • [F4:产品页] §5 规则 3 要求「徽章可点击查看流转记录」，但产品页 8 处徽章**无一处**传入 `onOpenHistory`（组件里两个 `onOpenHistory` 参数都实现了，只是没人接线）
+      登记：任务 **#47**。§5 规则 3 要求「徽章可点击查看流转记录」，`onOpenHistory` 在两个组件里**都实现了**，但产品页 **0 处传入** ⇒ 8 处徽章**没有一处可点击**。⚠️ **依赖后端**：流转记录要真数据，而 §5 决策 08 的 provenance 数据模型后端**尚未落库**（见 `backend.md`）。
+
+=== 只报不判（R 组，不影响退出码） ===
+  · R1 §5 规则 4（导出保留）：**前端源码里判不了**。`contract-review/page.tsx:37` 明写「本轮不做导出 Word（CR-05 已降级）」；开庭材料包由**后端**生成（`hearing_pack_path`） ⇒ 三态标记是否保留在 PDF/Word 里，**判据必须落在后端导出产物上**（与 `backend-cooperation-2026-09-21.md` 口径一致）。
+  · R2 三态可达性：产品页 `state="…"` 字面量分布 {'ai': 3}；**数据驱动**（`state={…}`）的只有 ['frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx']。⇒ `verified`（律师已确认）**只在案件详情页可达**（经 `analysisProvenance()` 读 `confirmed_by` / `ai_generated===false`），其余页面结构上到不了第三态。⚠️ **这不是产品缺陷**：§5 决策 08 的 provenance 数据模型**后端未落库**，前端只能派生或写死；且 `phase3-implementation.md` 决策 6 已把案件详情页的徽章定为**分析级**（后端只有 `confirmed_by`，无分段确认字段）。⇒ 属**冻结导致的**，需与后端配合。
+  · R3 `provenanceStates[].borderStyle`（AI 态 `"dashed"`）**声明了但 0 消费者**（`colors.ts` 之外命中 0 个文件）。§2.3 与 §5 的表格都写「AI 生成：紫色**虚线上边框**」，但 §5 规则 5 只要求「颜色 + 文字 + 图标」三重编码 ⇒ **规范内部不一致（表格 vs 规则）+ 死字段**，是缺陷还是删除该字段**待拍板**。⚠️ 与 `verify_component_wiring.py` 的「视觉分歧」**互补不重复**：那条讲的是**页面内联**实现用四边实线；本条讲的是**组件层**声明了虚线却没渲染。
+
+[结论] exit 0 —— 已登记欠账 3 条（棘轮内），无新违反

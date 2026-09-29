@@ -1,0 +1,443 @@
+# 像素基线刷新存证 · #63（2026-09-26）
+
+## 结论（先说）
+
+| 项 | 结果 |
+|---|---|
+| 旧基线归档 | `evidence/visual_baseline_dev_2026-09-26_keep/`（**改名保留，未删**） |
+| 新基线 | `evidence/visual_baseline/`，`server_mode: **prod**`，16 张，建于 `2026-09-26T09:54:32` |
+| 新基线 vs 当前代码 | **16/16 页 差异 `0.0000%`** ⇒ **噪声地板 = 0** |
+| 自检（注入已知变化） | **14/16 页被判漂移** ⇒ 比对器**真的会 FAIL**（否则「一致」不含信息量） |
+| 自检 A（**模式前提锁**，纯函数） | **5/5 臂通过** |
+| 顺带修掉的一个**假红** | 见下 |
+
+## 🚨 顺带发现：这个工具刚给出一次**假红**（9/16 页）
+
+拿旧基线与当前代码比对，报了 **9/16 页「产品缺陷」**。逐页裁图确认，**全部是同一个东西**：
+
+| 现象 | 判读 |
+|---|---|
+| 8 个 **mobile** 页漂移 `~0.34%`，**bbox 完全相同** `(57, 2361, 171, 2475)`（≈38×38 CSS px）—— **连登录页都命中** | 不像产品改动（登录页没动过） |
+| 6 个 desktop 页 + login 漂移**恰好都是** `0.0880%` | 同一处、按 dsf=2 换算尺寸一致 |
+| `desktop__reviews` 多出 `0.463%`，bbox `(38, 1466, 2512, 1761)` | **唯一一处真实漂移** |
+
+裁图（存在归档目录里）判读：
+
+- `crop_dev_badge_mobile.png` ⇒ 那个 bbox **就是 Next.js 的开发工具徽标**（左下角 "N" 圆标）。
+  **旧基线用 `next dev` 采的**（徽标被采进了「视觉真相」），本次用 `next start`（生产）采 ⇒ 徽标消失 ⇒ 每页假漂移。
+- `crop_pagination_desktop_reviews.png` ⇒ 真实漂移是**分页器**（页码盒变大）—— 正是 **#72** 的改动，**已获裁定**。
+
+⇒ **根因是「测量模式不同」，不是产品坏了。** 这正是本项目最优先修的那类缺陷（假红）。
+
+## 修法：给工具加**模式前提锁**（`visual_baseline.py`）
+
+1. **探测**：`document.querySelector('nextjs-portal')` ⇒ dev `true` / prod `false`。
+   ⚠️ 标记是**实测选出来的**，不是猜的：另两条候选（`GET /_next/webpack-hmr`、
+   `GET /__nextjs_original-stack-frame`）**在 dev 下也是 404** ⇒ HTTP 探测**不通**。
+2. **记录**：模式写进清单 `manifest.json` 的 `server_mode`。
+3. **断言**：比对时模式不一致 ⇒ **exit 2（不可比）**，**不判成产品缺陷**。
+   `unknown`（探测失败）时**两边都不断言** —— 断言「一致」是假绿，断言「不一致」是假红，都比不判更糟。
+4. **自检 A（纯函数 5 臂）**：`dev↔prod` 两个方向都必须报出 · 同模式必须不报 ·
+   `unknown` 两侧都必须不报。**没有它，锁坏了不会自己报警**，假红会原样复发。
+
+## dev 侧标记实测（`nextjs-portal` 只在 dev 为真）
+
+⚠️ 这一步需要起 `next dev` ⇒ 临时把 `apps/admin/.next`（生产产物）**改名备份**，
+跑完**原样还原**（`BUILD_ID` `Ipj-PL2y-llhFvwG-YCME` → 同一值 ✓）；dev 产生的 `.next` 是**可再生构建产物**（221 文件）⇒ 删除合规。
+
+```text
+======================================================================
+模式标记实测（dev）· 生产 BUILD_ID 备份前 = Ipj-PL2y-llhFvwG-YCME
+======================================================================
+  已备份 .next → .next_prod_keep
+→ 灌种子（seed_demo.py --reset，库：m.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  OK 后端就绪
+  起 next dev（pid=39768，首启要编译）…
+  OK dev 就绪（16s）
+
+-- HTTP 标记（GET）--
+  /_next/webpack-hmr                     HTTP 404
+  /__nextjs_original-stack-frame         HTTP 404
+
+-- DOM 标记 --
+  D1 nextjs-portal           => 'true'
+  D2 #next-logo              => 'false'
+  D3 data-nextjs-toast       => 'false'
+  D4 aria-label~Next.js      => 'false'
+  D5 html 含 nextjs-portal    => 'true'
+  截图 → %TEMP%\vb_dev_login.png
+[safe-delete][SAFE_DELETE_FAIL_CLOSED] {"target": "C:\\Users\\RS\\Documents\\trae_projects\\NLawer\\frontend\\apps\\admin\\.next", "reason": "trash-failed", "detail": "SHFileOperationW 失败: 0x2"}
+  已删 dev 的 .next
+  已还原 .next（BUILD_ID Ipj-PL2y-llhFvwG-YCME → Ipj-PL2y-llhFvwG-YCME ✓ 一致）
+-> 服务已收尾；临时目录已删
+```
+
+## ① 修前：旧基线（dev）vs 当前（prod）—— 9/16 页「产品缺陷」（**假红**）
+
+```text
+============================================================================
+像素基线 · 模式 = compare（隔离库 vb.db，不登记 job）
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：vb.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  OK 后端就绪
+→ 起前端 next start（admin → http://localhost:3002）
+  OK admin 就绪（http://localhost:3002）
+
+>>> python evidence/visual_baseline.py 
+  rc=1 · **产品缺陷** · 122.9s
+  -- stdout --
+── 前置检查 ──
+  [ ok ] admin dev server (3002)  HTTP 200
+  [ ok ] backend (8001)  HTTP 200
+  [data] firm_hlw: 在办=10 工单=2 | platform: 在办=4 工单=1
+  [ ok ] 数据指纹与基线一致（基线建于 2026-09-24T11:32:37）
+
+── 采集截图（与基线比对）──
+  [mobile] 390x844 @3x
+           8 张
+  [desktop] 1280x900 @2x
+           8 张
+
+  ⚠️ 刻意未纳入基线的页面（不是漏了）：
+     /audit —— 登录会写审计日志 ⇒ 「审计记录总量」随每次采集单调增长（观察者效应）
+
+── 逐像素比对 ──
+  [ ok ] desktop__billing  差异 0.0880%
+  [ ok ] desktop__cases  差异 0.0880%
+  [ ok ] desktop__cockpit  差异 0.0880%
+  [ ok ] desktop__complaints  差异 0.0880%
+  [ ok ] desktop__compliance  差异 0.0880%
+  [ ok ] desktop__dispatches  差异 0.0880%
+  [ ok ] desktop__login  差异 0.0833%
+  [FAIL] desktop__reviews  差异 0.551%  (25392/4608000 px)  bbox=(38, 1466, 2512, 1761)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_desktop__reviews.png
+  [FAIL] mobile__billing  差异 0.345%  (10229/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__billing.png
+  [FAIL] mobile__cases  差异 0.339%  (10040/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__cases.png
+  [FAIL] mobile__cockpit  差异 0.335%  (9919/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__cockpit.png
+  [FAIL] mobile__complaints  差异 0.346%  (10239/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__complaints.png
+  [FAIL] mobile__compliance  差异 0.349%  (10331/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__compliance.png
+  [FAIL] mobile__dispatches  差异 0.349%  (10331/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__dispatches.png
+  [FAIL] mobile__login  差异 0.339%  (10030/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__login.png
+  [FAIL] mobile__reviews  差异 0.345%  (10235/2962440 px)  bbox=(57, 2361, 171, 2475)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_mobile__reviews.png
+
+====================================================================
+结果：7/16 页与基线一致
+
+视觉漂移（**产品缺陷**）：
+  - desktop__reviews: 差异 0.551%  bbox=(38, 1466, 2512, 1761)
+  - mobile__billing: 差异 0.345%  bbox=(57, 2361, 171, 2475)
+  - mobile__cases: 差异 0.339%  bbox=(57, 2361, 171, 2475)
+  - mobile__cockpit: 差异 0.335%  bbox=(57, 2361, 171, 2475)
+  - mobile__complaints: 差异 0.346%  bbox=(57, 2361, 171, 2475)
+  - mobile__compliance: 差异 0.349%  bbox=(57, 2361, 171, 2475)
+  - mobile__dispatches: 差异 0.349%  bbox=(57, 2361, 171, 2475)
+  - mobile__login: 差异 0.339%  bbox=(57, 2361, 171, 2475)
+  - mobile__reviews: 差异 0.345%  bbox=(57, 2361, 171, 2475)
+====================================================================
+=> 退出码 1：视觉漂移超阈值
+
+-> 服务已收尾
+-> 临时目录已删：C:\Users\RS\AppData\Local\Temp\nlawer-vb-8h0aqwt9
+
+MODE=compare RC=1
+```
+
+## ② 重建基线（prod 模式）
+
+```text
+============================================================================
+像素基线 · 模式 = capture（隔离库 vb.db，不登记 job）
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：vb.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  OK 后端就绪
+→ 起前端 next start（admin → http://localhost:3002）
+  OK admin 就绪（http://localhost:3002）
+
+>>> python evidence/visual_baseline.py --capture
+  rc=0 · 通过 · 123.9s
+  -- stdout --
+── 前置检查 ──
+  [ ok ] admin dev server (3002)  HTTP 200
+  [ ok ] backend (8001)  HTTP 200
+  [data] firm_hlw: 在办=10 工单=2 | platform: 在办=4 工单=1
+  [mode] 服务模式：基线=unknown · 当前=prod
+
+── 采集截图（建立基线）──
+  [mobile] 390x844 @3x
+           8 张
+  [desktop] 1280x900 @2x
+           8 张
+
+  ⚠️ 刻意未纳入基线的页面（不是漏了）：
+     /audit —— 登录会写审计日志 ⇒ 「审计记录总量」随每次采集单调增长（观察者效应）
+
+基线已写入 C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\manifest.json（16 张 · 服务模式 `prod`）
+
+-> 服务已收尾
+-> 临时目录已删：C:\Users\RS\AppData\Local\Temp\nlawer-vb-8qau7y6y
+
+MODE=capture RC=0
+```
+
+## ③ 修后：compare + self-test（两次都 rc=0）
+
+```text
+============================================================================
+像素基线 · 模式 = compare（隔离库 vb.db，不登记 job）
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：vb.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  OK 后端就绪
+→ 起前端 next start（admin → http://localhost:3002）
+  OK admin 就绪（http://localhost:3002）
+
+>>> python evidence/visual_baseline.py    [compare]
+  rc=0 · 通过 · 124.6s
+  -- stdout --
+── 前置检查 ──
+  [ ok ] admin dev server (3002)  HTTP 200
+  [ ok ] backend (8001)  HTTP 200
+  [data] firm_hlw: 在办=10 工单=2 | platform: 在办=4 工单=1
+  [ ok ] 数据指纹与基线一致（基线建于 2026-09-26T09:54:32）
+  [mode] 服务模式：基线=prod · 当前=prod
+
+── 采集截图（与基线比对）──
+  [mobile] 390x844 @3x
+           8 张
+  [desktop] 1280x900 @2x
+           8 张
+
+  ⚠️ 刻意未纳入基线的页面（不是漏了）：
+     /audit —— 登录会写审计日志 ⇒ 「审计记录总量」随每次采集单调增长（观察者效应）
+
+── 逐像素比对 ──
+  [ ok ] desktop__billing  差异 0.0000%
+  [ ok ] desktop__cases  差异 0.0000%
+  [ ok ] desktop__cockpit  差异 0.0000%
+  [ ok ] desktop__complaints  差异 0.0000%
+  [ ok ] desktop__compliance  差异 0.0000%
+  [ ok ] desktop__dispatches  差异 0.0000%
+  [ ok ] desktop__login  差异 0.0000%
+  [ ok ] desktop__reviews  差异 0.0000%
+  [ ok ] mobile__billing  差异 0.0000%
+  [ ok ] mobile__cases  差异 0.0000%
+  [ ok ] mobile__cockpit  差异 0.0000%
+  [ ok ] mobile__complaints  差异 0.0000%
+  [ ok ] mobile__compliance  差异 0.0000%
+  [ ok ] mobile__dispatches  差异 0.0000%
+  [ ok ] mobile__login  差异 0.0000%
+  [ ok ] mobile__reviews  差异 0.0000%
+
+====================================================================
+结果：16/16 页与基线一致
+====================================================================
+=> 退出码 0：与基线一致
+
+>>> python evidence/visual_baseline.py --self-test   [selftest]
+  rc=0 · 通过 · 124.8s
+  -- stdout --
+── 自检 A：纯函数（模式前提锁）──
+  [OK  ] 基线=dev     当前=prod    期望报出 —— dev↔prod 必须报出（**本次 9/16 假红的根因**）
+  [OK  ] 基线=prod    当前=dev     期望报出 —— 反向同样必须报出（不能只判一个方向）
+  [OK  ] 基线=prod    当前=prod    期望不报 —— 同模式 ⇒ 必须不报（对照）
+  [OK  ] 基线=unknown 当前=prod    期望不报 —— 基线模式未知 ⇒ **不报**（不猜）
+  [OK  ] 基线=prod    当前=unknown 期望不报 —— 当前模式未知 ⇒ **不报**（不猜）
+  ✅ 自检 A 通过（5 臂）
+
+── 前置检查 ──
+  [ ok ] admin dev server (3002)  HTTP 200
+  [ ok ] backend (8001)  HTTP 200
+  [data] firm_hlw: 在办=10 工单=2 | platform: 在办=4 工单=1
+  [ ok ] 数据指纹与基线一致（基线建于 2026-09-26T09:54:32）
+  [mode] 服务模式：基线=prod · 当前=prod
+
+── 采集截图（自检（注入已知变化））──
+  ⚠️ 已注入额外 CSS：header{background:#ff2d55!important}
+  [mobile] 390x844 @3x
+           8 张
+  [desktop] 1280x900 @2x
+           8 张
+
+  ⚠️ 刻意未纳入基线的页面（不是漏了）：
+     /audit —— 登录会写审计日志 ⇒ 「审计记录总量」随每次采集单调增长（观察者效应）
+
+── 逐像素比对 ──
+  [FAIL] desktop__billing  差异 9.856%  (454150/4608000 px)  bbox=(480, 0, 2560, 440)
+         对比图：C:\Users\RS\Documents\trae_projects\NLawer\evidence\visual_baseline\diff_desktop__billing.png
+  [FAIL] desktop__cases  差异 9.788%  (451045/4608000 px)  bbox=(480, 0, 2560, 440)
+  [FAIL] desktop__cockpit  差异 10.010%  (461282/4608000 px)  bbox=(480, 0, 2560, 440)
+  [FAIL] desktop__complaints  差异 9.843%  (453567/4608000 px)  bbox=(480, 0, 2560, 442)
+  [FAIL] desktop__compliance  差异 9.756%  (449546/4608000 px)  bbox=(480, 0, 2560, 440)
+  [FAIL] desktop__dispatches  差异 9.869%  (454762/4608000 px)  bbox=(480, 0, 2560, 440)
+  [ ok ] desktop__login  差异 0.0000%
+  [FAIL] desktop__reviews  差异 9.864%  (454550/4608000 px)  bbox=(480, 0, 2560, 440)
+  [FAIL] mobile__billing  差异 17.394%  (515292/2962440 px)  bbox=(0, 0, 1170, 1362)
+  [FAIL] mobile__cases  差异 19.423%  (575393/2962440 px)  bbox=(0, 0, 1170, 1425)
+  [FAIL] mobile__cockpit  差异 11.790%  (349266/2962440 px)  bbox=(0, 0, 1170, 1182)
+  [FAIL] mobile__complaints  差异 21.823%  (646490/2962440 px)  bbox=(0, 0, 1170, 1494)
+  [FAIL] mobile__compliance  差异 19.315%  (572201/2962440 px)  bbox=(0, 0, 1170, 1425)
+  [FAIL] mobile__dispatches  差异 17.460%  (517230/2962440 px)  bbox=(0, 0, 1170, 1362)
+  [ ok ] mobile__login  差异 0.0000%
+  [FAIL] mobile__reviews  差异 17.446%  (516842/2962440 px)  bbox=(0, 0, 1170, 1362)
+
+====================================================================
+自检：已注入已知视觉变化 —— header{background:#ff2d55!important}
+✅ 自检通过：14/16 页被判为漂移 ⇒ **这个比对器真的会 FAIL**。
+   （只证明「一致」是不够的：永远返回「一致」的比对器也会打印 16/16。）
+====================================================================
+
+-> 服务已收尾
+-> 临时目录已删：C:\Users\RS\AppData\Local\Temp\nlawer-vb-meexhuvs
+
+MODES=['compare', 'selftest'] RC=0
+```
+
+## 复现方法
+
+```bash
+# 起 backend 8001 + admin 3002（生产构建产物），数据指纹须与基线一致
+python evidence/visual_baseline.py            # 与基线比对
+python evidence/visual_baseline.py --self-test # 自检：注入已知变化，断言必须 FAIL
+python evidence/visual_baseline.py --capture   # 重建基线（会覆盖；建议先改名归档旧基线）
+```
+
+⚠️ 本文件由临时日志**还原**而来（原日志用 `ascii()` 转义打印，规避 Windows GBK 终端
+把含 `✓`/`✗` 的整行变成不可逆乱码）。
+
+---
+
+## 附：端到端验证 —— 模式锁真的会拦，自检产物真的不落基线（2026-09-26 收尾）
+
+### 为什么要再跑一次
+
+上面的 `--self-test` 只证明了「**比对器**会 FAIL」。模式前提锁是**本次新加的代码**，
+它有两种坏法，前面那轮都没覆盖：
+
+| 坏法 | 纯函数臂（自检 A）能发现吗 | 端到端能发现吗 |
+|---|---|---|
+| `mode_mismatch()` 逻辑写错（例如恒返回 `None`） | ✅ 能 | 能，但绕 |
+| 逻辑对、**但没接进 `run()`**（算出来了没人用） | ❌ **不能** | ✅ 能 |
+
+⇒ 必须跑一次「**故意把清单里的模式翻到另一边**」的真实流程，断言它走 `exit 2`。
+**纯函数臂只证明逻辑，不证明接线** —— 而「逻辑对但没接线」正是本项目最熟悉的那类
+零判据（名册说接上了、实际没跑）。
+
+### 三次运行（`compare` → `selftest` → `inject_compare`）
+
+| 模式 | rc | 耗时 | 关键输出 |
+|---|---|---|---|
+| `compare` | **0** | 124.8s | `[mode] 基线=prod · 当前=prod` · `16/16 页与基线一致`（全 `0.0000%`） |
+| `selftest` | **0** | 124.7s | 自检 A **5/5** · `14/16 页被判为漂移` |
+| `inject_compare`（把清单翻成 `dev`） | **2** | **48.7s** | `[ENV ] **服务模式与基线不一致** ⇒ 画面差异**无法归因于样式**，不判定为产品缺陷。` |
+
+⚠️ **48.7s vs 124.8s 本身就是证据**：`inject_compare` 比 `compare` 少花 ~76s，
+省掉的正是 16 页的采集阶段 ⇒ 前提锁在**截图之前**就退出了，
+不是「采完再补一句免责声明」。
+
+`inject_compare` 的完整 stdout（原样）：
+
+```
+── 前置检查 ──
+  [ ok ] admin dev server (3002)  HTTP 200
+  [ ok ] backend (8001)  HTTP 200
+  [data] firm_hlw: 在办=10 工单=2 | platform: 在办=4 工单=1
+  [ ok ] 数据指纹与基线一致（基线建于 2026-09-26T09:54:32）
+  [mode] 服务模式：基线=dev · 当前=prod
+
+[ENV ] **服务模式与基线不一致** ⇒ 画面差异**无法归因于样式**，不判定为产品缺陷。
+        基线是 `dev`、当前是 `prod` ⇒ 画面差异**无法归因于样式**（dev 会挂开发工具徽标 `<nextjs-portal>`，生产构建没有）
+        ⇒ 用**与基线相同的模式**重跑；若确认是有意的模式切换，重建基线：`--capture`
+```
+
+### 自检产物落点：同一张图，两个目录
+
+| | 修 `write_artifact(out_dir=)` **之前** | **之后** |
+|---|---|---|
+| 对比图路径 | `evidence\visual_baseline\diff_desktop__billing.png` | `evidence\visual_baseline\_current\_selftest\diff_desktop__billing.png` |
+| 落在 | **基线目录**（刚重建的干净基线里） | `_current` 下的 `_selftest/` 子目录 |
+
+文件名**一模一样**，只是目录不同 ⇒ 这是「产物不再污染基线」的直接对照证据。
+
+### 顺带修掉的**第二个**同族隐患：`_current/` 顶层滞留
+
+第一次端到端跑完发现：自检产物虽然不再进基线目录，但落在了 **`_current/` 顶层** ——
+而 `_current` 的语义是「**最近一次运行的当前截图**」，且 `compare` 全绿时**不会**清理
+旧的 `diff_*.png` ⇒ 那张注入产生的**假差异图会长期滞留**，被下一个人读成「当前有漂移」。
+
+这与上面修的是**同一类错**（把假证据放在会被当成真证据的位置），所以用同一把尺子修：
+自检产物改落 **`_current/_selftest/`**（子目录语义自明）。改动三处：
+
+1. `write_artifact` docstring 补「也不要直接落 `_current/`」及原因；
+2. `out.parent.mkdir(parents=True, exist_ok=True)`（子目录可能不存在）；
+3. 调用点 `out_dir=CUR_DIR / "_selftest" if self_test else BASE_DIR`。
+
+**安全性核对**：`write_manifest` 的清理逻辑是 `BASE_DIR.glob("*.png")`（**不递归**、
+只匹配 `.png`）⇒ `_current/_selftest/` **完全不受影响**。
+
+**改后复跑**（`selftest` → `compare`）：
+
+| 模式 | rc | 耗时 | 关键输出 |
+|---|---|---|---|
+| `selftest` | **0** | 125.0s | 自检 A 5/5 · 对比图 = `_current\_selftest\diff_desktop__billing.png` · `14/16 页被判为漂移` |
+| `compare` | **0** | 124.3s | `16/16 页与基线一致`（**改动无回归**） |
+
+最终目录状态：
+
+| 位置 | 内容 | 判据 |
+|---|---|---|
+| `visual_baseline/`（基线） | 16 张 PNG + `manifest.json` + `_current/` | `diff_*.png` = **0** |
+| `visual_baseline/_current/` | 16 张截图 + `_selftest/` | `diff_*.png` = **0** |
+| `visual_baseline/_current/_selftest/` | 1 张（注入产生的假差异图） | = **1** |
+
+原来滞留在 `_current/` 顶层的那张（**10:11** 时间戳，改代码前那次留下的）已**移动**（非删除）
+到 `_selftest/` 覆盖同名（本次为 10:15，内容同为自检产物）。
+
+### 静态检查
+
+```
+ruff check evidence/  ⇒  All checks passed!  (exit 0)
+Settings path: "...\NLawer\ruff.toml"          # 确认用的是仓库根配置
+```
+
+### 顺带发现（未改，仅记录）
+
+前置检查打印的是 `[ ok ] admin dev server (3002)`，但实际起的是 **`next start`（生产构建）**。
+文案沿用 `envprobe.check_services()` 的固定串 —— 在**这个**「模式前提锁」的语境下容易误导
+（会让人以为跑的是 dev）。属共享工具 `envprobe.py` 的文案问题，本次不动。
+
+### 追加：登记同步 + 复跑
+
+本次还给 `run_ci_probes.py` 的 `NON_GATE_SCRIPTS["visual_baseline.py"]` 描述补上了第二个前提锁
+（原写「必须同一数据集」⇒ 现写「**且同一服务模式** `dev`/`prod`」）—— 属**登记同步**：
+工具多了一条前提锁，登记它的地方不能只说一半。
+
+改后复跑完整门禁：**`EXIT=0`**（2m25s）· 阶段 1 **27 条全绿** · 阶段 2 **21/21** ·
+阶段 3 **6/6**。
+
+⚠️ **两次门禁日志字节数完全相同（4761 B）** ⇒ 这次改的是**纯描述字符串**，
+**没有扰动任何判据输出**（预期之内，但当场验证了，而不是推断）。
+
+

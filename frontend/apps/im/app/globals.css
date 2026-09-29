@@ -1,0 +1,43 @@
+/* ============================================================================
+ * 律小智 · 全局样式 v2「墨与纸」
+ * ----------------------------------------------------------------------------
+ * 深色模式策略变更说明（重要）：
+ *   旧版在此文件用 20 余条 `.dark .xxx { !important }` 硬覆盖 Tailwind 工具类，
+ *   新增颜色类必然漏网。v2 起全部改为 CSS 变量驱动，本文件**不再包含任何
+ *   `.dark` 选择器，也不再包含任何 `!important`**。
+ *
+ * 两个 @import 的职责：
+ *   tokens.css  设计令牌（:root 与 .dark 两套变量）
+ *   styles.css  责任边界三态、排印工具、移动端辅助
+ *
+ * 阶段一的 bridge.css（存量工具类 -> 令牌的兼容映射）**已删除**：
+ * 四端业务页已全部改用语义类名，`bg-white` / `text-indigo-*` / 图标块渐变
+ * 在代码中零引用（可 grep 复核）。
+ *
+ * ⚠️ 这里的 @import **不是**由 postcss-import 处理的（项目没有装这个包），
+ *    而是由 Next 的 css-loader 内联，**内联位置不保证在 `@tailwind utilities`
+ *    之后**。因此 styles.css 内部凡是要覆盖工具类的自定义类，必须自带
+ *    `html ` 前缀把特异性提到 (0,1,1)，不能依赖样式表顺序。
+ * ========================================================================== */
+@import "../../../packages/ui/src/tokens.css";
+@import "../../../packages/ui/src/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-50 font-sans text-ink-900 antialiased;
+  /* 中文方块字密度高，正文行高不低于 1.65 */
+  line-height: 1.7;
+}
+
+/* 金额、案号、日期、条款号统一等宽 + 表格数字对齐 */
+.num {
+  font-variant-numeric: tabular-nums;
+}

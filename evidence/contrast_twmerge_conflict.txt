@@ -1,0 +1,27 @@
+=== tailwind-merge 对「自定义语义字号 vs 文字颜色」的冲突判定（可复现）===
+tailwind-merge 版本：
+
+输入 A = 字号类, 输入 B = text-white；输出里还剩谁：
+  [自定义] text-caption   => "text-white"              字号存活=false  颜色存活=true
+  [自定义] text-label     => "text-white"              字号存活=false  颜色存活=true
+  [自定义] text-body-sm   => "text-white"              字号存活=false  颜色存活=true
+  [自定义] text-body      => "text-white"              字号存活=false  颜色存活=true
+  [自定义] text-body-lg   => "text-white"              字号存活=false  颜色存活=true
+  [自定义] text-h4        => "text-white"              字号存活=false  颜色存活=true
+  [自定义] text-h1        => "text-white"              字号存活=false  颜色存活=true
+  [自定义] text-display   => "text-white"              字号存活=false  颜色存活=true
+  [标准] text-xs        => "text-xs text-white"      字号存活=true  颜色存活=true
+  [标准] text-sm        => "text-sm text-white"      字号存活=true  颜色存活=true
+  [标准] text-base      => "text-base text-white"    字号存活=true  颜色存活=true
+  [标准] text-lg        => "text-lg text-white"      字号存活=true  颜色存活=true
+
+=== 症状 A：Button.tsx（颜色在前、字号在后）===
+  twMerge(variant, size) => bg-brand-600 shadow-s1 hover:bg-brand-700 active:bg-brand-800 border border-transparent h-[34px] min-h-tap sm:min-h-0 px-4 text-body-sm rounded-r2 gap-2
+  含 text-white ? false  ⇒ 颜色被吃掉 ⇒ 文字退回继承色（浅色档 2.16:1）
+
+=== 症状 B：Pagination.tsx（字号在前、颜色在后）===
+  twMerge(btn, color) => num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-fast ease-out bg-brand-600 text-white
+  含 text-body-sm ? false  ⇒ 字号被吃掉 ⇒ 分页按钮字号退回继承值（对比度门禁看不到）
+
+=== 反向对照：调换顺序即正常 ===
+  twMerge(size, variant) 含 text-white ? true

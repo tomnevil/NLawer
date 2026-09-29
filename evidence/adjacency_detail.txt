@@ -1,0 +1,80 @@
+=== 相邻可点元素对（视口 390×844，分离 ≤12px）：共 137 对 ===
+按 gap 分布（* = 低于 §8.3 的 8px 线）：
+    0.0px *   67 对 **=0（疑似复合控件内部）**
+    1.0px *    2 对 
+    4.0px *    5 对 
+    5.0px *    2 对 
+    8.0px     45 对 
+   10.0px      4 对 
+   11.8px      1 对 
+   12.0px     11 对 
+
+  gap == 0        ：67 对（其中同父元素 67 对）
+  0 < gap < 8     ：9 对  ← **规范关心的那一类**
+  8 <= gap <= 12  ：61 对
+
+=== 0 < gap < 8 的对（若判据成立，这些是候选缺陷）===
+  --- gap=4px 轴=v @ web/contract-review 同父=True ---
+      A <BUTTON> '读取文本文件'  rect=239,460,357,508
+        cls='inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-fast ease-out focus-vis'
+        up=div.flex.items-center.gap-2 < div.mb-1.flex.flex-wrap < div < section.space-y-4.rounded-r3.border
+      B <TEXTAREA> ''  rect=33,512,357,768
+        cls='w-full rounded-r2 border border-line bg-surface px-3 py-2 text-ink-800 placeholder:text-ink-400 transition-colors durati'
+        up=div < section.space-y-4.rounded-r3.border < div.space-y-4 < div.mx-auto.w-full.max-w-workbench
+  --- gap=4px 轴=h @ lawyer/dispatches 同父=True ---
+      A <BUTTON> '‹'  rect=247,614,279,662
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+      B <BUTTON> '1'  rect=283,614,315,662
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+  --- gap=4px 轴=h @ lawyer/dispatches 同父=True ---
+      A <BUTTON> '1'  rect=283,614,315,662
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+      B <BUTTON> '›'  rect=319,614,351,662
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+  --- gap=4px 轴=h @ lawyer/archives 同父=True ---
+      A <BUTTON> '‹'  rect=247,510,279,558
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+      B <BUTTON> '1'  rect=283,510,315,558
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+  --- gap=4px 轴=h @ lawyer/archives 同父=True ---
+      A <BUTTON> '1'  rect=283,510,315,558
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+      B <BUTTON> '›'  rect=319,510,351,558
+        cls='num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-center justify-center rounded-r2 px-2 transition-colors duration-'
+        up=nav.flex.items-center.gap-1 < div.flex.items-center.gap-3 < div.flex.flex-wrap.items-center < div.flex.flex-wrap.items-center
+  --- gap=1px 轴=v @ im/ 同父=True ---
+      A <A> '商业秘密保护合规咨询HL'  rect=17,364,373,432
+        cls='flex min-h-tap items-center gap-3 px-4 py-3.5 transition-colors duration-fast hover:bg-surface-hover'
+        up=li.border-b.border-line.last:border-b-0 < ul.overflow-hidden.rounded-r4.border < div.mt-2 < div.mx-auto.w-full.max-w-[560px]
+      B <A> '科技公司股权架构设计HL'  rect=17,433,373,501
+        cls='flex min-h-tap items-center gap-3 px-4 py-3.5 transition-colors duration-fast hover:bg-surface-hover'
+        up=li.border-b.border-line.last:border-b-0 < ul.overflow-hidden.rounded-r4.border < div.mt-2 < div.mx-auto.w-full.max-w-[560px]
+  --- gap=1px 轴=v @ im/ 同父=True ---
+      A <A> '科技公司股权架构设计HL'  rect=17,433,373,501
+        cls='flex min-h-tap items-center gap-3 px-4 py-3.5 transition-colors duration-fast hover:bg-surface-hover'
+        up=li.border-b.border-line.last:border-b-0 < ul.overflow-hidden.rounded-r4.border < div.mt-2 < div.mx-auto.w-full.max-w-[560px]
+      B <A> '工伤待遇赔偿争议HLW-'  rect=17,502,373,570
+        cls='flex min-h-tap items-center gap-3 px-4 py-3.5 transition-colors duration-fast hover:bg-surface-hover'
+        up=li.border-b.border-line.last:border-b-0 < ul.overflow-hidden.rounded-r4.border < div.mt-2 < div.mx-auto.w-full.max-w-[560px]
+  --- gap=5px 轴=h @ im/ 同父=False ---
+      A <A> '待补材料看还缺哪几项'  rect=16,743,190,854
+        cls='flex min-h-tap flex-col rounded-r3 border border-line bg-surface p-3.5 shadow-s1 transition-colors duration-fast hover:b'
+        up=div.mt-2.grid.grid-cols-2 < div.mx-auto.w-full.max-w-[560px] < div.scroll-thin.h-full.overflow-y-auto < div.min-h-0.flex-1.pb-[var(--actionbar-bottom)]
+      B <BUTTON> '我的案件'  rect=195,788,293,844
+        cls='relative flex w-full flex-col items-center justify-center gap-1 h-tabbar min-h-tap transition-colors duration-fast ease-'
+        up=li.flex-1 < ul.flex.items-stretch < nav.fixed.inset-x-0.bottom-0 < div.flex.h-dvh.flex-col
+  --- gap=5px 轴=h @ im/ 同父=False ---
+      A <A> '联系律师在会话里直接沟通'  rect=200,743,374,854
+        cls='flex min-h-tap flex-col rounded-r3 border border-line bg-surface p-3.5 shadow-s1 transition-colors duration-fast hover:b'
+        up=div.mt-2.grid.grid-cols-2 < div.mx-auto.w-full.max-w-[560px] < div.scroll-thin.h-full.overflow-y-auto < div.min-h-0.flex-1.pb-[var(--actionbar-bottom)]
+      B <BUTTON> '咨询'  rect=98,788,195,844
+        cls='relative flex w-full flex-col items-center justify-center gap-1 h-tabbar min-h-tap transition-colors duration-fast ease-'
+        up=li.flex-1 < ul.flex.items-stretch < nav.fixed.inset-x-0.bottom-0 < div.flex.h-dvh.flex-col
+EXIT=0

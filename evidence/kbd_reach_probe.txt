@@ -1,0 +1,55 @@
+
+[web] /documents  「鼠标可点 / 键盘不可达」0 个
+
+[lawyer] /cases  「鼠标可点 / 键盘不可达」4 个
+    <tr> tabIndex= -1    990x48 'HLW-DEMO-0008 工伤待遇赔偿争议 劳动争议 B 级 已结'
+        cls=border-b border-line transition-colors duration-fast hover:bg-brand-50
+    → 本页**全部**可聚焦元素 40 个（找有没有替代路径进详情）：
+       <button> '律所工作台 案件协作与办案'
+       <button> '工作台'
+       <button> '派单池'
+       <button> '我的案件'
+       <button> '复核队列'
+       <button> '归档'
+       <button> '通知'
+       <button> '退出登录'
+       <button> '收起侧栏'
+       <button> '切换到深色模式'
+       <button> '通知'
+       <button> '王 王律师'
+       <button> '刷新'
+       <select> '全部阶段 已收案 待派单 已派单 已接单 办案中 已'
+       <select> '全部等级 S 级 A 级 B 级 C 级'
+       <input> ''
+       <button> '列设置'
+       <button> '案号'
+       <button> '案件标题'
+       <button> '争议类型'
+       <button> '等级'
+       <button> '阶段'
+       <button> '争议标的'
+       <button> 'HLW-DEMO-0008'
+       <button> 'HLW-DEMO-0007'
+       <button> 'HLW-DEMO-0004'
+       <button> 'HLW-DEMO-0001'
+       <button> 'HLW-DEMO-0008'
+       <button> 'HLW-DEMO-0007'
+       <button> 'HLW-DEMO-0004'
+       <button> 'HLW-DEMO-0001'
+       <select> '10 20 50 100'
+       <button> '‹'
+       <button> '1'
+       <button> '›'
+       <button> '工作台'
+       <button> '派单'
+       <button> '案件'
+       <button> '复核'
+       <button> '通知'
+    → 点「案号」按钮：clicked:HLW-DEMO-0008；URL **变了**
+       before=http://localhost:3001/cases
+       after =http://localhost:3001/cases/8
+
+[admin] /cases  「鼠标可点 / 键盘不可达」0 个
+
+[im] /cases  「鼠标可点 / 键盘不可达」0 个
+EXIT=0

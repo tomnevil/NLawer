@@ -1,0 +1,31 @@
+{
+  "name": "nlaw-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "//lint": "本仓库**没有** lint。原 `lint: pnpm -r lint` + 4 个 app 的 `lint: next lint` 是装饰性的：eslint 依赖 0 个、eslint 配置 0 个，`next lint` 上游已弃用（Next 16 移除），实跑 exit 1 且弹交互式配置提示（非 TTY 必失败）。2026-09-23 删除；门禁由 `pnpm typecheck`（tsc 是唯一裁判）+ `evidence/` 的静态门禁承担。要重新引入请先拍板规则集 —— 别直接把 `next lint` 加回来。",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "start": "pnpm -r --parallel start",
+    "typecheck": "tsc -p tsconfig.packages.json --noEmit && pnpm -r typecheck",
+    "typecheck:packages": "tsc -p tsconfig.packages.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "tailwindcss": "3.4.17",
+    "tailwind-merge": "^2.5.5",
+    "tailwindcss-animate": "^1.0.7",
+    "clsx": "^2.1.1",
+    "postcss": "^8.5.1",
+    "autoprefixer": "^10.4.20",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/node": "^20.14.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.28"
+    }
+  }
+}

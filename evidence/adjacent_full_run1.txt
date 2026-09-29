@@ -1,0 +1,20 @@
+§8.3「相邻可点元素间距 ≥ 8px」门禁（渲染级，390×844）
+  出处：design-spec.md:373（§8.3 第 4 条 bullet）· 线 = 8px
+  只做第 4 条：48px 热区归 verify_tap_targets.py；按钮高度归 verify_buttons.py；列表行高归 §8.3 另一条
+
+── 渲染层 A1/A2/A3（E1–E3 已声明的排除；E1 是**成对**判据）──
+  扫描可点元素 346 个（其中处于固定/粘性层 150 个）
+  ── 每页覆盖（可点元素数 / **内容区**可点元素数；内容区 0 = 该页没渲染出来）──
+    web: / 17/9 · /qa 11/3 · /documents 31/23 · /contract-review 12/4 · /compliance 15/7 · /knowledge 13/5 · /billing 13/5
+    lawyer: / 18/9 · /dispatches 18/9 · /cases 22/13 · /reviews 17/8 · /archives 18/9 · /notifications 12/3
+    admin: / 7/4 · /reviews 12/9 · /cases 16/13 · /dispatches 7/4 · /compliance 10/7 · /billing 13/10 · /complaints 8/5 · /audit 7/4
+    im: / 13/9 · /chat 10/6 · /cases 17/13 · /me 9/5
+    [E1·审计] 固定层来自：'nav.fixed.inset-x-0.bottom-0' × 81 · 'header.sticky.top-0.z-topbar' × 69
+  [E1] 按「跨固定/滚动层」排除 2 对（恰好一方 pinned ⇒ 间距随滚动而变，无意义；**同层**照常比较）
+  [A1] 并排且 0 < gap < 8px：**4 对**（1 条根因）
+          gap=4.0px  @ 2 页：lawyer/archives, lawyer/dispatches
+              被点元素类名：'num inline-flex h-8 min-h-tap sm:min-h-0 min-w-8 items-cente'
+  [A2] 上下且 0 < gap < 8px：1 对（**只报不判**：上下堆叠是全宽列表/表单的常态）
+  [A3] gap == 0：67 对（其中同父 3 对）（**只报不判**：多是一个复合控件的内部）
+  [E2] 按「列表行」排除 2 对（全宽 + 上下 + ≤2px ⇒ 归 §8.3「列表行高 ≥ 48px」）
+EXIT=1

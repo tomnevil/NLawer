@@ -1,0 +1,29 @@
+=== 相邻可点元素对（视口 390×844，分离 ≤12px）：共 137 对 ===
+按 gap 分布（* = 低于 §8.3 的 8px 线）：
+    0.0px *   67 对 **=0（疑似复合控件内部）**
+    1.0px *    2 对 
+    4.0px *    5 对 
+    5.0px *    2 对 
+    8.0px     45 对 
+   10.0px      4 对 
+   11.8px      1 对 
+   12.0px     11 对 
+
+  gap == 0        ：67 对（其中同父元素 67 对）
+  0 < gap < 8     ：9 对  ← **规范关心的那一类**
+  8 <= gap <= 12  ：61 对
+
+=== 0 < gap < 8 的对（若判据成立，这些是候选缺陷）===
+  gap=4px 轴=h  @ 2 页：lawyer/archives, lawyer/dispatches
+      A: 'num inline-flex h-8 min-h-tap sm:min-h-0'
+      B: 'num inline-flex h-8 min-h-tap sm:min-h-0'
+  gap=1px 轴=v  @ 1 页：im/
+      A: 'flex min-h-tap items-center gap-3 px-4 p'
+      B: 'flex min-h-tap items-center gap-3 px-4 p'
+  gap=5px 轴=h  @ 1 页：im/
+      A: 'flex min-h-tap flex-col rounded-r3 borde'
+      B: 'relative flex w-full flex-col items-cent'
+  gap=4px 轴=v  @ 1 页：web/contract-review
+      A: 'inline-flex items-center justify-center '
+      B: 'w-full rounded-r2 border border-line bg-'
+EXIT=0

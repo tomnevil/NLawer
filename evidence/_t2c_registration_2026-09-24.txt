@@ -1,0 +1,213 @@
+================================================================================
+T2c 存证 —— 判据的**检查集合**也必须读真源（`#42` 的复发路径）
+日期：2026-09-24   ·   执行：UiDesigner 会话   ·   起因：核「`display` 档在产物 CSS 里不存在」
+================================================================================
+
+## 0. 一句话
+
+核 `display` 档时顺带发现：`verify_typography.py` 的 **T2b 检查集合是硬编码的 `CUSTOM_SIZES`
+（10 个语义档）**，而字号档的**真源是 `tailwind.preset.ts`（17 档）**，两者之间**没有任何机械校验**
+⇒ **preset 新增一个档，四条判据没有一条会红**，而 `cn()` 照旧把它当颜色吞掉
+（字号静默回落继承值）。**这是 `#42` 完全相同的缺陷形状，只是可被「加一个档」重新打开。**
+已把硬编码清单**删除**，改为**从 preset 派生 + 实跑生存探针**（新判据 **T2c**）。
+
+## 1. 起因：`display` 档那一条的结论是「不是缺陷」
+
+前一轮列为「待核」：`CUSTOM_SIZES` 列了 `display`，但产物 CSS 里 `.text-display` 不存在。
+
+核实结论 —— **不是缺陷**：
+
+| 检查 | 结果 |
+|---|---|
+| `tailwind.preset.ts` 有 `display` 定义吗 | **有**（`display: ["38px", { lineHeight: "1.25", fontWeight: "600", … }]`） |
+| 源码里有 `text-display` 的用法吗 | **0 处**（`grep -rn "text-display" apps/ packages/` 为空） |
+| 产物 CSS 里 `.text-display` | **0 处** —— **符合预期**（Tailwind JIT 只生成**被用到的**类） |
+| 对照：`.text-h1`（有人用） | **1 处** ⇒ 证明产物 CSS 解析本身是通的 |
+
+⇒ 「preset 有定义 + 无人使用 + 产物里没有」是**正常三连**。判据的档清单**不该**按「产物 CSS 里有没有」
+来判断 —— 它是「`cn()` 必须认识的档」清单，与「当前有没有人用」无关。
+
+## 2. 🚨 真正的缺陷：检查集合是第二份手写清单
+
+```
+真源：frontend/tailwind.preset.ts        fontSize 17 档（10 语义 + 7 存量）
+  ↓ ？——**没有任何机械校验**
+判据：evidence/verify_typography.py      CUSTOM_SIZES 10 档（硬编码元组）
+  ↓ ？——**没有任何机械校验**
+配置：frontend/packages/ui/src/lib/cn.ts FONT_SIZE_TOKENS 10 档
+```
+
+`verify_typography.py` 里**原来只有一处**把三者绑起来：
+
+```python
+missing = [s for s in CUSTOM_SIZES if s not in merge_sizes]   # 只查 CUSTOM_SIZES ⊆ cn.ts
+```
+
+**两处失守**：
+
+1. **`preset → CUSTOM_SIZES` 无校验。** 往 preset 加一个语义档（例如 `h5`），
+   `CUSTOM_SIZES` 不会自动包含 ⇒ **T2b 根本不检查 `text-h5`**。
+2. **`missing` 只比清单、不比行为。** 它检查的是「清单里的名字在不在另一份清单里」，
+   **不是**「这个档在 `cn()` 里会不会被吞」。清单之间可以**一起错**。
+
+⇒ 后果与 `#42` 一模一样：`cn("text-h5", "text-ink-700")` ⇒ 两者同组 ⇒ 颜色赢 ⇒
+`text-h5` 被删 ⇒ 字号**静默回落继承值** ⇒ 行高按继承字号算。
+**而 T1/T1b/T1c/T2/T2b 没有一条会红。**
+
+> **这就是坑 63 的同一个坑，但换了一个面**：
+> 坑 63 讲的是「**期望值**必须读产品真正用的那一份」；
+> 本条讲的是「**被检查对象的集合（分母）**也必须读真源」。
+> 判据里**只要出现第二份手写清单，就一定会漂移**。
+
+## 3. 修法：删掉手写清单，改为从 preset 派生 + 实跑
+
+### 3.1 删除 `CUSTOM_SIZES`
+
+```diff
+ LH_FLOOR = 1.65
+-CUSTOM_SIZES = ("caption", "label", "body-sm", "body", "body-lg",
+-                "h4", "h3", "h2", "h1", "display")
++# 🚨 2026-09-24 删除：字号档的真源是 preset，判据里不该有第二份手写清单（坑 63）。
++#    现由 `parse_preset_sizes()` 直接派生，见 `judge_size_registration`（T2c）。
+```
+
+### 3.2 T2b 的迭代集合改为 preset 派生
+
+```diff
+-            for s in CUSTOM_SIZES:
++            for s in sorted(sizes):          # sizes = parse_preset_sizes()
+                 tok = f"text-{s}"
+                 if tok in itoks and tok not in mtoks:
+```
+
+⚠️ 多出来的 7 个存量档**零成本**：T2b 只在 `tok in itoks`（**源码里真的出现**）时才判，
+存量档（`xs/sm/base/lg/xl/2xl/3xl`）twMerge 默认就认识 ⇒ 不会被误报。
+
+### 3.3 新增 T2c：**实跑生存探针**（不是比清单，是比行为）
+
+```python
+def size_registration_probe_blocks(sizes):
+    return [[f"text-{s}", "text-white"] for s in sorted(sizes)]   # 必然的颜色类
+
+def judge_size_registration(sizes, project_merged):
+    """preset 的**每一个**字号档，在**项目 merge 配置**下都必须存活。"""
+```
+
+- 形状与既有机制臂 M1/M5 **完全一致**（`text-<档>` + `text-white`）⇒ 复用已验证的机制。
+- 输出**带修法**：`修法：把 {s} 加进 frontend/packages/ui/src/lib/cn.ts 的 FONT_SIZE_TOKENS`。
+- **不接收任何硬编码档名** ⇒ 天然跟随真源，**构造上不可能漂移**。
+- 探针跑不了（真实 twMerge 不可用）⇒ 走 **env 通道**（「取不到」≠「0 条合格」）。
+- 用 `is not None` 而非真值判断：`cn.ts` 登记为**空列表**也是一种产品状态，
+  此时应**报红**，而不是走「探针跑不了」。
+
+### 3.4 替换掉 `missing`
+
+```diff
+-        missing = [s for s in CUSTOM_SIZES if s not in merge_sizes]
+-        if missing:
+-            problems.append(f"[T2b] … 未登记语义档 {missing} …")
++        if probe_merged is None:
++            env.append("[T2c] 档登记生存探针跑不了（真实 twMerge 不可用）⇒ 本次不判")
++        else:
++            problems += judge_size_registration(sizes, probe_merged)
+```
+
+⇒ **更强**（覆盖全部 17 档，含存量档）且**不再有第二份清单**。
+
+## 4. 🔬 真机注入反证（证明「改之前抓不到」）
+
+判据表里加了一条新判据，**必须证明它测得出东西** —— 否则它自己就是「零判据」。
+
+**注入**：往 `frontend/tailwind.preset.ts` 的 `fontSize` 加一个**未登记进 `cn.ts`** 的档：
+
+```diff
+ display: ["38px", { lineHeight: "1.25", … }],
++h5: ["17px", { lineHeight: "1.5", fontWeight: "600" }],   // ⚠️ 注入反证
+```
+
+| 组 | 条件 | 结果 |
+|---|---|---|
+| **实验组** | 注入 + **T2c 打开** | **缺陷 1 条**（`INJECT_EXIT=1`） |
+| **对照组** | 注入 + **T2c 关闭**（其余判据原样） | **缺陷 0 条**（判对数 6 · env 0） |
+
+实验组原文（`_t2c_injection_2026-09-24.log`）：
+
+```
+✗ [T2c] preset 字号档 `h5`（17px）在**项目 merge 配置**下被吞掉（`text-h5` 与颜色类同组
+  ⇒ 颜色赢） ⇒ `cn()` 会删掉它、字号**静默回落继承值**；
+  修法：把 `h5` 加进 frontend/packages/ui/src/lib/cn.ts 的 `FONT_SIZE_TOKENS`
+── 源码/产物层：判对数 6，缺陷 1 条
+```
+
+⇒ **对照组 0 条** 就是「**此前这个洞确实抓不到**」的直接证据；
+**实验组 1 条** 就是「T2c 是唯一抓到它的那条判据」。两组之差 = T2c 的**全部价值**。
+
+**还原**：`cp` 回备份，`md5sum` = `86c8c0979bdec66112aa16816d9aaf34`（与注入前**逐字节一致**），
+`grep -c h5` = **0**。复核判据回到 **缺陷 0 条 · EXIT=0**。
+
+## 5. 自检臂 65 → 68
+
+| 臂 | 断言 |
+|---|---|
+| **M14** | 合成 preset 含未登记档（`h5`）⇒ **T2c 必须红** |
+| **M15** | 已登记的档（`body-sm`/`body`/`h2`）⇒ **不得**报 T2c（对照臂） |
+| **M16** | 全部登记 ⇒ T2c **必须零条**（证明 M14 不是恒红） |
+
+⚠️ 用**合成夹具**（不读真实 preset）—— 自检测的是**判据**，不该随产品当前状态变红/绿。
+（与既有 M9 同一纪律。）
+
+自检结果：**68/68 通过 · EXIT=0**。
+
+## 6. 未验证边界（**必须说清**）
+
+- **T2c 只判「preset 的档在 `cn()` 里活不活」，不判「该不该有这个档」。**
+  `display` 定义了但无人使用 ⇒ T2c **不报**（这是**设计系统的取舍**，不是 `cn()` 的问题）。
+- **存量档（`xs/sm/…/3xl`）也被 T2c 覆盖** —— 若有人把 `sm` 从 twMerge 默认配置里挤掉，
+  T2c 会报。**这是有意的**（更宽的网），但**意味着 T2c 的「0 条」比原来更强**，不是同一条断言。
+- **`probe_cn_render_delta.py` 仍留一份 10 档清单** —— 那是**一次性历史探针**（复现 `#42` 的
+  改前/改后渲染证据）。已把注释改为指向 **preset**，并写明「新增语义档时**这里需手工跟上**
+  （判据侧已不需要）」。**未把它改成派生**：它是一次性仪器，改动会让当时证据不可复现。
+- **`BODY_SIZES = ("body-sm","body","body-lg")` 仍是硬编码** —— 它是**判据的语义判断**
+  （§3.2「用途」列里哪些算正文档），**不是真源的副本**。若 §3.2 改版，**需人工跟**。
+  ⚠️ 与 `CUSTOM_SIZES` 性质不同：`CUSTOM_SIZES` 是「真源的子集副本」（可派生），
+  `BODY_SIZES` 是「判据自己的口径」（不可派生）。**这个区别是本条最有价值的部分**。
+
+## 7. 改动文件
+
+    evidence/verify_typography.py          删 CUSTOM_SIZES · T2b 改 preset 派生 ·
+                                          新增 size_registration_probe_blocks / judge_size_registration（T2c）·
+                                          判据表加 T2c 行 · 自检 +M14/M15/M16（65→68）
+    evidence/run_ci_probes.py              棘轮描述补 T2c 与注入反证（**冻结条数不变：0**）
+    evidence/probe_cn_render_delta.py      注释：不再指向已删除的 CUSTOM_SIZES，改指 preset
+    frontend/tailwind.preset.ts            ⚠️ **注入反证后已精确还原**（md5 未变）
+
+## 8. 存证清单
+
+    _t2c_registration_2026-09-24.txt            本文件
+    _t2c_check_2026-09-24.log                   注入前：缺陷 0 条 · EXIT=0
+    _t2c_injection_2026-09-24.log               注入后（T2c 打开）：缺陷 1 条 · EXIT=1
+    _t2c_injection_control_2026-09-24.log       注入后（T2c 关闭）：缺陷 0 条  ← **对照组**
+    _t2c_check_after_revert_2026-09-24.log      还原后复核：缺陷 0 条 · EXIT=0
+    _ci_probes_run_2026-09-24_t2c.log           全量门禁复跑
+
+## 9. 全量门禁复跑（T2c 落地后）
+
+`_ci_probes_run_2026-09-24_t2c.log`（**~2m10s**）：
+
+```
+[阶段 1] ✅ 探针自检全绿（`verify_typography.py` exit=0 3.5s —— 自检 68/68）
+[阶段 2] 通过 21 · 失败 0 · 跳过 0 · 共 21
+[阶段 3] 通过 7 · 失败 0 · 跳过 0 · 共 7（棘轮：只拦增长）
+         ✓ verify_typography.py  exit=0  PASS（rc=0 · 条数 0 ≤ 0）
+✅ evidence 门禁通过（含静态半边棘轮）。
+RUNNER_EXIT=0
+```
+
+⇒ **棘轮冻结条数不变（仍 0）**：T2c 是**加强**判据，不是放宽。
+⇒ 「今天 17 档全部存活」是被**实跑探针**证明的（不是被「清单对得上」证明的）。
+
+⚠️ **口径限定（2026-09-24 补）**：以上「全绿」**仅指 `run_ci_probes.py`（阶段 1/2/3）**。
+**该脚本不含 lint** —— CI 另有一步 `ruff check evidence/`（`ci.yml:249`），实测当时仍有 **3 条**
+（本文件作者自己 1 条 F541，已修；另 2 条属并行会话，按用户决定不动）。
+⇒ **说「门禁全绿」必须指明是哪一个**（同坑 51）。详见 `evidence/README.md` 的「口径警告」。
+

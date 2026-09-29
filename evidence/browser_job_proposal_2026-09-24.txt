@@ -1,0 +1,652 @@
+═══════════════════════════════════════════════════════════════════════════════
+①「浏览器 job」立项方案  ——  最大结构性缺口（17 个探针「从不执行」）
+═══════════════════════════════════════════════════════════════════════════════
+日期：2026-09-24        角色：UiDesigner 会话        状态：**待用户拍板（未动产品代码）**
+依据纪律：设计/结构类改动**先出规范+概念图，用户定稿后才动工**。
+         ⇒ 本文件只做**事实摸底 + 分级方案**，`cdp.py` / `ci.yml` **一行未改**。
+
+───────────────────────────────────────────────────────────────────────────────
+§0 结论摘要（TL;DR）
+───────────────────────────────────────────────────────────────────────────────
+1. **技术障碍比预期小得多**：`cdp.py` 的**唯一**平台绑定是 `CHROME_CANDIDATES`
+   （5 行 Windows 路径）；启动参数（`--headless=new` / `--no-sandbox` / `creationflags=0`）
+   本就跨平台。**全仓库其余 `verify_*.py` 零平台绑定**（已全扫）。
+2. **成本比预期低得多**：GitHub `ubuntu-latest`（Ubuntu 24.04）**预装**
+   Chrome 152 / Chromium 152 / Edge 152 / Firefox 155 **以及 Node.js 22.23.2**
+   ⇒ 浏览器 job **零安装成本**（不需要 `apt-get`、不需要 playwright 下载）。
+3. 🚨 **摸底过程中揪出一个「从不执行」的新实例（比原议题更急）**：
+   `verify_typography.py`（`GATED_STATIC`，棘轮冻结 0/0）在 CI 里 **exit 2**
+   ⇒ `run_ci_probes.py` 阶段 3 记「⏭ SKIP(环境)」⇒ **棘轮从未被评估**。
+   本窗口刚落地的 T2b / T2c **在 CI 里一条都没跑**。**已实测坐实**（§2）。
+4. 🚨 **且降级态会产假阳**：merge 不可用时探针退化成「字面量拼接」，
+   会把**两个互斥的字号类**当成共存 ⇒ 实测报出 1 条**假缺陷**（`DataTable.tsx:628`）。
+   ⇒ 「让它在 CI 里跑」必须**真的接上 merge**，**不能**靠「降级也判」。
+5. **建议分 4 期**：Phase 0（零新增 job，补上 §3 的缺口）→ Phase 1（极低成本的
+   「仪器自检」job）→ Phase 2（单端）→ Phase 3（四端+种子库）。
+   ⚠️ **Phase 3 有硬前置**：`verify_adjacent_targets.py` 现在**实测 exit 1（真缺陷 4 对）**，
+   直接接进去第一天就是红的（项目教训：长期红的门禁两天内必被注释掉）。
+
+───────────────────────────────────────────────────────────────────────────────
+§1 事实底数（全部实测 / 外部核验，附出处）
+───────────────────────────────────────────────────────────────────────────────
+
+1.1 CI 平台：**5 个 job 全是 `ubuntu-latest`（Linux）**
+    `.github/workflows/ci.yml` → `runs-on` 出现在 29 / 102 / 203 / 280 / 343 行。
+    job 名：`backend` · `frontend` · `evidence` · `security-audit` · `docker-build`。
+    `actions/setup-node@v4` 只在 **117（frontend）/ 320（docker-build）** 出现
+    ⇒ **`evidence` job 没有 Node setup**。**没有任何 job 安装浏览器**。
+
+1.2 `evidence` job 的完整 steps（`ci.yml:201-264`，逐条读原文）
+    `Checkout` → `Setup Python 3.12` → `Install dependencies`（`pip install -r
+    backend/requirements.txt`）→ `Lint (ruff, evidence)`（`ruff check evidence/`）
+    → `Gate self-test`（`--self-test`）→ `Print gating roster`（`--list`）
+    → `Run gated probes`（`python evidence/run_ci_probes.py`）。
+    ⇒ **没有 `pnpm install`** ⇒ `frontend/node_modules` 在 CI 里**必然不存在**。
+
+1.3 runner 镜像预装（外部核验：actions/runner-images `Ubuntu2404-Readme.md`）
+    镜像版本 20260907.300.1 —— Google Chrome 152.0.7977.82 · Chromium 152.0.7977.0 ·
+    Microsoft Edge 152.0.4191.66 · Firefox 155.0 · **Node.js 22.23.2**（缓存 24.20.0）·
+    npm 10.9.8 · 另有 ChromeDriver 152 / Geckodriver 0.37.1。
+    ⇒ 🚨 **推翻一条此前只靠读码得出的推断**：先前认为「`evidence` job 无
+      `setup-node` ⇒ `shutil.which("node")` 返回 `None`」。**错**：runner 自带 Node。
+      ⇒ 这正印证项目既有纪律「**读源码得出的结论也要回头用一次实测确认**」。
+
+1.4 各档条数（awk 精确统计 `run_ci_probes.py`，非手数）
+    `GATED` 21 · `GATED_STATIC` 7 · `NOT_GATED` **17** · `CI_ELSEWHERE` 1 ·
+    `NON_GATE_SCRIPTS` 22 · `SELFTEST_ENV_BOUND` **10** · `SELFTEST_REPO_BOUND` 1。
+
+1.5 `SELFTEST_ENV_BOUND` 10 条的阻塞理由（逐条读原文）
+    **9 条的理由是同一句「CI 里无 Chromium」**；余 1 条（`verify_api_base_baked.py`）
+    是「归档的生产产物目录已删」——**不同成因**，不在本议题范围。
+    ⇒ 也就是说：**这 9 条里，凡自检只需浏览器的那部分，加一个浏览器就能解锁**。
+
+1.6 平台绑定的**全部**落点（全仓 grep：`LOCALAPPDATA|Program Files|taskkill|startfile`）
+    命中的文件**只有 `cdp.py` 一个**，且只在 27–31 行：
+        LOCALAPPDATA/ms-playwright/chromium-1234/chrome-win64/chrome.exe
+        LOCALAPPDATA/ms-playwright/chromium-1228/chrome-win64/chrome.exe
+        C:/Program Files/Google/Chrome/Application/chrome.exe
+        C:/Program Files (x86)/Google/Chrome/Application/chrome.exe
+        C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe
+    其余 `verify_*.py` **零平台绑定**。`creationflags=0` 在 POSIX `subprocess.Popen`
+    签名里是合法参数（值必须为 0）⇒ **不构成 Linux 障碍**。
+    ⇒ **技术上要改的只有这一处 + 一个 `CHROME_BIN` 覆盖口。**
+
+1.7 仓库**没有**「起 dev server」的能力
+    全仓 grep `next dev|npm run dev|def serve|start_dev` ⇒ **零命中**。
+    探针一律假定服务已在 `http://localhost:{cfg['port']}` 上跑。
+    ⇒ **浏览器 job 的真正成本不在浏览器，在「把服务和数据拉起来」。**
+
+1.8 17 个 `NOT_GATED` 探针的**依赖矩阵**（按「真判据需要什么」分级）
+    ┌─ 级别 ──────────────────────────── 条数 ── 探针
+    │ A 只需**运行中的后端**（连浏览器都不要）  1 ── ws_msg_type_bypass
+    │ B 只需 CDP + **1 端** dev server         3 ── dark_mode · reduced_motion · breakpoints
+    │ C 只需 CDP + **1 端**（且多需后端）       5 ── im_safe_area · im_tabs · mobile_actionbar
+    │                                              · im_e2e(+后端) · admin_413_toast_e2e(+后端)
+    │ D CDP + **4 端** dev server               4 ── adjacent_targets · mobile_375
+    │                                              · mobile_safe_area · tap_targets
+    │ E CDP + 后端 + **4 端**                   2 ── render_e2e · runtime_health
+    │ F CDP + 后端 + **3 端**                   1 ── task_center_e2e
+    │ G CDP + 后端 + web + **已灌种子的库**      1 ── contract_review_gate_e2e
+    └────────────────────────────────────────────────────────────────
+    合计 1+3+5+4+2+1+1 = **17** ✓
+
+1.9 4 条「只需浏览器」的**自检**（`--self-test`，走 `data:text/html` 合成页）
+    `verify_breakpoints.py`（实测 6.6s）· `verify_dark_mode.py`（11.9s）·
+    `verify_mobile_375.py`（5.4s）· `verify_reduced_motion.py`（14.3s）⇒ 合计 **≈38s**。
+    ⚠️ 这是**唯一**一批「不碰服务、不碰后端、不碰种子库」的 CDP 用例。
+
+───────────────────────────────────────────────────────────────────────────────
+§2 🚨 新发现 A：`verify_typography.py` 在 CI 里**从不被评估**（已实测坐实）
+───────────────────────────────────────────────────────────────────────────────
+2.1 机制（读码 + 实测两遍）
+    `verify_typography.py:304-306`（`twmerge_blocks` 守卫）：
+        node = _node_bin()
+        if not node or not (FRONTEND / "node_modules" / "tailwind-merge").exists():
+            return None
+    CI 里：`node` **有**（runner 预装，§1.3）—— **卡住的是 `frontend/node_modules`**
+    （`evidence` job 从不 `pnpm install`，§1.2）。
+    ⇒ `twmerge_blocks()` 返回 `None` ⇒ T2c 落进 `env` 列表（`:967-969`）
+    ⇒ `summary_exit()`（`:873-874`）**先判 `env_broken`** ⇒ 返回 **2**
+    ⇒ `run_ci_probes.py:868-870` 把 `rc == 2` 记为「⏭ SKIP(环境)」**并跳过棘轮判定**。
+    ⇒ **`verify_typography.py` 的棘轮（冻结 0/0）在 CI 里从未被评估。**
+
+2.2 实测（模拟 CI：**只**摘 `frontend/node_modules`，源码树原封不动）
+    做法：代理对象包住真实 `FRONTEND`，仅 `FRONTEND / "node_modules"` 指向不存在，
+    其余透传 ⇒ **唯一变量**就是 node_modules 的有无。**独立进程**各跑一次。
+    ┌──────────────────────────────────────────────────────────────────┐
+    │ 状态            判对数  缺陷  env   summary_exit                 │
+    │ 本机真实（A）      6     0    0     0                            │
+    │ 模拟 CI（B）       8     1    1     2   ← CI 的实际状态          │
+    └──────────────────────────────────────────────────────────────────┘
+    ⚠️ **第一版实验是错的、已废弃**：它把整个 `FRONTEND` 换成空临时目录 ⇒
+       **源码扫描也空了**（输出「扫描：0 个 `className` 块」+ 多出一条 T4 env）
+       ⇒ exit 2 的成因被污染。**变量没控住**，结论不成立。修正版（上表）才作数。
+
+2.3 🚨 发现 B：降级态会产**假阳**（同一实验暴露）
+    模拟 CI 里报出的唯一缺陷：
+        [T2] 正文档 `text-body-sm` 被 `leading-5` 压到 **1.538** < 1.65
+             —— frontend/packages/ui/src/components/DataTable.tsx:628
+    读源码（`DataTable.tsx:626-630`）：
+        className={cn(
+          "truncate text-body-sm text-ink-800",
+          col.numeric && "num text-[11px] leading-5"
+        )}
+    **两个块里的字号类互斥**：`col.numeric` 为真时字号是 `text-[11px]`，不是 `text-body-sm`。
+    merge 实测（node 直跑 `tailwind-merge`，库默认与项目配置**同结果**）：
+        in : "truncate text-body-sm text-ink-800" + "num text-[11px] leading-5"
+        out: "truncate text-ink-800 num text-[11px] leading-5"   ← text-body-sm 被吞
+    ⇒ 真实行为下 `leading-5`(1.538) 作用在 **11px**（caption 档，非正文）⇒ **合法**。
+    ⇒ **CI 降级态那条是假阳**：它把两个互斥块按字面量拼接，误判成 `text-body-sm` 与
+      `leading-5` 共存。**探针自己在 `:957` 已声明这种降级是「保守」的**，
+      但「保守」的代价在这里表现为**假红**。
+    ⇒ **推论（对本议题关键）**：把 typography 接进 CI，**必须让它拿到
+      `frontend/node_modules`**（真 merge），**不能**「反正降级也判」。
+
+2.4 🚨 **发现 C（结构性根因）：阶段 3 的「跳过」永远不会被判红**
+    实测 `run_ci_probes.py` 里 `r_skipped` **只出现 3 次**：初始化（`:860`）·
+    追加（`:869`）· 汇总打印（`:893`）。**它不参与任何失败判定。**
+    阶段 3 之后的所有失败判据只有三条：`if failed` · `if skipped and not passed`
+    （**注意：`skipped` 是阶段 2 的列表，不含阶段 3**）· `if r_failed`。
+    ⇒ 阶段 3 的探针**可以永久 SKIP 而门禁照绿**。
+    ⚠️ 这与项目既有纪律**不一致**：坑 50 明确要求「棘轮『取不到条数』**必须判红**」——
+       但那是**脚本内部**的防线；`rc == 2` 在**运行器层面、判定之前**就被划进 SKIP，
+       **连坑 50 那条防线都不会被触发**。
+    ⚠️ 阶段 2 的跳过有「全部跳过且无一通过 ⇒ 判红」（`:909`）兜底，**阶段 3 没有对应物**。
+    ⇒ 这正是 §2.1 那条静默能长期存在的原因：**没有任何机制会发现它**。
+    ⇒ **建议**：Phase 0 修好之后，补一条守卫 ——「阶段 3 出现 SKIP ⇒ 判红，除非该探针
+      在名册里**显式登记了豁免理由**」。**顺序不能反**（先修，再加守卫，否则 CI 立刻红）。
+
+───────────────────────────────────────────────────────────────────────────────
+§3 分级方案（每期：改动点 / 成本 / 收益 / 风险）
+───────────────────────────────────────────────────────────────────────────────
+
+■ Phase 0 —— 补上 §2 的「从不执行」缺口（**零新增 job**，成本最低）
+  目标：让 T2 / T2b / T2c **真的在 CI 里执行**。
+  两条路线（**需拍板选一**）：
+    0-A【推荐】`frontend` job 里加一步。该 job **已有** node + `node_modules`（`pnpm
+        install --frozen-lockfile`）。改动：
+          · 加 `pip install websockets==13.1`（`verify_typography.py:123`
+            有 `from cdp import Browser` ⇒ 需要 `websockets`；该 job 目前不装 Python 依赖）
+          · 加一步 `python3 ../evidence/verify_typography.py --source-only`，断言 exit 0
+        ⚠️ 连带：`run_ci_probes.py` 的棘轮在 `evidence` job 里仍会对它 SKIP
+           ⇒ 必须在名册里**表态**（把它从 `GATED_STATIC` 挪到 `CI_ELSEWHERE` 一类），
+           否则出现「名册说棘轮在管、实际两个 job 都不判」的**假接线**。
+    0-B【更统一、更贵】给 `evidence` job 加 `setup-node` + `pnpm install`。
+        好处：棘轮逻辑一行不改、T2/T2b/T2c 与其它 `GATED_STATIC` 走同一路径。
+        代价：多一次依赖安装（有 pnpm 缓存后约 40–60s）。
+  ⇒ **建议 0-B**：改动面最小（不动棘轮语义），且避免「同一判据在两个 job 里各有一套期望值」。
+  0-2【**必须后置**】补 §2.4 那条守卫：「阶段 3 出现 SKIP ⇒ 判红，除非名册里显式登记豁免」。
+      ⚠️ **顺序不能反** —— 先修 0-A/0-B，再加守卫；否则 CI 立刻变红（正是 §2.1 的现状）。
+
+■ Phase 1 —— 新增「仪器自检」job（**极低成本**，解锁 §1.9 那 4 条）
+  改动：`evidence/cdp.py:26-32` 补 Linux 候选 + `CHROME_BIN` 覆盖；
+       新增 job `browser-selftest`：Checkout → Setup Python 3.12 → `pip install -r
+       backend/requirements.txt` → 跑 4 条 `--self-test`。
+  成本：**无浏览器安装**（预装）；4 条自检 ≈38s + 依赖安装。
+  收益：① 证明「CDP 仪器在 Linux 上没坏」（这正是 `--self-test` 的用途）；
+        ② `SELFTEST_ENV_BOUND` 从 **10 → 6**；③ 为 Phase 2 先趟平路径/环境问题。
+  风险：低。唯一未知是 headless Chrome 152 在 Linux 上的行为（§5）。
+
+■ Phase 2 —— 「browser」job（单端，中成本）
+  覆盖 §1.8 的 B/C 级（8 条）：dark_mode · reduced_motion · breakpoints ·
+  im_safe_area · im_tabs · mobile_actionbar · im_e2e · admin_413_toast_e2e。
+  设计要点：
+    · 用 **`pnpm build` + `pnpm start`（生产模式）**，**不用 `next dev`**
+      —— dev 的按需编译是 flaky 主源，且本项目本机已踩过「一个回合只能起 1 个 dev」。
+    · 后端用 `uvicorn` + `DATABASE_URL=sqlite+aiosqlite`（照抄 `evidence` job 的 env 块）。
+    · 起服务后**必须等健康检查**（轮询 `/healthz` 之类）再跑探针，不能 `sleep` 赌。
+  成本：估 4 端构建中的 1–2 端 + 后端；分钟级。
+  风险：中。冷启动超时、端口冲突、探针自身的等待参数需按 CI 机器速度调。
+
+■ Phase 3 —— 四端 + 种子库（最重）
+  覆盖 D/E/F/G 级（8 条）：mobile_375 · mobile_safe_area · tap_targets ·
+  adjacent_targets · render_e2e · runtime_health · task_center_e2e ·
+  contract_review_gate_e2e。
+  🚨 **硬前置**：`verify_adjacent_targets.py` **已知 exit 1**（出处：该脚本在
+     `run_ci_probes.py` 的 `NOT_GATED` 登记注释，**2026-09-21 实测** —— A1 报 4 对相邻
+     可点元素 `gap=4px < 8px`，全部出自 1 条根因，落在 `lawyer/archives` 与
+     `lawyer/dispatches` 两页的 `.num` 分页按钮上。**本次未复跑**，按登记值引用）。
+    直接接进 CI ⇒ **第一天就是红的**。必须先「修缺陷」或「先用棘轮放行已知欠账」。
+  成本：4 端构建 + 后端 + 种子数据 + 26 页 × 多账号 ⇒ 每 PR **10–15 min** 量级。
+  ⇒ **强烈建议只在 `main` / 夜间 / 手动 `workflow_dispatch` 触发**，不进 PR 必跑路径。
+
+───────────────────────────────────────────────────────────────────────────────
+§4 需要改动的文件清单（逐处，供拍板后施工）
+───────────────────────────────────────────────────────────────────────────────
+1. `evidence/cdp.py:26-32` —— `CHROME_CANDIDATES` 补 Linux 路径，并让 `CHROME_BIN`
+   优先（环境变量覆盖是跨平台的正规做法，也让本机可强制指定）：
+     候选建议：`/usr/bin/google-chrome` · `/usr/bin/google-chrome-stable` ·
+               `/usr/bin/chromium` · `/usr/bin/chromium-browser` ·
+               `/usr/bin/microsoft-edge` · `/snap/bin/chromium`
+2. `.github/workflows/ci.yml` —— Phase 0 的步骤（frontend job）或 Phase 1–3 的新 job。
+3. `evidence/run_ci_probes.py` —— 名册同步（`NOT_GATED` / `GATED_STATIC` /
+   `SELFTEST_ENV_BOUND`）。**不做就会被判据 0 / 0b / 0c 直接判红**（这是设计意图）。
+4. `evidence/verify_typography.py:103` —— `--source-only` 的 docstring 仍写
+   「T1/T1b/T1c/T2/T2b/T4」，**未同步本窗口新增的 T2c** ⇒ 文档漂移，顺手补。
+5. ⚠️ **不要**把 `visual_baseline.py`（像素基线）接进 CI：跨平台渲染差异
+   （字体/抗锯齿/子像素）**必然**不同 ⇒ 会变成永久假红。见 §5。
+
+───────────────────────────────────────────────────────────────────────────────
+§5 未验证边界（**必须真跑一次才能说**，本轮未做）
+───────────────────────────────────────────────────────────────────────────────
+· Linux headless Chrome 152 下 `env(safe-area-inset-*)` 的实际取值 —— 本机是
+  Windows headless，**不能**据此推断 Linux 一致（`verify_*_safe_area.py` 全靠它）。
+· `Emulation.setEmulatedMedia`（`prefers-reduced-motion` / `prefers-color-scheme` /
+  `forced-colors`）在 Chrome 152 Linux 上的行为是否与本机一致。
+· §1.9 那 4 条自检在 Linux 上是否同样通过 —— **唯一没跑过的一环**，Phase 1 就是去验它。
+· 生产模式（`pnpm start`）下探针的等待参数是否够（本机全是在 dev 下测的）。
+· 像素基线跨平台差异的具体幅度（用于确认 §4 第 5 条「不要接」这个结论）。
+
+───────────────────────────────────────────────────────────────────────────────
+§6 待拍板清单
+───────────────────────────────────────────────────────────────────────────────
+□ ① Phase 0 走 **0-A**（frontend job 加步）还是 **0-B**（evidence job 加 node_modules）？
+     ⚠️ 这是**唯一**能在「零浏览器成本」下补掉一个「从不执行」缺口的动作，建议优先做。
+□ ② Phase 1 是否立项（新增 `browser-selftest` job）？
+□ ③ Phase 2 / 3 是否立项？若立项，触发策略选「仅 main」/「夜间」/「手动」？
+□ ④ Phase 3 的前置缺陷（`verify_adjacent_targets.py` 的 4 对 gap=4px）：
+     先修产品 / 先上棘轮放行 / 暂不接？
+□ ⑤ 是否采纳「**不把像素基线接进 CI**」这条边界（§4.5）？
+
+───────────────────────────────────────────────────────────────────────────────
+§7 本次摸底用到的实测命令（可复现）
+───────────────────────────────────────────────────────────────────────────────
+· 各档条数：
+    awk -v s=NOT_GATED 'index($0,s" = "){f=1;next} f&&/^\}/{exit}
+        f&&/^    "[^"]+\.py":/{c++} END{print c}' evidence/run_ci_probes.py
+· 模拟 CI（只摘 node_modules）：
+    CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR= backend/.venv/Scripts/python.exe <driver>.py ci
+· merge 行为直验：
+    cd frontend && node -e "const tm=require('tailwind-merge'); ..."
+· 平台绑定全扫：
+    grep -rn "LOCALAPPDATA|Program Files|taskkill|startfile" evidence/
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ 上面是**方案**（§0–§7）。下面是**施工记录**（§8–§9，2026-09-24 用户拍板「1–6 全部按建议执行」）。
+═══════════════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════════════
+§8 执行记录（2026-09-24）
+═══════════════════════════════════════════════════════════════════════════════
+
+■ ① Phase 0 —— 🚨 **我原来的建议（0-B）被实测否掉，改走 0-A**
+   **落地**（`ci.yml` 的 `frontend` job 新增 3 步）：
+     · `Setup Python 3.12`
+     · `Install evidence deps (websockets)` = `pip install websockets==13.1`
+     · `Assert typography source gate` = `python3 ../evidence/verify_typography.py --source-only`
+       —— 排在 `Build (production)` 与 `Assert NEXT_PUBLIC_API_BASE…` 之后。
+   **名册同步**：`verify_typography.py` 从 `GATED_STATIC` 移入 `CI_ELSEWHERE`
+     （`GATED_STATIC` 7 → **6**；`CI_ELSEWHERE` 1 → **2**）。
+   **棘轮语义未削弱**：冻结值本就是 `rc_max=0 / count_max=0`，而 `exit 0` ⇔ 0 缺陷
+     ⇒ 「断言 exit 0」与棘轮**等价且更强**（`exit 2` 也会红）。
+
+   🚨 **修正：为什么不是 0-B**（四组合实测；`blocks=2447` · preset 17 档 · `cn.ts` 10 档）
+   ┌──────────────────────────────────────┬────────┬──────┬──────┐
+   │ 组合                                  │ 判对数 │ 缺陷 │ exit │
+   ├──────────────────────────────────────┼────────┼──────┼──────┤
+   │ 本机真实（node_modules 有 / .next 有） │   6    │  0   │  0   │
+   │ **只补 node_modules（= 原 0-B 建议）** │ **0**  │  0   │ **2**│
+   │ 只补 .next                            │   8    │  1   │  1   │
+   │ evidence job 现状（两者都缺）          │   0    │  0   │  2   │
+   └──────────────────────────────────────┴────────┴──────┴──────┘
+   ⇒ 探针**同时**需要 ① `frontend/node_modules/tailwind-merge`（**真** merge）
+     与 ② 四端 `.next` 产物 CSS（`leadings`；`judge_line_height` 拿不到值就**逐对 `continue`**）。
+   ⇒ 只补 `node_modules` ⇒ 判对数 0 ⇒ `total==0` ⇒ **仍是 exit 2** ⇒ 仍被 SKIP。
+   ⇒ **只有 `frontend` job 同时满足两者** ⇒ **0-A 是唯一正确的落点**。
+   ⚠️ 第三行更危险：只补 `.next` 时**降级合并把假阳报成 exit 1（产品缺陷）** ——
+      比 `exit 2` 危险，因为 `exit 2` 至少会被读成「没测成」。
+   ⚠️ **教训**：模拟 CI 时必须把被测脚本的**所有**环境前提列全。
+      第一轮只控住 `node_modules` ⇒ 差点交付一个「修了但没修好」的方案。
+   ⚠️ **本机不能验证这条接线**：四端 dev server 常驻，`pnpm build` 会毁掉它们的 `.next`
+      ⇒ **首次 CI 运行即为端到端验证**（同 `verify_api_base_baked.py`）。
+
+■ ② 判据 4b —— 阶段 3 的 SKIP ⇒ **判红**（已落地）
+   `run_ci_probes.py` 新增 `STATIC_SKIP_EXEMPT`（**当前空表** = 一条都不许跳）
+   + 阶段 3 之后的新判定 `unexplained_skip` ⇒ `return 1`。
+   自检臂 **W2**（合成 rc=2 ⇒ `run_all()` 必须 exit 1）。
+   ⚠️ W1 **不够**：它只覆盖「棘轮条数暴涨」那条分支，对 4b **没有判别力**
+      （`rc == 2` 在 `judge_ratchet` **之前**就把探针划进 SKIP）。
+
+■ ③ Phase 1 —— `browser-selftest` job（已落地）
+   · `cdp.py`：`CHROME_CANDIDATES` 改为**按平台**生成（`_chrome_candidates()`）
+     + **`CHROME_BIN` 环境变量优先**；Windows 候选**逐个保留**；Linux 候选 6 个。
+     报错信息补「平台 + 可用 `CHROME_BIN` 指定」。
+     ✅ 本机回归：`find_chrome()` 仍返回原路径（`ms-playwright/chromium-1234`）。
+   · `ci.yml`：新增 job `browser-selftest`（5 步：Checkout / Setup Python /
+     Install deps / **Locate browser (fail fast)** / Run browser self-tests）。
+     「Locate browser」那一步是**故意的**：浏览器找不到就**当场红**，
+     而不是让 4 条自检各报一次 `RuntimeError`（那时分不清「没浏览器」还是「探针坏了」）。
+   · 🚨 **探针名清单刻意不写进 YAML**：只传 `--selftest-for-job browser-selftest`，
+     清单来自运行器的 `SELFTEST_JOB_PROBES`（坑 64：第二份手写清单一定会漂移）。
+   · 名册同步：4 条自检从 `SELFTEST_ENV_BOUND` 移入 `SELFTEST_ELSEWHERE`
+     （`SELFTEST_ENV_BOUND` 10 → **6**；`SELFTEST_ELSEWHERE` 2 → **6**），
+     理由文本用机器可读标记 `@job:browser-selftest`。
+   · 新增**判据 5**：两张登记表必须**互相兜住**（见 `README.md` **坑 66**
+     —— 第一版声称口径依赖被检查对象本身，被自检臂 **G2 当场否掉**）。
+   ✅ **已在本机端到端验证新入口**（本议题里**唯一**能本机验的部分）：
+      `--selftest-for-job browser-selftest` ⇒ **4/4 通过 · `EXIT=0`**
+      （7.0s / 12.7s / 5.5s / 14.2s ≈ 40s）。
+      ⚠️ 这也意味着这 4 条自检**第一次被真正执行**（此前登记在「阶段 1 给不出结论」档）。
+   ⚠️ **本机无法验证的**：Linux headless Chrome 152 的实际行为（见 §5）。
+      ⇒ **首次 CI 运行即为它的验证**。已用「Locate browser」把失败点前置。
+
+■ ④ Phase 2 / 3 —— **已立项**；触发策略：Phase 3 **仅 main / 夜间 / 手动**
+   ⚠️ 编排规范见 §9，**尚未施工**。原因（诚实说明）：
+     ① 仓库**没有任何「起服务」能力**（全仓 grep `next dev|def serve|start_dev` 零命中）；
+     ② 这部分**完全无法在本机按 CI 语义验证**（本机 Windows + 四端 dev server 常驻，
+        且本机内存/端口约束不允许再起一套）；
+     ③ 按项目纪律「设计类改动必须先出规范，用户定稿后才动工」⇒ 先出 §9。
+
+■ ⑤ 像素基线**不接 CI** —— 已登记为**永久边界**
+   写进 `run_ci_probes.py` 的 `SELFTEST_ELSEWHERE["visual_baseline.py"]` 理由文本
+   （含「Linux 与本机 Windows 截图**必然**不同 ⇒ 永久假红」的判据与对照说明）。
+
+■ ⑥ 阶段 3 SKIP 守卫 —— 即 ②（已落地）。
+   ⚠️ **但 Phase 3 的硬前置仍未处置**：`verify_adjacent_targets.py` 已知 exit 1
+      （4 对相邻可点元素 `gap=4px < 8px`，落在 `lawyer/archives` 与 `lawyer/dispatches`）。
+      **本项在 §6 里没有单一推荐**（当时列了三个选项），故按项目既有形态**预留**为
+      「**先上棘轮放行已知欠账**」（同 `GATED_STATIC` / `KNOWN_GAPS`）。
+      ⇒ 施工 Phase 3 时若采用，须在名册里显式登记冻结条数；**若要「先修产品」，
+        那是一次独立的设计改动，需要单独拍板。**
+
+───────────────────────────────────────────────────────────────────────────────
+§9 Phase 2 / 3 编排规范（**待拍板后施工**；本节不含实现代码）
+───────────────────────────────────────────────────────────────────────────────
+■ 核心问题：**「起服务」这件事目前不存在，必须先设计出来**
+   探针一律假定 `http://localhost:{port}` 上已有服务（§1.7）。所以 Phase 2/3 的
+   真正工作 = 写一个**服务编排**：起后端 → 灌种子 → 起 N 端 → 等健康 → 跑探针 → 收尾。
+
+■ 设计要点（每条都对应一个已知的踩坑）
+   1. **用生产模式，不用 `next dev`**：`pnpm build` + `pnpm start`。
+      dev 的按需编译是 flaky 主源，且本项目本机已踩过「一个回合只能起 1 个 dev」。
+   2. **必须轮询健康检查**，不许 `sleep` 赌：探针的等待参数都是按本机速度调的。
+   3. **后端用 `uvicorn` + `sqlite+aiosqlite`**（照抄 `evidence` job 的 `env:` 块）。
+   4. **种子数据**：`contract_review_gate_e2e` 要「已灌种子的库」⇒ 需要显式 seed 步骤；
+      `render_e2e`/`runtime_health` 要 6 个账号（`app.seed.data.DEMO_USERS`）。
+      ⚠️ **本机跑全量 pytest 会清空开发库**（`backend.md` #187）⇒ CI 里必须用**独立**的
+      `DATABASE_URL`，**不要**碰任何本机库。
+   5. **端口固定**：3000–3003 + 8001（`APPS` 表里写死）；CI 里要防「端口被占」。
+   6. **`.env.local` 必须播种**（`NEXT_PUBLIC_API_BASE=http://localhost:8001`）
+      —— 已有先例（`frontend` job 的 `Seed build-time env` 步）。⚠️ 是**构建期内联**的。
+   7. **分阶段接**：Phase 2 先接 §1.8 的 B/C 级（8 条，单端即可）；Phase 3 接 D/E/F/G（8 条）。
+   8. **触发策略**（已拍板）：Phase 3 **只在 `main` / 夜间 / `workflow_dispatch`** ——
+      每 PR 10–15 min 的 flaky 源会让人把整条门禁注释掉（项目既有教训）。
+
+■ 仍需拍板的细节（**施工前必须定**）
+   □ a. Phase 2 先接哪一端？（建议 `admin` —— 它同时覆盖 `dark_mode`/`breakpoints`
+        /`admin_413_toast_e2e` 三条，单位成本最低）
+   □ b. 服务编排代码放哪？（建议 `evidence/` 下的**非** `verify_*` 脚本 ⇒ 须登记进
+        `NON_GATE_SCRIPTS`，否则判据 0b 会红）
+   □ c. 种子库：用现有 seed 脚本，还是为 CI 单独造一份最小种子？
+   □ d. Phase 3 的 8 条是否**全接**，还是先接「已绿」的、把 `verify_adjacent_targets.py`
+        单独用棘轮放行？
+   □ e. 超时/重试策略（建议：整体 job 级超时 + 单探针 300s，**不做自动重试**
+        —— 重试会把 flaky 藏起来）
+
+═══════════════════════════════════════════════════════════════════════════════
+§10 Phase 2 执行记录（2026-09-24 · **已施工并端到端本机验证**）
+───────────────────────────────────────────────────────────────────────────────
+■ 10.1 §9 五项待拍板 —— 按**建议默认值**推进（用户指令「继续执行任务」）
+   a. 先接哪端 ⇒ **admin**（单端成本最低，且能覆盖 2 条真判据）—— 按建议
+   b. 编排代码放哪 ⇒ **`evidence/run_browser_job.py`**（非 `verify_*`）
+      —— 已登记 `NON_GATE_SCRIPTS`（判据 0b）+ `SELFTEST_REPO_BOUND`（判据 0c）—— 按建议
+   c. 种子库 ⇒ **复用 `backend/seed_demo.py --reset`**，但库是
+      `tempfile.mkdtemp()` 下的**全新 SQLite**（绝不碰开发库）—— 按建议
+   d. Phase 3 是否全接 ⇒ **本轮不动**（另需拍板）
+   e. 超时/重试 ⇒ 单探针 420s、就绪轮询 180s、**不做自动重试** —— 按建议
+
+■ 10.2 交付物（3 个文件 + 1 个新 job）
+   · **新增** `evidence/run_browser_job.py`（~520 行，编排器）
+   · **改** `evidence/run_ci_probes.py`：
+       新增 `CI_JOB_PROBES` / `JOB_ENTRYPOINTS` / `_ci_job_blocks()` /
+       `judge_exit_codes()` / `_evidence_sources()`；
+       **判据 5 泛化**（两族共用内核，要求 `@job:<name>` 或 `@manual` 显式声称）；
+       **新增判据 6**（`ci.yml` 逐字交叉核对，带**词边界**）；
+       **新增判据 7**（退出码语义，AST 判定）；
+       自检 **+9 臂**（G4/G5/H0–H3/J0–J4）；`--list` 页脚新增 CI_JOB_PROBES 段
+   · **改** `.github/workflows/ci.yml`：新增 `browser-admin` job（**仅 main / 手动**，
+       `if: github.event_name != 'pull_request'`，10 步）
+   · **改** `evidence/README.md`：**坑 67 / 68 / 69**（编号 25–69 连续，共 45 条）
+
+■ 10.3 端到端实测（本机 · 生产构建 · 隔离库）
+   ```
+   $ pnpm --filter app-admin build                    # exit 0 · 13 页 · 2m31s
+   $ python evidence/run_browser_job.py --job browser-admin
+     ✓ 灌种子（隔离 SQLite）
+     ✓ 后端就绪（readyz 200）
+     ✓ admin 就绪（http://localhost:3002/ 200）
+     ▸ verify_reduced_motion.py --app admin     ✅ rc=0 · 54.7s
+     ▸ verify_admin_413_toast_e2e.py            ✅ rc=0 · 24.4s
+     汇总：2/2 通过
+     ✅ 浏览器 job 通过：2 条真判据全绿。       EXIT=0（总 1m34s）
+   ```
+   其余验证：`ruff check evidence/` **0 条** · 运行器自检 **exit 0**（全臂）·
+   编排器自检 **exit 0** · `--list` **exit 0** · 名册现读
+   `GATED 21 · GATED_STATIC 6 · NOT_GATED 15 · CI_ELSEWHERE 4` ⇒ **CI 会执行 31**。
+
+■ 10.4 🚨 Phase 2 真跑逮到的**三件事**（这才是这个 job 存在的意义）
+   **① 探针层系统性缺陷：`raise SystemExit("msg")` 的退出码是 1，不是 2。**
+      全仓 **14 处 / 5 个文件**。`verify_admin_413_toast_e2e.py` 因 CDP 输入 race
+      走「环境」分支 ⇒ 实际退出 **1** ⇒ 浏览器 job 把它报成**产品缺陷**。
+      —— 正是 methodology 反复警告的「把『我没测成』报成『产品坏了』」。
+      **已修**（消息一字不改，改成 `print(..., file=sys.stderr)` + `SystemExit(2)`）。
+      **并加判据 7 防复发**；判据 7 **上线当天就逮到**一次性正则脚本漏掉的
+      `verify_contract_review_gate_e2e.py:129`（**多行**写法）。
+      ⇒ **README 坑 68**。
+   **② 探针层顺序缺陷：先 `goto` 列表页、后 `seed_complaint()`。**
+      页面不轮询 ⇒ 新工单不在 DOM 里 ⇒ T3 打不开处理弹窗。
+      **在本机旧库上永远看不出来**（库里早有别的 PENDING 工单撑着）
+      —— 「本机绿、CI 红」的经典成因，**只有隔离库能暴露**。
+      **已修**（造数挪到导航之前）⇒ 该探针从 rc=1 变 **rc=0（24.4s）**。
+      ⇒ **README 坑 69**。
+   **③ 已知产品缺陷 #40 被确认为「生产构建下仍然存在」。**
+      `verify_dark_mode.py --app admin` **rc=1**：D0 在 admin 的 `/`、`/audit`、
+      `/complaints` 三页 `@dark` 上**全部命中**（observer 序列 `['dark','light','dark']`）
+      ⇒ 即任务 **#40**「修深色模式首屏闪烁（`ThemeProvider` 挂载时摘掉 `.dark`）」。
+      ⚠️ 它改的是 **`packages/ui`（共享包）⇒ 需拍板**，本轮**不动产品代码**。
+
+■ 10.5 因此接线清单**据实测收窄**（原计划 3 条 ⇒ 实际 2 条）
+   接上（**第一天就绿**，符合本仓库纪律）：
+     · `verify_reduced_motion.py --app admin`
+     · `verify_admin_413_toast_e2e.py`
+   不接（**明确写入 `NOT_GATED` 的阻塞项，不许含糊**）：
+     · `verify_dark_mode.py` —— 前提**已备齐**、跑得动，但 **rc=1 = 已知产品缺陷 #40**。
+       CDP 探针**没有棘轮**（`GATED_STATIC` 那套只服务静态半边）⇒ 接线即红
+       ⇒ 按「门禁必须第一天就是绿的」**不接线**。
+       🚨 **修 #40 后必须重评本档**（且 #40 是共享包改动 ⇒ 需拍板）。
+       ⚠️ 它的 `--self-test` **仍在** `browser-selftest` job 跑 —— **仪器是好的，坏的是产品**，
+          这两句话必须分开说。
+
+■ 10.6 仍未验证的边界（**首次 CI 运行即为验证**）
+   · Linux headless Chrome 152 上这 2 条的真实行为（本机验的是 Windows + Chromium 1234）
+   · `browser-admin` job 的 YAML 接线（本机**无法**执行 `ci.yml`）
+   · `if: github.event_name != 'pull_request'` 的触发语义
+   · `actions/upload-artifact` 的 `/tmp/nlawer-browser-job-*/logs/` 通配
+   · 本机跑的 node 是 **22.22.2**，CI 是 **20**（`setup-node` 写死 20）—— 未做差异比对
+
+§11 Phase 3 开工记录（2026-09-25 · **已开工，分步走**）
+
+■ 11.1 交付 A：编排器**支持多端**（`evidence/run_browser_job.py`）
+   `JOB_SPECS[*]["app"]` → `["apps"]`（tuple）。单端写 `("admin",)`，语义不变。
+     · `_backend_env(db_path, apps)` —— `CORS_ORIGINS` 覆盖**所有**端。
+       漏一端 ⇒ 那一端「点了没反应」，只有控制台有 CORS 报错
+       ⇒ 又一次「长得像产品缺陷的环境问题」。
+     · `_start_frontend` 日志**按端分文件**（`frontend-<app>.log`）——
+       四端共用 `frontend.log` 会各自 `open("w")` 互相截断 ⇒ 失败取证只能看到最后一端。
+     · `main()` **逐个起、逐个等就绪**（不是全起再统一等）——
+       否则「到底哪一端没起来」在日志里分不清。
+     · **先查全部端产物，再灌种子/起后端**：缺端时**一次列全**，
+       省掉一次「灌种子 + 起后端」的浪费。
+     · 自检校验 `apps`（非空 tuple / 无重复 / 已知端）；
+       🚨 **端口冲突只在同一 job 内查** —— 不同 job 从不同时跑（`ci.yml` 里是两个独立 job），
+       全局查会把「两个 job 各起一个 admin」误报成冲突。
+   验收：`--self-test` exit 0 · `ruff check evidence/` 0 条。
+
+■ 11.2 交付 B：`verify_dark_mode.py` 接线（2 → **3** 条）
+   §10.5 的阻塞项已解 —— **产品已修**（`packages/ui/src/theme/ThemeProvider.tsx`，缺陷 **#40**）：
+     根因：第二个 `useEffect` 在**挂载时**就用初始 state（恒 `"light"`）回写 `<html>` 的 class
+           ⇒ 把 `ThemeScript` 刚加上的 `.dark` **摘掉**，等 state 与 DOM 对齐后再补回。
+     修法：`userChanged = useRef(false)`；第二个 effect 首帧 `return`；`setTheme()` 置 `true`
+           ⇒ **class 只会被「用户意图」改动**。
+   实测（本机）：`pnpm --filter app-admin build` exit 0（2m33s）⇒
+     `run_browser_job.py --job browser-admin` **EXIT=0 · 3/3 通过**
+     （`reduced_motion` 54.8s · **`dark_mode` 26.7s** · `admin_413_toast_e2e` 24.3s · 总 2m0s）。
+   名册：`NOT_GATED` 15→**14** · `CI_ELSEWHERE` 4→**5** · CI 执行 31→**32**。
+
+■ 11.3 下一步（**未完成**，被 §11.4 的裁定卡住）
+   ⚠️ 前提：四端**生产构建**。2026-09-25 摸底发现**只有 admin 有** `.next/BUILD_ID`
+      （web/lawyer/im 是 dev 构建）⇒ 已串行重建（本机可用内存 **7.9 GB**、负载 74% ⇒ **串行**不并发）。
+
+■ 11.4 🚨 需要裁定（§6 说「无单一推荐」，现在有数据了）
+   **① `verify_adjacent_targets.py` 的 4 对 `gap=4px<8px` —— 它不是「待修的缺陷」，
+      是「待裁定的设计冲突」。**
+     `deliverables/ui-design/admin-gap-analysis.md:1165-1169` 已写明：§8.3 **同时**要求
+       「图标按钮 48px 不可见热区」与「相邻可点元素间距 ≥ 8px」，
+     而 32px 盒子 + 8px 间距 ⇒ 两个 48px 热区**各外扩 8px ⇒ 重叠 8px**
+       ⇒ 两条要求**只在盒子本身 ≥ 40px 时才相容**。
+     现状根因：`frontend/packages/ui/src/components/Pagination.tsx:96` 的 `gap-1`（4px）。
+     ⇒ **「先修产品」这条路当前不可用**：修它 = 改共享包的设计决策，
+       按项目约定「设计类改动必须先出规范+概念图、用户定稿后才动工」。
+     选项：① 页码按钮放大到 **≥40px**（则 8px 间距与 48px 热区相容）；
+           ② 保持 32px、把 4px 写成**规范明文例外**；③ 改结构；④ 上**棘轮**（冻结 4 对）。
+   **② 「先上棘轮 vs 先修产品」**
+     技术可行性**已确认**：`verify_adjacent_targets.py` 的 `judge()` 返回值里**已带 A1 条数**
+       （`len(all_def)`），且 `--dump` 已能 `json.dumps(all_def)` ⇒ 加一个机器可读出口即可接棘轮。
+     ⚠️ 但棘轮是**新基础设施**：现有棘轮只服务 `GATED_STATIC` 的**静态半边**
+       （在 `run_ci_probes.py` 里按「跑一次拿条数」实现），而 CDP 探针**要先起服务** ⇒ 形态不同。
+
+■ 11.5 仍未验证
+   · 四端真跑 14 条的 rc 分布（**本步未做**，等构建完成）
+   · `browser-all` job 的 YAML 接线（本机**无法**执行 `ci.yml`）
+   · **首次 CI 运行**仍是所有 CI 侧改动的唯一端到端验证
+
+■ 11.6 摸底结果（2026-09-25 · 四端**生产构建** + 隔离库 + 真后端 · **14 条全部真跑**）
+
+  合计 **823s**（13.7 min）。rc 分布：
+
+  ✅ **rc=0（11 条 ⇒ 修 #73 后共 12 条）** —— 可直接接线，**零成本**：
+     `verify_ws_msg_type_bypass` 11.1s · `verify_im_safe_area` 17.9s · `verify_im_e2e` 20.7s ·
+     `verify_contract_review_gate_e2e` 31.1s · `verify_mobile_actionbar` 36.2s · `verify_im_tabs` 41.1s ·
+     `verify_mobile_safe_area` 63.4s · `verify_tap_targets` 64.8s · `verify_render_e2e` 76.2s ·
+     `verify_runtime_health` 120.7s · `verify_mobile_375` 141.4s
+     ＋（§11.7 修完）`verify_task_center_e2e` 61.9s
+
+  ❌ **rc=1（2 条）** —— 都是**产品缺陷**，且**都卡在待拍板的设计裁定上**：
+     · `verify_adjacent_targets` 116.1s —— 4 对 `gap=4px<8px`（§11.4-①）
+     · `verify_breakpoints` 57.2s —— B2a：im 在 1024/1440 **没有导航出口**
+       （TabBar 被 `lg:hidden` 隐藏、又没有常驻左列，页内只有自链）
+       ⇒ **这正是待办 #39**（「补 im 在 ≥1024 的全局导航」）—— 此前只写在任务里，
+         **现在有了硬性的 CI 后果**。
+
+  ⚠️ **rc=2（1 条 · 已修 ⇒ rc=0）** —— `verify_task_center_e2e` 24.9s：
+     W1/W2/W3 全绿，**W4 失败**：`clicked=no-span ⇒ 注入的 FAILED 任务没进抽屉
+     （种子未落到运行库 / 状态未存成 FAILED）⇒ 环境 → exit 2`。
+     ⇒ **不是产品缺陷**，是**探针自己的库/时序假设**（与坑 69「先渲染、后造数」同族）
+     ⇒ **接线前必须先修探针** —— **2026-09-25 已修，见 §11.7**（两层根因 · rc=0 · 8/8）。
+
+  🚨 **本步最重要的结论**：14 条里**只有 2 条**真被产品缺陷挡住，而**这 2 条都不是「改一行就好」**
+     —— 各自卡在一条**待拍板的设计裁定**上（§11.4-① 与 #39）。
+     ⇒ 「先修产品」对这两条**都不可用** ⇒ **「先上棘轮」是唯一能立刻推进的路径**。
+     ⚠️ 但另有 1 条（`verify_task_center_e2e`）是**探针 bug**，**与裁定无关、已立刻修完**（§11.7）
+     ⇒ **rc 分布更新为：rc=0 共 12 条 · rc=1 共 2 条（均待裁定）· rc=2 共 0 条**。
+
+  ⚠️ **CI 成本（必须先算清再接线）**：一个 `browser-all` job ≈ **四端构建（本机 5m41s，
+     runner 上更慢）+ 探针 823s ≈ 14 min** ⇒ **单次 ≈ 22–25 min**。
+     而 `browser-admin` 单端只要 ~2 min。⇒ 建议：`browser-all` **只在 main / 手动 / 夜间触发**，
+     **先接「绿的 12 条」**（去掉 141s 的 `mobile_375` 与 121s 的 `runtime_health` 需单独权衡）。
+
+■ 11.7 修 `verify_task_center_e2e` 的 rc=2（2026-09-25 · 与裁定**无关**，先修掉）
+
+  ✅ **结果：rc=2 → rc=0（8/8 通过）**。W1–W4（web 抽屉）+ L1/L2（律师端 /jobs）
+     + A1/A2（管理端 /jobs）全绿；`W4 clicked=clicked, gone=no-btn`。
+
+  🚨 **两层根因（修了第一层才看见第二层）**：
+
+  ① **探针自己猜库路径** ⇒ 编排器的隔离库静默失效。
+     它自带一个 `resolve_live_db()` 按硬编码候选路径（`storage/nlawer.db`、
+     `backend/demo_8001.db` …）挑「jobs 最多」的那张；而编排器是用 `DATABASE_URL`
+     把后端指向**隔离临时库**的 ⇒ 探针把种子写进了**另一张库**、后端读不到。
+     ⇒ 与**坑 64**「检查集合也必须读真源」同族：**「谁是运行库」只有后端的启动环境说了算**。
+     修法：抽成 `evidence/envprobe.resolve_live_db()` —— **先读 `DATABASE_URL_SYNC` /
+     `DATABASE_URL`，猜路径只作兜底**；`verify_ws_msg_type_bypass.py` 同一处硬编码
+     （`DB = BACKEND_DIR / "demo_8001.db"`）一并改掉。
+
+     ⚠️ **后者更险**：它读回空列表 ⇒ 会把「**产品有洞（rc=1）**」误报成
+     「**环境问题（rc=2）**」。它此前 rc=0 是因为产品**已加固**，**不是因为测对了**。
+
+  ② **`seed_demo.py --reset` 根本不建 `jobs`** ⇒ 「复制已有行当模板」在干净库上必然失败。
+     实测：隔离库 `SELECT COUNT(*) FROM jobs` = **0**；旧硬编码目标 `demo_8001.db` 也是 0
+     （真正有 jobs 的是 `backend/storage/nlawer.db`，13 条）。
+     ⇒ 本机旧数据**长期掩盖**了这个假设（坑 69 形状）。
+     修法：加第二条路径 `_create_failed_via_service()` —— 走**产品自己的建行路径**
+     （`JobService.enqueue` + `Job` 模型 + `async_session_factory`），**不手搓 SQL**。
+     ⚠️ 因为 `Enum(native_enum=False)` 存的是**枚举名**（真实行是 `'COMPLETED'`），
+     而 `.value` 是 `'completed'` ⇒ 手搓 INSERT 会**静默写错域** ⇒ `GET /jobs` 整条 500
+     ⇒ 抽屉「暂无任务」。**能调产品的服务就不要手搓 SQL。**
+
+  ③ **顺带降噪**：`settings.DEBUG` 默认 `True`，而它**全仓唯一用途**是
+     `app/database.py` 的 SQL echo ⇒ 探针只要 `import app.database` 就把
+     `sqlalchemy.engine.Engine` 行打进 stdout、污染输出。
+     ⇒ 编排器 `_backend_env()` 加 `"DEBUG": "false"`（**不改任何 API 行为**）。
+
+  🛡️ **新增常驻自检臂 `_check_live_db_honors_env()`**（编排器 `run_self_test()` 顶部）：
+     临时造一张真 SQLite（含 `jobs` 表）→ 设 `DATABASE_URL` 指向它 →
+     **断言 `resolve_live_db()` 返回的就是它**。已做**注入反证**：把 `resolve_live_db`
+     换成忽略环境变量的版本 ⇒ 自检**正确报红**（控制组为 `[]`）。
+     ⇒ 这条臂的意义：**「编排器设了 `DATABASE_URL`」≠「探针认了它」**，
+       隔离必须是**事实性的**，不能只是声明式的。
+
+  📌 **接线口径更新**：§11.6 的 rc 分布从「11/2/1」变为「**12/2/0**」
+     ⇒ 「绿的 12 条」现在**零阻塞**、可随时接线（仍待 §11.4-③ 的拍板）。
+
+■ 11.8 ✅ **接线落地（2026-09-26 · 拍板 §11.4-③ = 「全部按建议」）**
+
+  用户 2026-09-26 对累计待拍板项一次性授权「**所有的 全部按你的建议**」⇒ §11.4-③
+  「是否按 §11.6 接线绿的 12 条」**批准**，并按**实测**把口径从 12 条**扩到 14 条**。
+
+  🚨 **为什么是 14 而不是 12**：§11.6 留的 2 条 rc=1 **都不是「改一行就好」**，
+    各自卡在一条待拍板的设计裁定上；裁定后**两条都已从产品侧修完**，并**同日复跑确认转绿**：
+      · **#39** im ≥1024 无导航出口 ⇒ `verify_breakpoints.py` **rc=0（57.6s）**
+      · **#72** Pagination 4px 间距 vs 48px 热区 ⇒ `verify_adjacent_targets.py` **rc=0（116.3s）**
+    存证：`evidence/four_app_rm_2026-09-26.txt`。
+    ⇒ 与 §11.7 把 `task_center_e2e` 从 rc=2 修成 rc=0 **同一逻辑**：**先据实测收窄，再据实测接回**。
+
+  **四处改动（`JOB_SPECS` / `CI_JOB_PROBES` / `JOB_ENTRYPOINTS` / `ci.yml` 必须同步）**：
+    ① `run_browser_job.py` 的 `JOB_SPECS["browser-all"]` —— `apps=("web","lawyer","admin","im")`，
+       `probe_args` **14 条全为空**（逐条核过：12 条没有 `--app`；余 3 条的 `--app` 是**单端**
+       参数且**默认四端全跑** ⇒ 本 job 刻意不传）。
+    ② `run_ci_probes.py` 的 `CI_JOB_PROBES["browser-all"]`（14 条）+ `JOB_ENTRYPOINTS["browser-all"]`。
+    ③ `run_ci_probes.py` 的 **`NOT_GATED` 14 → 0（清空）**，14 条全部搬进 `CI_ELSEWHERE`
+       （每条带 `@job:browser-all` 标记）。⚠️ 这是本档一贯纪律的第 4 次执行
+       （前三次：`api_base_baked` / `admin_413_toast_e2e` / `dark_mode`）。
+    ④ `ci.yml` 新增 `browser-all` job（四端 `pnpm build` + 四端 `.env.local` 播种 +
+       一行调用）——**`if: github.event_name != 'pull_request'`**（≈22–25 min，只守主干）。
+
+  ⚠️ **判据 6 的阴性对照 H0 当场判红**（合成 `ci.yml` 夹具里还没有 `browser-all`）
+    ⇒ 已补进夹具 —— **这正是那条臂存在的意义**：加了 job 却忘了同步夹具，
+    判据 6 会立刻告诉你。
+
+  ⚠️ **连带修掉的文档漂移**（`NOT_GATED` 一清空，「CI 里一条判据都没有」这类断言全失效）：
+    · `verify_appshell.py` / `verify_im_mobile_nav.py` 的**静态地板理由** ——
+      由「CI 里没有」升级为「**PR 上**没有」（`browser-all` 只在主干跑）⇒ 理由**更强**；
+    · `report_spec_coverage.py` 的自检臂 **Q15b 当场判红**（它断言
+      `verify_runtime_health.py` ∉ CI 分档）⇒ 改成**三条**断言（GATED ∈ / CI_ELSEWHERE ∈ /
+      非门禁脚本 ∉），比原来**更强**而不是把断言删掉；
+    · `report_spec_coverage.py` 的 docstring ⑦ 与汇总输出加了**日期化更新**（不改写当时结论）。
+
+  ✅ **本机验证（唯一可做的那一种）**：`--self-test` 双绿（编排器 J1 + 运行器阶段 1 含 H0 阴性对照）·
+    `ruff check evidence/` 0 条 · `report_spec_coverage --self-test` 20/20 ·
+    真跑 `--job browser-all`（四端生产构建 + 隔离库 + 真后端，见 `four_app_rm_*` 同款口径）。
+  ⚠️ **`ci.yml` 本机无法执行** ⇒ **首次 CI 运行仍是它唯一的端到端验证**。
+
+═══════════════════════════════════════════════════════════════════════════════
+状态：§8 的 ①②③⑤⑥ **已落地并本机验证**；
+      **§9/§10 的 Phase 2 已施工并端到端本机验证**（`EXIT=0` · 3/3 通过 · 2m0s）；
+      **§11 的 Phase 3 已开工**（多端编排器 ✓ · `dark_mode` 接线 ✓ · **14 条摸底完成** ✓ ·
+        **探针 bug `task_center_e2e` 已修 ⇒ rc=0** ✓）；
+      ✅ **§11.4 三项裁定全部落地**（2026-09-26）：
+        ① `Pagination` 间距/热区冲突 ⇒ **#72**（盒 32→40px + 间距 4→8px，**修产品**）；
+        ② 棘轮 vs 修产品 ⇒ **走「修产品」**（两条都修好了，无需棘轮）；
+        ③ 接线「绿的 N 条」⇒ **N = 14（不是 12）**，见 §11.8，**已接线**。
+      ⇒ **本方案无待拍板项。**
+═══════════════════════════════════════════════════════════════════════════════

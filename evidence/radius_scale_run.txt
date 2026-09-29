@@ -1,0 +1,20 @@
+[ENV] 规范：deliverables/ui-design/design-spec.md
+[ENV] §4.3 解析：圆角 4 条 {'--r1': 4.0, '--r2': 6.0, '--r3': 8.0, '--r4': 12.0}；阴影 3 条；废弃阈值 16px
+[ENV] 扫描 107 个源码文件
+
+=== 判据 ===
+  ✓ R1 圆角令牌 == §4.3 表：{'--r1': 4.0, '--r2': 6.0, '--r3': 8.0, '--r4': 12.0}
+  ✓ R2 无 ≥16px 的圆角（**按解析值判**：令牌 15 项，含存量档位映射如 `2xl→var(--r4)`）
+  ✓ R4 preset 的 11 个圆角档位全部指向令牌（含存量档位收敛）
+
+  ── ✗ 新的规则违反（阻断）──
+  ✗ [R3:越界] `rounded-[20px]`（frontend/apps/web/app/(app)/__probe_radius_inject.ts:2）= 20px ≥ 16px
+
+=== 只报不判（不影响退出码） ===
+  · R3 任意值 `rounded-[2px]`（frontend/packages/ui/src/components/CitationPanel.tsx:69）用的是裸 px，建议改令牌引用（与 §4.2 的 S1 同构；规范未强制，**只报**）
+  · R3 任意值 `rounded-[3px]`（frontend/packages/ui/src/components/DataTable.tsx:408）用的是裸 px，建议改令牌引用（与 §4.2 的 S1 同构；规范未强制，**只报**）
+  · R3 任意值 `rounded-[4px]`（frontend/packages/ui/src/components/SegmentedControl.tsx:92）用的是裸 px，建议改令牌引用（与 §4.2 的 S1 同构；规范未强制，**只报**）
+  · R5 `rounded-full` 出现 42 处（如 frontend/apps/admin/app/(app)/billing/page.tsx:432）。`rounded-full`（9999px）用于药丸 / 头像 / 开关，**规范未点名**。按字面推广会把 42 处合法用法判成「16px 及以上圆角」= 拿规范的字面否定规范没禁止的东西。⇒ **只报不判**；建议 §4.3 补一句豁免（规范类改动，待定稿）。
+  · R6 §4.3 阴影令牌链：规范 3 条；令牌齐；preset 齐；「优先 1px 边框而非阴影」是设计取舍，**不判**。
+
+[结论] exit 1 —— 新违反 1 条 · 过期豁免 0 条

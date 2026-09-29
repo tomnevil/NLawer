@@ -1,0 +1,154 @@
+§2.4「案件等级」根因证据
+================================================================
+本文件由实测命令的输出整理而成（每条都注明命令），不是推断。
+门禁：evidence/verify_grade_badges.py
+
+────────────────────────────────────────────────────────────
+① 出处：§2.4 的四色**精确等于**现有令牌
+────────────────────────────────────────────────────────────
+design-spec.md:105-114（§2.4 表格）      tokens.css（令牌定义）
+  S  #B08A4F 金     ==  --gold-500    = 176 138 79    (tokens.css:101)
+  A  #C0392B 朱砂   ==  --danger-500  = 192 57 43     (tokens.css:91)
+  B  #274C93 墨蓝   ==  --brand-600   = 39 76 147     (tokens.css:49)
+  C  #9AA3AE 中性   ==  --ink-400     = 154 163 174   (tokens.css:34)
+
+⚠️ ①  **没有 grade 令牌**：`grep -rn "grade" tokens.css colors.ts` ⇒ 空。
+    §2.4 是「用既有语义令牌表达等级」，不是「定义一套等级令牌」。
+⚠️ ②  `--ink-400` 的用途注释写的是「占位符/图标/装饰，**禁用于正文**」，
+    而 §2.4 把同一个 `#9AA3AE` 分配给 C 级徽章 ⇒ **规范自己内部有 tension**。
+    本门禁 G5 **只报不判**（不能替用户裁决规范冲突）。
+⚠️ ③  深色模式下令牌**整体翻转**，所以判据**不能写死 hex**：
+    `--brand-600` #274C93→#3A63B0 · `--gold-500` #B08A4F→#C49E62 ·
+    `--danger-500` #C0392B→#D65448 · `--ink-400` #9AA3AE→#7E8795 ·
+    `--link` #274C93→#8AA8E0（与 --brand-600 深色值**不同**）
+
+────────────────────────────────────────────────────────────
+② 组件层**已经备好正确答案**，但没人用它做等级
+────────────────────────────────────────────────────────────
+Badge.tsx:53
+    // S 级案件 / 高价值标记。金色全局面积 ≤3%，此处已是允许的少数用途之一
+    gold: "bg-gold-500/15 text-gold-700 border-gold-500/30",
+
+实际用到 `variant="gold"` 的只有 2 处，**都不是案件等级**：
+    apps/admin/app/(app)/cases/page.tsx:582        <Badge variant="gold">需正式法律意见</Badge>
+    apps/web/app/components-preview/page.tsx:773   <Badge variant="gold">S 级</Badge>（预览页示例）
+
+⇒ 同一个系统里，**预览页把 S 级展示成金色**，业务页却把它渲染成朱砂。
+  这是「定义了没人用」（焦点环同族）的又一次现身。
+
+────────────────────────────────────────────────────────────
+③ 根因实测：tailwind-merge 把**自定义字号**当成 text-color，吞掉语义文字色
+────────────────────────────────────────────────────────────
+$ node -e "const {twMerge}=require('tailwind-merge'); console.log(twMerge(...))"
+  ["text-info-600","text-caption"]                => "text-caption"
+  ["text-danger-600","text-label"]                => "text-label"
+  ["text-ink-500","text-label"]                   => "text-label"
+  ["text-white","text-body-sm"]                   => "text-body-sm"     ← #42 同根
+  ["text-info-600","text-caption","text-ink-700"] => "text-ink-700"
+  （反向 "text-caption","text-info-600" => "text-info-600" ⇒ **顺序敏感**）
+
+Badge.tsx:82-87 的调用顺序是
+    cn("inline-flex … rounded-r1", variantStyles[key], sizeStyles[size], className)
+  ⇒ `sizeStyles` 里的 `text-caption`/`text-label`/`text-body-sm`
+    排在 `variantStyles` 的 `text-info-600` **之后** ⇒ **被顶掉**。
+
+实测印证：DOM 上**根本不存在** `text-info-600` 这个 class ——
+一个 info 变体徽章的 class 是
+    inline-flex items-center whitespace-nowrap border font-medium rounded-r1
+    bg-info-500/15 border-info-500/30 px-1.5 py-0.5 text-caption gap-1
+                                                      ↑ 只有字号，没有颜色
+
+⇒ **Badge 的文字色通道整体失效**，文字色退化为**从容器继承**。
+  这是 **#42 的第二个受害组件**（第一个是 Button 的 `text-white`），
+  影响面比 Button 大得多：26 页里 **82 个可识别变体的 Badge 全部失败**。
+
+────────────────────────────────────────────────────────────
+④ 渲染实测：等级徽章底色（浅色，1280×900）
+────────────────────────────────────────────────────────────
+命令：一次性渲染探针（**用完即删**，避免仓库里留临时脚本）；原始量测已存
+       `evidence/grade_render_probe.txt`
+
+  等级  出现位置                     实际 bg                     §2.4 期望
+  S     im / · im /cases            rgba(192,57,43,.15)         rgba(176,138,79,.15)
+        ↑ danger-500/15              （朱砂）                    （金 --gold-500）        ✗
+  A     admin /cases · im /cases    rgba(180,121,31,.15)        rgba(192,57,43,.15)
+        ↑ pending-500/15             （琥珀，§2.4 里**没这个色**）（朱砂 --danger-500） ✗
+  B     全部 4 处                    rgba(42,111,176,.15)        rgba(39,76,147,.15)
+        ↑ info-500/15                （蓝，§2.4 里**没这个色**）  （墨蓝 --brand-600）   ✗
+  C     全部 7 处                    rgb(239,241,243)            rgba(154,163,174,.15)
+        ↑ bg-surface-subtle          （极浅灰）                   （中性 --ink-400）      ✗
+
+⇒ **4/4 行全部不符**，且 S/A/B 用的是「§2.4 里不存在」或「属于别的等级」的颜色：
+   S 拿走了本该给 A 的朱砂；A 和 B 用的是规范里根本没有的 pending/info 色。
+
+深色下同样不符（令牌翻转后按 §2.4 期望值算，仍全部不符）。
+
+────────────────────────────────────────────────────────────
+⑤ 渲染实测：徽章文字色 == 容器继承色（不是变体色）
+────────────────────────────────────────────────────────────
+  admin /cases  的 B 徽章：color = rgb(52,59,68)  = --ink-700 (tokens.css:37)
+  admin /cases  的 C 徽章：color = rgb(52,59,68)  = --ink-700
+  admin /cases  的 A 徽章：color = rgb(52,59,68)  = --ink-700
+  im    /cases  的 C 徽章：color = rgb(20,24,29)  = --ink-900 (tokens.css:39)
+  im    /cases  的 S 徽章：color = rgb(20,24,29)  = --ink-900
+  im    /cases  的 B 徽章：color = rgb(20,24,29)  = --ink-900
+
+⇒ 同一页面上**三个不同 variant 的徽章文字色完全相同** —— 这在
+   `variantStyles` 明确定义了 `text-info-600` / `text-danger-600` / `text-pending-600`
+   的前提下**不可能**，除非文字色根本没生效（与 ③ 互证）。
+⇒ 且**跨端不一致**：lawyer/admin 继承到 ink-700，im 继承到 ink-900。
+
+期望值（Badge.tsx:39-56 声明，从令牌读）：
+   info → --info-600 = rgb(34,92,147)   · danger → --danger-600 = rgb(166,47,35)
+   pending → --pending-600 = rgb(143,95,20) · verified → --verified-600 = rgb(22,112,85)
+   primary → --link = rgb(39,76,147)    · ai → --ai-600 = rgb(91,69,176)
+   gold → --gold-700 = rgb(112,86,46)   · neutral → --ink-500 · default → --ink-600
+
+────────────────────────────────────────────────────────────
+⑥ 全量门禁结果（26+1 = 27 页，27 页是因为补上了 lawyer 的 @first-case）
+────────────────────────────────────────────────────────────
+$ python evidence/verify_grade_badges.py        # 输出见 grade_full_run.txt
+  跑成 27 页（20 页有 Badge） · Badge 138 个 · 等级徽章 25 个
+    G1 底色符 §2.4：0/25
+    G3 字母通道：25/25          ← **满足**（干净的控制组：判据不是「只会红」）
+    G4 文字色由变体决定：0 通过 / **82 失败** / 56 不判
+  渲染层缺陷 107 条，聚为 13 条根因（G1×4 + G4×9）
+  源码层 G2：GRADE_TONE 6 份定义、0 份在 packages/ui
+
+────────────────────────────────────────────────────────────
+⑦ 组件层缺口：§2.4 的 B / C 两级**没有现成变体可用**
+────────────────────────────────────────────────────────────
+Badge.tsx 实际可用变体：
+  ['ai','danger','default','gold','info','neutral','outline','pending','primary','verified']
+
+  S 级 --gold-500  → 变体 `gold`   ★ 有 ⇒ 改映射即可
+  A 级 --danger-500→ 变体 `danger` ★ 有 ⇒ 改映射即可
+  B 级 --brand-600 → 变体 `brand`  ✗ **组件层没有**
+                     （最接近的 `primary` 底色是 brand-500/15 = #3660B0，不是 #274C93）
+  C 级 --ink-400   → 变体 `ink`    ✗ **组件层没有**
+                     （`neutral` 用的是 bg-surface-subtle，不是 ink-400）
+
+⇒ 「改 GRADE_TONE 的映射」**只能修好 S 和 A 两级**；B 和 C 需要**在 packages/ui 新增变体**
+   或**由用户指定复用哪个**。这是一个必须拍板的设计决策（涉及共享包）。
+
+────────────────────────────────────────────────────────────
+⑧ 附：一次**被我撤回的假红**（`cursor:pointer` ≠ 可键盘到达，但也 ≠ 缺陷）
+────────────────────────────────────────────────────────────
+审计中撞见：`lawyer /cases` 的表格行是裸 `<tr>`（无 `<a>`/`role`/`tabindex`，
+`tabIndex=-1`），但 `cursor:pointer` + `hover:bg-brand-50`，且点击确实导航
+（实测 URL `/cases` → `/cases/8`）。而 `verify_focus_ring.py` 的 `FOCUSABLE`
+选择器只挑「按 DOM 语义可聚焦」的元素 ⇒ **结构上看不到它**。
+
+一度准备报成「键盘不可达」缺陷（WCAG 2.1.1）。**实测后撤回**：
+该页面的**案号列是一个 `<button>`**（`<button>HLW-DEMO-0008</button>`），
+点击它同样导航（实测 `/cases` → `/cases/8`）⇒ **键盘路径存在**，
+`<tr>` 的 `cursor:pointer` 只是**鼠标便捷路径**。
+
+对照组（证明判据不是「只会红」）：
+  web /documents 0 个 · admin /cases 0 个 · im /cases 0 个 · lawyer /cases 4 个
+  输出见 evidence/kbd_reach_probe.txt
+
+教训：**`cursor:pointer` + 不可聚焦 ≠ 缺陷** —— 它可能只是鼠标便捷路径，
+键盘路径由**另一个**可聚焦元素提供。判据若不识别「等效的可聚焦入口」，
+就会把正确实现报成缺陷。这与「判据必须认识项目自己的补偿机制」（§8.3 的
+`min-h-tap`）同族，是该纪律的**第 7 次复发**。

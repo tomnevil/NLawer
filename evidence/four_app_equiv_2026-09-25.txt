@@ -1,0 +1,339 @@
+四端实测存证 · #72（相邻目标）与 #39（导航出口）的闭合证据
+================================================================================
+日期：2026-09-25（OS 时钟 06:42–06:56）
+执行：临时编排脚本（复用 evidence/run_browser_job.py 的生命周期函数，**不登记任何 job**）
+      —— 起 web/lawyer/admin/im 四端 + 后端 + 隔离种子库，跑完自动拆服务并删临时目录。
+服务：后端 127.0.0.1:8001（readyz 200）· 四端 next start 3000/3001/3002/3003（生产构建产物）
+
+判定口径：探针 rc —— 0 通过 / 1 产品缺陷 / 2 环境问题。
+
+--------------------------------------------------------------------------------
+【第一轮】只改了 Pagination（#72），im 未改 ⇒ 预期：#72 绿、#39 红
+--------------------------------------------------------------------------------
+  verify_adjacent_targets.py   rc=0 ✅ 通过     117.3s   [A1] 并排且 0 < gap < 8px：0 对 ✓
+  verify_breakpoints.py        rc=1 ❌ 产品缺陷  57.9s   测量 22 组；不合格 2 组
+      ✗ [B2a 1024px] @/cases  页内链接=['cases'] ⇒ 该宽度下没有导航出口
+      ✗ [B2a 1440px] @/cases  同上
+  EXIT=1
+
+  ⇒ 结论：**#72 一次到位**（4 对 → 0 对）；
+     **#39 未生效** —— 加 `AppSwitcher` 之后 B2a 采到的链接一个都没多。
+     根因：`AppSwitcher` 是 `<button>` + 下拉（`{open && …}`），而 B2a 只取
+     `document.querySelectorAll('a[href]')`（`verify_breakpoints.py:217`）。
+
+--------------------------------------------------------------------------------
+【第二轮】im 头部新增 `<Link href="/chat#new">发起咨询</Link>` ⇒ 预期：两条全绿
+--------------------------------------------------------------------------------
+  verify_adjacent_targets.py   rc=0 ✅ 通过     116.9s   [A1] 并排且 0 < gap < 8px：0 对 ✓
+  verify_breakpoints.py        rc=0 ✅ 通过     57.9s   测量 22 组；不合格 0 组
+      ✓ @/cases @1024 / @1440  无常驻左列  无TabBar
+  EXIT=0
+
+  ⇒ 结论：**#72 与 #39 双双闭环**；未上棘轮、未加白名单、未放宽 B2a。
+
+⚠️ 安全：`demo_8001.db` 全程未被触碰（实测用 `%TEMP%\nlawer-all-equiv-*\all.db` 隔离库，
+   收尾 `shutil.rmtree` 删除）。
+
+⚠️ 日志编码说明：本文件中的探针输出含「娴嬮噺」这类乱码，成因是**探针子进程 stdout 用 GBK、
+   而 `_run_probe` 按 UTF-8 解码**（`run_browser_job.py:368`）。**只影响可读性，不影响 rc**。
+   本存证保留原始形态以便核对；下方第二轮附「已还原」版本。
+
+================================================================================
+第一轮 · 原始日志
+================================================================================
+============================================================================
+四端实测（临时编排 · 不登记任何 job）
+  隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-60dn2q4b\all.db
+  日志：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-60dn2q4b\logs
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：all.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  ✓ 后端就绪（readyz 200）
+→ 起前端 next start（web → http://localhost:3000）
+  ✓ web 就绪（http://localhost:3000）
+→ 起前端 next start（lawyer → http://localhost:3001）
+  ✓ lawyer 就绪（http://localhost:3001）
+→ 起前端 next start（admin → http://localhost:3002）
+  ✓ admin 就绪（http://localhost:3002）
+→ 起前端 next start（im → http://localhost:3003）
+  ✓ im 就绪（http://localhost:3003）
+
+============================================================================
+跑 2 条真判据（四端）
+============================================================================
+
+▸ python evidence/verify_adjacent_targets.py
+  ✅ rc=0 · 通过 · 117.3s
+  ── stdout（尾 5000 字）──
+    §8.3「相邻可点元素间距 ≥ 8px」门禁（渲染级，390×844）
+      出处：design-spec.md:373（§8.3 第 4 条 bullet）· 线 = 8px
+      只做第 4 条：48px 热区归 verify_tap_targets.py；按钮高度归 verify_buttons.py；列表行高归 §8.3 另一条
+    
+    ── 渲染层 A1/A2/A3（E1–E3 已声明的排除；E1 是**成对**判据）──
+      扫描可点元素 349 个（其中处于固定/粘性层 150 个）
+      ── 每页覆盖（可点元素数 / **内容区**可点元素数；内容区 0 = 该页没渲染出来）──
+        web: / 17/9 · /qa 11/3 · /documents 31/23 · /contract-review 13/5 · /compliance 15/7 · /knowledge 13/5 · /billing 13/5
+        lawyer: / 18/9 · /dispatches 18/9 · /cases 22/13 · /reviews 17/8 · /archives 18/9 · /notifications 12/3
+        admin: / 7/4 · /reviews 12/9 · /cases 16/13 · /dispatches 7/4 · /compliance 10/7 · /billing 13/10 · /complaints 8/5 · /audit 7/4
+        im: / 14/10 · /chat 10/6 · /cases 18/14 · /me 9/5
+        [E1·审计] 固定层来自：'nav.fixed.inset-x-0.bottom-0' × 81 · 'header.sticky.top-0.z-topbar' × 69
+      [E1] 按「跨固定/滚动层」排除 2 对（恰好一方 pinned ⇒ 间距随滚动而变，无意义；**同层**照常比较）
+      [A1] 并排且 0 < gap < 8px：0 对 ✓
+      [A2] 上下且 0 < gap < 8px：1 对（**只报不判**：上下堆叠是全宽列表/表单的常态）
+      [A3] gap == 0：67 对（其中同父 3 对）（**只报不判**：多是一个复合控件的内部）
+      [E2] 按「列表行」排除 2 对（全宽 + 上下 + ≤2px ⇒ 归 §8.3「列表行高 ≥ 48px」）
+
+▸ python evidence/verify_breakpoints.py
+  ❌ rc=1 · **产品缺陷** · 57.9s
+  ── stdout（尾 5000 字）──
+    ⚠️ B2b 豁免（**只豁免「左列宽 = 令牌」这一手段**；B2a「≥1024 必须有导航出口」对 im **照样生效**）：
+      · im：im 的桌面形态是**满屏三栏**，不是 AppShell ⇒ 不适用「宽 = 令牌 --sidebar-w」。出处：概念图 06:27 `grid-template-columns:288px 1fr 320px`；§8.1「im 桌面视为放大适配」；决策 12「IM 端形态 ✓ 桌面三栏」。最左栏是**会话列表**（内容），不是 §4.1 的墨色导航侧栏。⚠️ 与 §4.1 / §8.2 表 / 决策 05「统一四端 AppShell」冲突，已登记 §9 待裁决。
+    
+    
+    ══ web  http://localhost:3000/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ lawyer  http://localhost:3001/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ admin  http://localhost:3002/   （Tab：无（§8.4））
+      compact（<640）                ✓   无常驻左列  无TabBar
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ im  http://localhost:3003/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点） @/chat ✓   常驻左列=250px（B2b 已豁免）  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/chat ✓   常驻左列=288px（B2b 已豁免）  无TabBar
+      expanded 起点（=1024，切换点） @/cases ✗
+          [B2a 1024px] ≥1024 时既无常驻左列，也没有指向**其它**一级路由的链接（页内链接=['cases']）⇒ 该宽度下**没有导航出口**：TabBar 已被 `lg:hidden` 隐藏，用户只能靠浏览器后退
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/cases ✗
+          [B2a 1440px] ≥1024 时既无常驻左列，也没有指向**其它**一级路由的链接（页内链接=['cases']）⇒ 该宽度下**没有导航出口**：TabBar 已被 `lg:hidden` 隐藏，用户只能靠浏览器后退
+      expanded 起点（=1024，切换点） @/me  ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/me ✓   无常驻左列  无TabBar
+    
+    ==========================================================================
+    测量 22 组；不合格 2 组。
+    ⚠️ 其中 2 组走了 B2b 豁免（**不代表它符合 §8.2 的「240px 导航侧栏」**）：
+      · im/chat@1024: 250px 常驻左列，B2b 未断言（豁免）
+      · im/chat@1440: 288px 常驻左列，B2b 未断言（豁免）
+    
+    缺陷：
+      ✗ [B2a 1024px] ≥1024 时既无常驻左列，也没有指向**其它**一级路由的链接（页内链接=['cases']）⇒ 该宽度下**没有导航出口**：TabBar 已被 `lg:hidden` 隐藏，用户只能靠浏览器后退
+      ✗ [B2a 1440px] ≥1024 时既无常驻左列，也没有指向**其它**一级路由的链接（页内链接=['cases']）⇒ 该宽度下**没有导航出口**：TabBar 已被 `lg:hidden` 隐藏，用户只能靠浏览器后退
+
+→ 服务已收尾
+→ 临时目录已删：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-60dn2q4b
+
+EXIT=1
+
+
+================================================================================
+第二轮 · 原始日志
+================================================================================
+============================================================================
+四端实测（临时编排 · 不登记任何 job）
+  隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-gvaexn8c\all.db
+  日志：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-gvaexn8c\logs
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：all.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  ✓ 后端就绪（readyz 200）
+→ 起前端 next start（web → http://localhost:3000）
+  ✓ web 就绪（http://localhost:3000）
+→ 起前端 next start（lawyer → http://localhost:3001）
+  ✓ lawyer 就绪（http://localhost:3001）
+→ 起前端 next start（admin → http://localhost:3002）
+  ✓ admin 就绪（http://localhost:3002）
+→ 起前端 next start（im → http://localhost:3003）
+  ✓ im 就绪（http://localhost:3003）
+
+============================================================================
+跑 2 条真判据（四端）
+============================================================================
+
+▸ python evidence/verify_adjacent_targets.py
+  ✅ rc=0 · 通过 · 116.9s
+  ── stdout（尾 5000 字）──
+    §8.3「相邻可点元素间距 ≥ 8px」门禁（渲染级，390×844）
+      出处：design-spec.md:373（§8.3 第 4 条 bullet）· 线 = 8px
+      只做第 4 条：48px 热区归 verify_tap_targets.py；按钮高度归 verify_buttons.py；列表行高归 §8.3 另一条
+    
+    ── 渲染层 A1/A2/A3（E1–E3 已声明的排除；E1 是**成对**判据）──
+      扫描可点元素 350 个（其中处于固定/粘性层 150 个）
+      ── 每页覆盖（可点元素数 / **内容区**可点元素数；内容区 0 = 该页没渲染出来）──
+        web: / 17/9 · /qa 11/3 · /documents 31/23 · /contract-review 13/5 · /compliance 15/7 · /knowledge 13/5 · /billing 13/5
+        lawyer: / 18/9 · /dispatches 18/9 · /cases 22/13 · /reviews 17/8 · /archives 18/9 · /notifications 12/3
+        admin: / 7/4 · /reviews 12/9 · /cases 16/13 · /dispatches 7/4 · /compliance 10/7 · /billing 13/10 · /complaints 8/5 · /audit 7/4
+        im: / 14/10 · /chat 10/6 · /cases 19/15 · /me 9/5
+        [E1·审计] 固定层来自：'nav.fixed.inset-x-0.bottom-0' × 81 · 'header.sticky.top-0.z-topbar' × 69
+      [E1] 按「跨固定/滚动层」排除 2 对（恰好一方 pinned ⇒ 间距随滚动而变，无意义；**同层**照常比较）
+      [A1] 并排且 0 < gap < 8px：0 对 ✓
+      [A2] 上下且 0 < gap < 8px：1 对（**只报不判**：上下堆叠是全宽列表/表单的常态）
+      [A3] gap == 0：67 对（其中同父 3 对）（**只报不判**：多是一个复合控件的内部）
+      [E2] 按「列表行」排除 2 对（全宽 + 上下 + ≤2px ⇒ 归 §8.3「列表行高 ≥ 48px」）
+
+▸ python evidence/verify_breakpoints.py
+  ✅ rc=0 · 通过 · 57.9s
+  ── stdout（尾 5000 字）──
+    ⚠️ B2b 豁免（**只豁免「左列宽 = 令牌」这一手段**；B2a「≥1024 必须有导航出口」对 im **照样生效**）：
+      · im：im 的桌面形态是**满屏三栏**，不是 AppShell ⇒ 不适用「宽 = 令牌 --sidebar-w」。出处：概念图 06:27 `grid-template-columns:288px 1fr 320px`；§8.1「im 桌面视为放大适配」；决策 12「IM 端形态 ✓ 桌面三栏」。最左栏是**会话列表**（内容），不是 §4.1 的墨色导航侧栏。⚠️ 与 §4.1 / §8.2 表 / 决策 05「统一四端 AppShell」冲突，已登记 §9 待裁决。
+    
+    
+    ══ web  http://localhost:3000/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ lawyer  http://localhost:3001/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ admin  http://localhost:3002/   （Tab：无（§8.4））
+      compact（<640）                ✓   无常驻左列  无TabBar
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ im  http://localhost:3003/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点） @/chat ✓   常驻左列=250px（B2b 已豁免）  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/chat ✓   常驻左列=288px（B2b 已豁免）  无TabBar
+      expanded 起点（=1024，切换点） @/cases ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/cases ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点） @/me  ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/me ✓   无常驻左列  无TabBar
+    
+    ==========================================================================
+    测量 22 组；不合格 0 组。
+    ⚠️ 其中 2 组走了 B2b 豁免（**不代表它符合 §8.2 的「240px 导航侧栏」**）：
+      · im/chat@1024: 250px 常驻左列，B2b 未断言（豁免）
+      · im/chat@1440: 288px 常驻左列，B2b 未断言（豁免）
+    §8.2 四档断点与 §8.4 导航模式符合规范（限已测到的组）。
+    ⚠️ 注意：im 的 ≥1024 两档是**按豁免通过**的 —— 见上方豁免理由与 §9 待裁决项。
+
+→ 服务已收尾
+→ 临时目录已删：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-gvaexn8c
+
+EXIT=0
+
+
+================================================================================
+第二轮 · 已还原（GBK→UTF-8 往返，仅供阅读）
+================================================================================
+============================================================================
+四端实测（临时编排 · 不登记任何 job）
+  隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-gvaexn8c\all.db
+  日志：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-gvaexn8c\logs
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：all.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  ✓ 后端就绪（readyz 200）
+→ 起前端 next start（web → http://localhost:3000）
+  ✓ web 就绪（http://localhost:3000）
+→ 起前端 next start（lawyer → http://localhost:3001）
+  ✓ lawyer 就绪（http://localhost:3001）
+→ 起前端 next start（admin → http://localhost:3002）
+  ✓ admin 就绪（http://localhost:3002）
+→ 起前端 next start（im → http://localhost:3003）
+  ✓ im 就绪（http://localhost:3003）
+
+============================================================================
+跑 2 条真判据（四端）
+============================================================================
+
+▸ python evidence/verify_adjacent_targets.py
+  ✅ rc=0 · 通过 · 116.9s
+  ── stdout（尾 5000 字）──
+    §8.3「相邻可点元素间距 ≥ 8px」门禁（渲染级，390×844）
+      出处：design-spec.md:373（§8.3 第 4 条 bullet）· 线 = 8px
+      只做第 4 条：48px 热区归 verify_tap_targets.py；按钮高度归 verify_buttons.py；列表行高归 §8.3 另一条
+    
+    ── 渲染层 A1/A2/A3（E1–E3 已声明的排除；E1 是**成对**判据）──
+      扫描可点元素 350 个（其中处于固定/粘性层 150 个）
+      ── 每页覆盖（可点元素数 / **内容区**可点元素数；内容区 0 = 该页没渲染出来）──
+        web: / 17/9 · /qa 11/3 · /documents 31/23 · /contract-review 13/5 · /compliance 15/7 · /knowledge 13/5 · /billing 13/5
+        lawyer: / 18/9 · /dispatches 18/9 · /cases 22/13 · /reviews 17/8 · /archives 18/9 · /notifications 12/3
+        admin: / 7/4 · /reviews 12/9 · /cases 16/13 · /dispatches 7/4 · /compliance 10/7 · /billing 13/10 · /complaints 8/5 · /audit 7/4
+        im: / 14/10 · /chat 10/6 · /cases 19/15 · /me 9/5
+        [E1·审计] 固定层来自：'nav.fixed.inset-x-0.bottom-0' × 81 · 'header.sticky.top-0.z-topbar' × 69
+      [E1] 按「跨固定/滚动层」排除 2 对（恰好一方 pinned ⇒ 间距随滚动而变，无意义；**同层**照常比较）
+      [A1] 并排且 0 < gap < 8px：0 对 ✓
+      [A2] 上下且 0 < gap < 8px：1 对（**只报不判**：上下堆叠是全宽列表/表单的常态）
+      [A3] gap == 0：67 对（其中同父 3 对）（**只报不判**：多是一个复合控件的内部）
+      [E2] 按「列表行」排除 2 对（全宽 + 上下 + ≤2px ⇒ 归 §8.3「列表行高 ≥ 48px」）
+
+▸ python evidence/verify_breakpoints.py
+  ✅ rc=0 · 通过 · 57.9s
+  ── stdout（尾 5000 字）──
+    ⚠️ B2b 豁免（**只豁免「左列宽 = 令牌」这一手段**；B2a「≥1024 必须有导航出口」对 im **照样生效**）：
+      · im：im 的桌面形态是**满屏三栏**，不是 AppShell ⇒ 不适用「宽 = 令牌 --sidebar-w」。出处：概念图 06:27 `grid-template-columns:288px 1fr 320px`；§8.1「im 桌面视为放大适配」；决策 12「IM 端形态 ✓ 桌面三栏」。最左栏是**会话列表**（内容），不是 §4.1 的墨色导航侧栏。⚠️ 与 §4.1 / §8.2 表 / 决策 05「统一四端 AppShell」冲突，已登记 §9 待裁决。
+    
+    
+    ══ web  http://localhost:3000/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ lawyer  http://localhost:3001/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ admin  http://localhost:3002/   （Tab：无（§8.4））
+      compact（<640）                ✓   无常驻左列  无TabBar
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+    
+    ══ im  http://localhost:3003/   （Tab：有）
+      compact（<640）                ✓   无常驻左列  TabBar可见
+      medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+      expanded 起点（=1024，切换点）       ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点） @/chat ✓   常驻左列=250px（B2b 已豁免）  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/chat ✓   常驻左列=288px（B2b 已豁免）  无TabBar
+      expanded 起点（=1024，切换点） @/cases ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/cases ✓   无常驻左列  无TabBar
+      expanded 起点（=1024，切换点） @/me  ✓   无常驻左列  无TabBar
+      expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/me ✓   无常驻左列  无TabBar
+    
+    ==========================================================================
+    测量 22 组；不合格 0 组。
+    ⚠️ 其中 2 组走了 B2b 豁免（**不代表它符合 §8.2 的「240px 导航侧栏」**）：
+      · im/chat@1024: 250px 常驻左列，B2b 未断言（豁免）
+      · im/chat@1440: 288px 常驻左列，B2b 未断言（豁免）
+    §8.2 四档断点与 §8.4 导航模式符合规范（限已测到的组）。
+    ⚠️ 注意：im 的 ≥1024 两档是**按豁免通过**的 —— 见上方豁免理由与 §9 待裁决项。
+
+→ 服务已收尾
+→ 临时目录已删：C:\Users\RS\AppData\Local\Temp\nlawer-all-equiv-gvaexn8c
+
+EXIT=0

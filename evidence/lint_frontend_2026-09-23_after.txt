@@ -1,0 +1,42 @@
+# 前端 lint 实测 · **改后**（待裁定 ⑤ 落地 · 2026-09-23）
+#
+# 命令：cd frontend && pnpm lint </dev/null        （非 TTY，复刻 CI 环境）
+# 退出码：1
+#
+# 关键：**退出码没变（1 → 1），但性质完全变了。**
+#
+#   · 改前：脚本**存在**，跑起来是 `next lint` ⇒ 进入交互式 ESLint 初始化向导
+#           ⇒ 「**静默说谎**」：`package.json` 声称有 lint，实际一个文件都没检查。
+#           ⚠️ 在 CI 里（非 TTY）它会**卡在向导上然后 Cancel**，看起来像「跑过了」。
+#   · 改后：脚本**不存在** ⇒ pnpm 直接报 `Command "lint" not found` ⇒
+#           **大声失败**，不可能被误读成「lint 通过了」。
+#
+# ⇒ 纪律：**「响亮的缺席」优于「静默的谎言」。**
+#    一个「存在但从不生效」的门禁，与没有门禁在效果上无法区分（同 README 坑 45），
+#    而且它更坏 —— 它会让后来的人**以为这一类问题已经有人管了**。
+#
+# ⚠️ 实测边界：本机是 Windows + Git Bash，pnpm 在「脚本不存在」时会退化成调用 shell，
+#    于是先看到 `'lint' 不是内部或外部命令`（cmd 的报错），再是 pnpm 自己的
+#    `Command "lint" not found`。Linux CI 上只会看到后者。**两者都是 exit 1。**
+# ⚠️ 本机终端编码把 pnpm 的框线字符渲染成乱码（`鈥塃RR_PNPM_…`），
+#    语义就是 `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command "lint" not found`。
+
+=== 原始输出（本机 Windows + Git Bash，含编码乱码，原样保留）===
+
+'lint' 不是内部或外部命令，也不是可运行的程序
+或批处理文件。
+undefined
+鈥塃RR_PNPM_RECURSIVE_EXEC_FIRST_FAIL鈥� Command "lint" not found
+
+=== 原始输出结束 ===
+
+# 配套复验（同批次实测）
+#
+# 1) 5 个 `package.json` 仍是合法 JSON（`json.load` 逐个通过）：
+#      frontend/package.json · apps/{web,lawyer,admin,im}/package.json
+# 2) `grep -rn '"lint"' frontend/package.json frontend/apps/*/package.json` ⇒ **0 命中**
+# 3) `cd frontend && pnpm typecheck` ⇒ **exit 0**（`Scope: 7 of 8 workspace projects`，四端 tsc 全 Done）
+#    —— 证明删脚本没有连带破坏前端 job 真正在跑的那一步。
+# 4) ⚠️ **未跑 `pnpm build`**：四端 dev server 正在跑（3000–3003），
+#    `next build` 会覆盖它们正在用的 `.next`。本次改动只是**删 script 键**，
+#    不触碰任何构建输入 ⇒ 已在 `ci.yml` 注释里说明「首次 CI 运行即为端到端验证」。

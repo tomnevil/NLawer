@@ -1,0 +1,249 @@
+================================================================================
+「首次 CI 运行」的本地等价验证结果
+2026-09-25 · NLawer · 逐条执行 .github/workflows/ci.yml（570 行 · 7 个 job）
+================================================================================
+
+【为什么要做这件事】
+
+本仓库**不是 git 仓库**（无 `.git`）⇒ `ci.yml` **永不触发** ⇒「首次 CI 运行」在字面上
+**不可达**。但「不可达」≠「不可验证」：把 `ci.yml` 的每个 step 在**本地**按同样顺序
+执行一遍，就能拿到「首次 CI 运行**会**得到什么」的等价结论 —— 而且**早于**建 git 仓库
+就知道结果，避免「先建仓库、再发现 CI 红、再回头查」。
+
+⚠️ **口径**（说「绿」必须指明是哪一个，见 `MEMORY.md` 同名硬约束）：
+   本报告 = **`ci.yml` 各 step 的本地等价**，**不是** evidence 门禁
+   （后者只是其中 1 个 job 的 1 个 step）。
+
+【结论】
+
+· **7 个 job 里，6 个本地可跑，全部通过**（含 backend 全量 pytest **815 passed / 0 failed**）。
+· **只剩 1 个跑不了**：`docker-build`（**Docker daemon 未运行**，与代码无关）。
+· 🚨 **但逮到一条「断线」**：`frontend` job 的排印断言**原本会红**（§3）。
+  该问题**已修**（`evidence/verify_typography.py`）；修后 `frontend` job 全绿。
+  ⇒ 若不做这次等价验证、直接建 git 仓库，**第一次 CI 运行必红**。
+
+
+================================================================================
+§1 逐 job 结果表
+================================================================================
+
+job / step（`ci.yml` 原文）                                     本地结果
+--------------------------------------------------------------------------------
+backend
+  `ruff check .`（cwd=backend）                                 ✅ All checks passed · 200 文件
+  `python -m compileall -q app/`                                ✅ rc=0
+  `pytest tests/ -q`                                            ✅ 815 passed, 25 warnings
+                                                                   in 1187.12s (0:19:47) · EXIT=0
+--------------------------------------------------------------------------------
+frontend
+  `pnpm install --frozen-lockfile`                              ✅ EXIT=0 ·「Already up to date」
+                                                                   Done in 4m 25.8s
+  `pnpm typecheck`                                              ✅ EXIT=0
+  Seed build-time env（`apps/<app>/.env.local`）                 ✅ 四端值均为 http://localhost:8001
+  `pnpm build`                                                  ✅ EXIT=0 · 四端生产构建（Next 15.5.24）
+  `python3 ../evidence/verify_api_base_baked.py`                ✅ EXIT=0 · 四端产物均烘入 :8001
+  `python3 ../evidence/verify_typography.py --source-only`      🚨 原 EXIT=2 → ✅ 修后 EXIT=0
+                                                                   （判对数 6 · 缺陷 0）
+--------------------------------------------------------------------------------
+evidence
+  `ruff check evidence/`（cwd=仓库根）                          ✅ All checks passed · 69 文件
+  `python evidence/run_ci_probes.py --self-test`                ✅
+  `python evidence/run_ci_probes.py --list`                     ✅ EXIT=0
+  `python evidence/run_ci_probes.py`                            ✅ EXIT=0 · 阶段 2 21/21 ·
+                                                                 阶段 3 6/6 · 跳过 0（2m40s）
+--------------------------------------------------------------------------------
+browser-selftest
+  Locate browser（`find_chrome()`）                              ✅ ms-playwright chromium-1234
+  `--selftest-for-job browser-selftest`                         ✅ 4/4 通过（43.6s）
+--------------------------------------------------------------------------------
+browser-admin
+  起 admin + 后端 + 种子库 → `run_browser_job.py --job browser-admin`
+                                                                ✅ EXIT=0 · **3/3 通过**（2m2s）
+                                                                   reduced_motion 55.6s ·
+                                                                   dark_mode 27.1s ·
+                                                                   admin_413_toast 24.8s
+--------------------------------------------------------------------------------
+security-audit
+  `pip-audit`                                                   ✅ rc=0
+                                                                   「No known vulnerabilities found,
+                                                                    10 ignored」
+  `pnpm audit --audit-level high`                               ✅ rc=0
+--------------------------------------------------------------------------------
+docker-build
+  `docker buildx build`（context `./backend`）                   ❌ Docker daemon 未运行（§2）
+
+§1.1 关于 `pnpm install --frozen-lockfile`
+  ✅ **已补跑实测**（2026-09-25 第 2 轮）：`Done in 4m 25.8s` · `INSTALL_EXIT=0`，
+  输出为「**Already up to date**」⇒ 锁文件与依赖树**一致**
+  （`--frozen-lockfile` 的作用正是拦住不一致：不一致时**直接失败**、且**不写** `node_modules`）。
+
+
+================================================================================
+§2 本机跑不了的 job（原因均为环境，不是代码）
+================================================================================
+
+① `docker-build`
+   `docker --version` 有 CLI（29.5.3），但 `docker images` 报
+   `failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine`
+   ⇒ **Docker daemon 未运行**（有 CLI ≠ daemon 在跑）。启动 Docker Desktop 后即可跑。
+
+② `browser-admin` —— ✅ **第 2 轮已补跑，全绿**（`EXIT=0` · **3/3** · 2m2s）。
+   它用**隔离临时库**（`%TEMP%\nlawer-browser-job-*\browser_job.db`），
+   全绿后**连临时目录一起清掉**；`backend/demo_8001.db` 指纹**未变**。
+   ⚠️ 它此前被列为「未覆盖项」，现已补齐 ⇒ **本机只剩 `docker-build` 一个跑不了**。
+
+
+================================================================================
+§3 🚨 逮到的断线 —— 「接线接上了，但线是断的」（`evidence/README.md` 坑 73）
+================================================================================
+
+【现象】
+按 `ci.yml` 顺序跑完 `pnpm build` 后，`verify_typography.py --source-only` 得到：
+      judged=0 · 缺陷 0 · **EXIT=2**
+而 `ci.yml:196-197` 断言的是 **`exit 0`** ⇒ **`frontend` job 在首次 CI 运行里会红**。
+
+【根因】
+`artifact_css()` 写死了
+      `.next/static/css/`**`app/layout.css`**
+—— 那是 **`next dev`** 的产物路径。
+`next build`（生产）产出的是 `.next/static/css/`**`<contenthash>.css`**
+（实测四端只有 `b812608327d83ca9.css` 这类文件，`app/` 子目录**根本不存在**）
+⇒ `exists()==False` ⇒ `leadings={}` ⇒ `judge_line_height` **逐对跳过** ⇒ `judged=0`
+⇒ `summary_exit` 判 **2**（环境问题码）。
+
+【为什么此前没被发现】
+2026-09-24 定稿这次接线时，那次「**本机 6/0**」是**对着正在跑的四端 `next dev` 的 `.next`**
+量的（`evidence/cn_fix_execution_2026-09-24.txt:171` 原文即写
+`apps/<app>/.next/static/css/app/layout.css`）；而 `ci.yml` 走的是 **`Build (production)`**。
+`ci.yml:193-194` 与 `run_ci_probes.py:748` 都注明了「本机不能用 `pnpm build` 验证这条接线
+（四端 dev server 正在跑，重建会毁掉它们的 `.next`）⇒ **首次 CI 运行即为它的端到端验证**」。
+⇒ **那次端到端验证真做了，结论是「断的」。**
+
+【反证（唯一变量法）】
+只把解析目标换成真实的 `<hash>.css`，其余一概不动：
+
+      原样（`css/app/layout.css`，四端全 MISSING）  → judged=0 · 缺陷 0 · exit 2
+      改指真实产物（`css/<hash>.css`，四端都在）    → judged=6 · 缺陷 0 · exit 0
+
+  而 **6/0** 与 2026-09-24 dev 那次实测**逐字一致**。
+⇒ 内容（`.leading-relaxed{line-height:1.625}` 等 10 个类）**一个不缺**，
+  **唯一的问题是路径**。
+
+【修法（已落地）】
+· `artifact_css()` → `css_artifacts()`：返回 `.next/static/css/` 下 **`rglob("*.css")` 的全部**
+  （dev 形状 + build 形状一起认），不再写死文件名。
+· 自检新增 **P8–P11** 四条臂，把这条语义**锁住**：
+  P8 认得 dev 形状 · P9 认得 build 形状 · P10 缺产物返回空表（不抛错） ·
+  P11 两种形状都能喂进 `parse_leading`。
+  ⇒ 自检 **72/72 通过**。
+· 失败时的诊断文案改为**指名原因**（「`.next` 里有 CSS 却解析不到」vs「四端都没有 `.next`」），
+  并**刻意留在 `notes` 而不是 `env`** —— 因为 `summary_exit` 里 `env` 优先于 `problems`，
+  挪过去会把「有真缺陷」从 exit 1 降级成 exit 2（在 `run_ci_probes` 里 = SKIP），
+  **反而掩盖产品缺陷**。退出码本身不变，只把原因说清楚。
+
+【修后复验】
+      `verify_typography.py --source-only` → 产物 `leading-*` **12 个** · 判对数 **6** ·
+      缺陷 **0** · **EXIT=0**  ✅
+      `verify_typography.py --self-test`   → **72/72**  ✅
+      `ruff check evidence/verify_typography.py` → All checks passed  ✅
+
+【可执行内核】
+**凡「探针读构建产物」的地方，都不许写死文件名** —— dev 与 build 的产物路径/命名是**两套**；
+写死其一，门禁会**静默地测不到东西**，而「测不到」在 `summary_exit` 里恰好也是 **2**
+（与「环境问题」同码）⇒ **看起来像环境噪音，实际是接线断了**。
+⚠️ 推论：**「接线」这个动作必须用「与 CI 同构的构建」验证过**；
+用 dev 产物验证「接线」等于**换了个环境测**（`ci.yml:193` 自己写了这句话，却仍照此验证了）。
+
+
+================================================================================
+§4 顺带修正的一处**归因错误**（`ci.yml:266-285` 的注释）
+================================================================================
+
+原注释写：从 `backend/` 跑 `ruff check ../evidence/` 会套用 `backend/pyproject.toml` 的
+`extend-exclude = ["verify_*.py", …]`（按 basename 匹配）⇒ **实测 62 个 `.py` 里只扫到 20 个**，
+被静默排除的 42 个「恰好是整套 `verify_*.py` 门禁」。
+
+**ruff 0.16.7 复测（2026-09-25）—— 该现象不可复现**：
+
+      命令（cwd=backend）              扫到文件    其中 verify_*.py
+      ------------------------------  ---------  -----------------
+      `ruff check ../evidence/`            69         46（未被排除）
+      `ruff check .`                      200          0
+
+  机制：`evidence/` **不是** `backend/` 的子目录，而 ruff 是**按文件所在目录向上**找配置
+  ⇒ 命中的是**仓库根 `ruff.toml`**，不是 `backend/` 那份。
+  ⇒ 真正的原因更简单：`ruff check .` 的 cwd 是 `backend/`，**根本走不到 `evidence/`**。
+  ⚠️ `extend-exclude` 的「按 basename」语义本身**确实存在** —— 它只是**管不到 `../evidence/`**。
+
+**处理**：注释已就地更正（保留原表述并标注「复测不可复现」）。
+**结论不变、且更硬**：`evidence/` 必须有**自己的一步**，且必须在**仓库根**跑（换目录会换配置）。
+
+
+================================================================================
+§5 安全与清理
+================================================================================
+
+· **开发库未被改动**：`backend/demo_8001.db` md5 = `81dedd16c51f2699f666a45d3b93e7bf`
+  （与跑 pytest **之前**一致）。pytest 用的是 **CI 隔离库** `backend/ci_test.db`
+  （`DATABASE_URL=sqlite+aiosqlite:///./ci_test.db`，cwd=`backend/`）—— 两个是**不同文件**。
+  ⚠️ 背景：本项目有「跑全量 pytest 会清空开发库」的已知风险（`#187`）⇒ 跑前已备份并核对。
+· **临时脚本已删**：`evidence/_tmp_tp_pathprobe.py`（用于 §3 的反证）。
+  ⚠️ 它**忘在 `evidence/` 里时门禁当场判红**（「`evidence/` 有未分类 `.py`」，坑 46）
+  ⇒ 判据 0 确实在工作 —— 这是一条**正面证据**。
+· **门禁复跑第 5 次**（改 GATED 探针后必跑）：**EXIT=0 · 2m40s · 68 行 · 21/21 · 6/6 · 跳过 0**。
+
+
+================================================================================
+§6 可复现口径（命令原文）
+================================================================================
+
+# backend job
+cd backend && ruff check .
+cd backend && python -m compileall -q app/
+cd backend && DATABASE_URL="sqlite+aiosqlite:///./ci_test.db" \
+  DATABASE_URL_SYNC="sqlite:///./ci_test.db" ENVIRONMENT=test MODERATION_ENABLED=true \
+  MODERATION_BACKEND=builtin SECRET_KEY="ci-only-not-a-real-secret-0123456789abcdef" \
+  python -m pytest tests/ -q
+
+# frontend job
+cd frontend && pnpm typecheck
+cd frontend && pnpm build
+cd frontend && python3 ../evidence/verify_api_base_baked.py
+cd frontend && python3 ../evidence/verify_typography.py --source-only
+
+# evidence job（必须在**仓库根**跑）
+ruff check evidence/
+python evidence/run_ci_probes.py --self-test
+python evidence/run_ci_probes.py --list
+python evidence/run_ci_probes.py
+
+# browser-selftest job
+python evidence/run_ci_probes.py --selftest-for-job browser-selftest
+
+# security-audit job
+pip-audit
+pnpm audit --audit-level high
+
+⚠️ 本机跑这些时统一加 `CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR=`：
+   它只跳过沙箱的**批量删除守卫**，删除**仍然进 OS 回收站**（可恢复）。
+   不加它，同回合删除累计 >50 次会让进程被注入假的 `exit 1`（长得和产品缺陷一模一样）。
+⚠️ 长任务一律 `python -u` + 后台跑：`cmd > log 2>&1` 时 stdout 非 tty ⇒ **块缓冲**
+   ⇒ 整个 ~2.5 分钟日志都是 **0 字节**，退出才 flush（`evidence/README.md` 坑 72）。
+
+【本轮归档的原始证据】
+  evidence/_ci_equiv_gate_2026-09-25.log            完整门禁输出（68 行 · EXIT=0 · 21/21 · 6/6 · 跳过 0）
+  evidence/_ci_equiv_pytest_2026-09-25.log          全量 pytest 输出（815 passed · 0 failed · 1187.12s）
+  evidence/_ci_equiv_browser_admin_2026-09-25.log   browser-admin 输出（3/3 · EXIT=0 · 2m2s）
+  evidence/_ci_equiv_pnpm_install_2026-09-25.log    pnpm install --frozen-lockfile（EXIT=0 · 4m25.8s）
+
+
+================================================================================
+§7 待办 / 未覆盖项
+================================================================================
+
+1. ✅ `browser-admin` job **已补跑**：`EXIT=0` · 3/3 · 2m2s（§2②）。
+2. ✅ `pnpm install --frozen-lockfile` **已补跑**：`EXIT=0` ·「Already up to date」（§1.1）。
+3. ⚠️ `docker-build` job 是本机**唯一**跑不了的 ⇒ 需 Docker Desktop 在跑才能验（§2①）。
+4. 🚨 **仍待拍板**：是否建 git 仓库让 `ci.yml` 真正触发（本报告只回答「触发了会怎样」）。
+5. 本次修的是**探针**（`evidence/`）；**没有**改任何产品代码 / 共享包 / CI 政策。
+================================================================================

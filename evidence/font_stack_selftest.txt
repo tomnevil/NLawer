@@ -1,0 +1,42 @@
+§3.1 字体栈门禁 —— 纯函数自测（40 臂）
+  ✓ split_stack 去引号
+  ✓ split_stack 压平跨行
+  ✓ 规范解析出三套栈
+  ✓ 规范 sans 首位是 Inter
+  ✓ 规范 serif 含 Georgia
+  ✓ 规范 mono 首位 ui-monospace
+  ✓ 解析不越界到 §3.2
+  ✓ tokens 解析出三套
+  ✓ tokens sans 跨行完整（末位 sans-serif）
+  ✓ tokens sans 含 Segoe UI
+  ✓ 子序列：允许实现加族
+  ✓ 子序列：改序即假
+  ✓ 子序列：丢族即假
+  ✓ F1 合规实现 ⇒ 无 red
+  ✓ F1 缺族 ⇒ red
+  ✓ F1 顺序错 ⇒ red
+  ✓ F1 无通用族收尾 ⇒ red
+  ✓ F1 未声明 ⇒ red
+  ✓ F2 Inter 非系统预装且无证据 ⇒ note
+  ✓ F2 有加载证据 ⇒ 无 note
+  ✓ F2 全是系统预装族 ⇒ 无 note
+  ✓ F2 mono 全系统预装 ⇒ 无 note
+  ✓ F4 定义文件不算使用点（tokens.css / styles.css 整份排除）
+  ✓ F4 🚨 规则头 `html .legal-text {` 也不得被当成使用点（只按行过滤会漏）
+  ✓ F4 产品使用点被抓到
+  ✓ F4 有出处注释 ⇒ hint=True
+  ✓ F4 预览页被标记
+  ✓ F4 预览页那条 hint=False（无出处注释）
+  ✓ fams_of
+  ✓ glyphs_of
+  ✓ glyphs_of 空 ⇒ 0
+  ✓ 生成物：_prev_build 被排除
+  ✓ 生成物：.next 被排除
+  ✓ 生成物：.next_old_v14_keep2 被排除
+  ✓ 生成物：.next_corrupt_devmix 被排除
+  ✓ 生成物：.next_eprerm_bak_115619 被排除
+  ✓ 生成物：node_modules 被排除
+  ✓ 源码：apps/web/app/layout.tsx **不得**被排除
+  ✓ 源码：packages/ui/src/tokens.css **不得**被排除
+  ✓ 源码：tailwind.preset.ts **不得**被排除
+自测 通过（40 臂）

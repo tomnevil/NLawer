@@ -1,0 +1,380 @@
+═══════════════════════════════════════════════════════════════════════════════
+CI 覆盖率审计：21 个门禁在 CI 里从不执行（2026-09-22）
+═══════════════════════════════════════════════════════════════════════════════
+
+结论（一句话）
+──────────────
+**39 个门禁里只有 18 个会在 CI 跑；另外 21 个（恰好是整套设计系统一致性门禁）
+在任何 job 里都不执行。** 其中 **7 个有免浏览器模式、合计约 44s**，
+且**5 个是红的**（全是已登记的设计侧欠账，不是新缺陷）。
+⇒ 「有判据 ≠ 会被跑」：一条从不执行的门禁与没有门禁在效果上无法区分。
+
+一、CI 里到底跑了什么（读 `.github/workflows/ci.yml`）
+──────────────────────────────────────────────────────
+5 个 job：
+  · backend          ruff + compileall + pytest（后端基线 756 passed）
+  · frontend         **只有 `pnpm typecheck`** —— 不跑任何 evidence 探针
+  · evidence         `run_ci_probes.py --self-test` / `--list` / **只跑 GATED**
+  · security-audit   依赖漏洞扫描
+  · docker-build     镜像构建
+⇒ `run_ci_probes.py` 里 `NOT_GATED` 的 21 个探针**没有任何 job 会执行**。
+
+分档实测（`run_ci_probes.py --list`）：
+  GATED     18 个   ← 会被跑
+  NOT_GATED 21 个   ← **从不被跑**
+
+二、21 个里有 7 个其实免浏览器（实测，改后重采）
+────────────────────────────────────────────────
+⚠️ 第一遍只数出「6 个」：我按 **开关名** `--source-only` 去 grep，
+   漏掉了 `verify_contrast.py` —— 它的**同能力开关叫 `--tokens-only`**。
+   ⇒ 教训：**按「能力」（是否需要浏览器）盘，不要按「开关名」盘。**
+
+ 探针                   免浏览器开关       rc   耗时   缺陷/发现
+ ────────────────────────────────────────────────────────────────────────
+ verify_buttons         --source-only      1    8s   10 条
+ verify_design_tokens   --source-only      0    2s   ——（修前 **160s**）
+ verify_focus_ring      --source-only      1    3s    3 条（覆盖率 96）
+ verify_font_scale      --source-only      1    9s    6 条（聚 1 条根因）+ 18 条 T4 提示
+ verify_grade_badges    --source-only      1   17s    5 条（4 等级 + G2）
+ verify_typography      --source-only      1    2s   86 条（判对数 28）
+ verify_contrast        --tokens-only      0    3s   ——（仅规范 5 条近似值，非产品缺陷）
+ ────────────────────────────────────────────────────────────────────────
+ 合计                                       5红2绿   ≈44s
+
+复现命令（每个都是 `PYTHONIOENCODING=utf-8`，否则中文输出在 GBK 下乱码）：
+   cd <repo>
+   for f in verify_buttons verify_design_tokens verify_focus_ring \
+            verify_font_scale verify_grade_badges verify_typography; do
+       backend/.venv/Scripts/python.exe evidence/$f.py --source-only; echo "rc=$? $f"
+   done
+   backend/.venv/Scripts/python.exe evidence/verify_contrast.py --tokens-only
+
+本批**原始输出**已存证：`evidence/not_gated_static_runs/`（7 个 `.txt` + `summary.txt`）。
+`verify_design_tokens` 的改前/改后/对照组存证：`evidence/design_tokens_walkfix_{before,after,control}.txt`。
+
+三、红的都是**已登记**的欠账（不是新发现）
+──────────────────────────────────────────
+ · verify_buttons 10 条 → `<button>` 硬编码 `h-8`/`h-9` 绕过 `Button`
+   违反 §6.1 的 48px。**判据已正确识别补偿机制**：`notifications/page.tsx`
+   的 `min-h-tap` 被显式标为「非缺陷」⇒ 不是过宽判据。
+   登记：`admin-gap-analysis.md` #32
+ · verify_focus_ring 3 条 → F3 环宽 `ring-2`=2px≠规范 3px（×48）、
+   F4 环色 5 种不统一、F5 令牌 `shadow-focus` **0 调用点**。
+   ⚠️ 已交叉验证 F3 **不是误报**：`admin-gap-analysis.md:2022` 明确记着
+   「源码 48 处一次都没用 `shadow-focus`，全部手写 `focus:ring-2 focus:ring-brand-500/30`」。
+   登记：#31
+ · verify_grade_badges 5 条 → 4 个等级映射不符 §2.4，其中 `brand`/`ink`
+   两个变体**组件层根本不存在**；+ G2 六份 `GRADE_TONE` 重复来源（`packages/ui` 里 0 份）。
+   登记：#33（推荐解：新增两变体 + 收敛到 `packages/ui`）
+ · verify_typography 86 条 → 含 `cn()` 吞掉 `text-body-sm` 一类。登记：#42
+ · verify_font_scale 6 条 → 聚 1 条根因；另 18 条 T4 是**只报不判**（供拍板）。
+
+四、顺带修掉的一个真 bug：`verify_design_tokens.py` 的遍历不剪枝
+────────────────────────────────────────────────────────────────
+现象：`--source-only` 在 `timeout 100` 下 **rc=124（被当挂死）**。
+根因：`walk_source()` 用 `root.rglob("*")` **先下降再过滤** ⇒ 照样走完四份
+      `node_modules`（四端各一份）。过滤发生在下降之后 ⇒ 过滤不省任何时间。
+      属 `README.md` 坑 6 同族。
+
+改法：`os.walk` + `dirnames[:] = [...]` **就地剪枝**。
+      **判据一个字没改** —— 每个候选文件走的还是原来那两条
+      `any(part in SOURCE_SKIP_DIRS …)` / `any(part.startswith(".next") …)` 谓词。
+      剪枝与谓词**严格冗余**（被剪的目录名必然命中同一条谓词）⇒ 结果集可证不变。
+      ⚠️ `not p.is_file()` 不能省：`os.walk` 把**断链符号链接/特殊文件**也归进
+      `filenames`，少了它会读不到 ⇒ **假 EXIT=2**。
+
+证据（改前快照 vs 改后，对照实验）：
+  OLD(rglob)   n=116   耗时=161.33s
+  NEW(os.walk) n=116   耗时=  0.06s   ← 2850×
+  SET   相等: True                    ← 结果集不变（可证）
+  ORDER 相等: False                   ← 仅顺序（已在 docstring 里预言）
+
+  `--source-only` 端到端：**160s ⇒ 1.306s**，
+  输出**逐字节一致**（`diff` 空）：`[源码级] 扫描 116 个文件`、
+  `bg-white/15 2 处`、`EXIT=0` 全部相同。
+  ⇒ 这是**纯性能改动**，结论零变化。
+
+⚠️ 顺带发现（未改）：该探针 `alpha_hits` 打印的是**未排序**的文件列表，
+   所以产物字节依赖遍历顺序（`os.walk`/`rglob` 都基于 `scandir` 顺序）。
+   在 CI 里判的是退出码而非字节，故影响很小；但若将来要求产物可 diff，
+   应把该处改为 `sorted(files)`。
+
+五、待拍板（没有擅自接线）
+──────────────────────────
+把这 7 个接进 CI = **CI 立刻变红**（5 红）。三条路：
+
+ ① **棘轮（推荐）**：冻结当前条数，**只拦增长**。今天全绿，欠账再也无法悄悄变大。
+    与本项目既有做法同构（`verify_endpoint_authz.py` 的 `GATE_BASELINE`、
+    `BASELINE_UNGUARDED_READ`；Q-T 也是这么收口的）。
+    成本：给 5 个探针各加一个「基线常量 + 超基线即红」的判据。
+ ② **先修欠账再接**：把 #31/#32/#33/#42 修完（改共享包 `Badge.tsx`、
+    48 处焦点环换 `shadow-focus`、10 处硬编码按钮…）⇒ 属产品改动，需另行拍板。
+ ③ **维持现状**：仅保留本文件与 `run_ci_probes.py` 顶部的显式记录（已做）。
+
+⚠️ 另注：`verify_font_scale` 的 18 条 T4 是**只报不判**（探针自述），
+   接进 CI 时不该把它们算成缺陷。
+
+六、诚实边界
+────────────
+ · 本审计只测**免浏览器模式**；这 7 个探针的**渲染级**判据仍需 CDP + dev server，
+   本次未测（那是另一套前提，不在本结论范围内）。
+ · 「21 个从不执行」是**读 `ci.yml` + `--list`** 得出的；本仓库**不是 git 仓库**，
+   无法用 CI 运行历史交叉验证 ⇒ 结论基于**配置**而非**运行记录**。
+ · 缺陷条数取自本机一次运行（2026-09-22 15:2x）；`verify_typography` 的 86 条
+   与 `verify_buttons` 的 10 条会随前端代码变动，用作棘轮基线时需注明取样时间。
+
+七、后续：把「可见」升级成「自曝」（同日续做）
+──────────────────────────────────────────────
+1) **先验证标题结论不是假阴性**：`find .github -type f` ⇒ 只有 `ci.yml` 一个 workflow；
+   `deploy/*.yml` 是 Prometheus/告警规则；全仓**没有任何 `schedule:` / cron / nightly**
+   ⇒ 「21 个从不执行」成立（不是「我只读了一个文件」的漏判）。
+
+2) **同族的第二处**：`report_spec_coverage.py`（**找盲区的仪器**）在 `ci.yml` 与
+   `run_ci_probes.py` 里**都 0 引用** ⇒ **它自己也没人自动跑**。
+   （暂不接线：它是**报表**，且 `--list` 那一步已经在 CI 里跑。）
+
+3) 🚨 **关键洞察：「把理由打印出来」≠「理由是完整的」。**
+   `ci.yml` 里 `--list` 那一步的注释写着它存在的理由就是「让『哪些探针在门禁内、
+   哪些不在、为什么』**每次都可见**，而不是埋在代码里等人来问」。
+   **它只成功了一半** —— 缺口**确实被打印出来了**，但 5 个探针的「为什么」只写了
+   「**CDP。**」，而它们**有免浏览器的一半**。
+   ⇒ **一个有（错误的）理由的缺口，比一个裸露的缺口更危险**：
+   裸露的缺口会被追问，有理由的缺口会被读成「已经评估过、且是有意为之」。
+
+4) **落地（不碰 `ci.yml`、不增加 CI 变红风险）**：
+   · 运行器新增 **`--static-audit`**：现场重跑那 7 个免浏览器模式，打印 `rc` + 耗时 + 登记值，
+     **只报告不判定、永远 `exit 0`**。实测 **7 个 / 5 红 / 36s / EXIT=0**，
+     且**每条 `rc` 与登记值一致**（无漂移告警）。
+     ⚠️ 漂移检测**只比 `rc` 不比耗时**（耗时机器相关，比它会天天假报警）。
+   · `--list` 增**页脚**：「21 个在 CI 里从不执行；其中 7 个其实有免浏览器模式
+     （实测 5 红）⇒ 用 `--static-audit` 现场复测；接进 CI = 立刻变红 ⇒ 政策决定」。
+     ⇒ **`--list` 本来就在 CI 里跑** ⇒ 缺口**每次 CI 都自曝，无需新增 CI 步骤**。
+
+5) **为什么不写「自动探测器」**：实测 7 个探针里 `help` 写了「不开浏览器」的只有 **3 个**
+   （`focus_ring` / `typography` / `contrast`），另外 **4 个漏掉** ——
+   `verify_buttons` / `verify_font_scale` **连 `help` 都没有**；
+   `verify_design_tokens` 写「只跑源码级检查」、`verify_grade_badges` 写「只扫源码层」。
+   ⇒ **自动探测会漏报 4/7，而漏报看起来权威、比没有更危险**。
+   ⇒ 改为 **`STATIC_AUDIT` 显式登记（每条带测量日期）+ `static_audit_guard()` 守卫**
+   （断言「文件在 + 该开关真的在源码里」，能逮改名/搬家；
+   ⚠️ **逮不到「条数过期」** —— 那只有重跑 `--static-audit` 能发现）。
+
+6) **验证**：`--static-audit` 7 个 / 5 红 / EXIT=0；`--list` 页脚正常、**守卫 0 告警**；
+   `run_ci_probes.py --self-test` **4/4**；全量 CI **18/18 EXIT=0**。
+   存证：`static_audit_run.txt` / `ci_run_2026-09-22_round22.txt`。
+   **仍然只改仪器，未动任何产品代码。**
+
+================================================================================
+九、裁定与落地：**① 棘轮**（2026-09-22 用户拍板）
+================================================================================
+
+结论：那 7 个免浏览器半边**已接进 CI**，方式 = **冻结条数、只拦增长**。
+今天全绿（基线就是当前实测值），欠账**再也无法悄悄变大**。
+**未动任何产品代码**，只改仪器（`run_ci_probes.py` + `ci.yml` 的说明注释）。
+
+落地形态
+--------------------------------------------------------------------------------
+· `STATIC_GATES`：**逐探针登记**（开关 / 冻结 rc / 冻结条数 / **计数口径** / 测量日期）。
+· `GATED_STATIC` = 登记表的键；`run_all()` 新增**阶段 3**。
+· 三档重构（判据 0 同步）：`GATED` **18** / `GATED_STATIC` **7** / `NOT_GATED` **21 → 14**。
+· `--static-audit` 与阶段 3 **共用同一张登记表**（`STATIC_GATES`）⇒ 不会再漂移；
+  `--list` 新增该档并更新页脚。
+
+冻结基线（2026-09-22 实测）
+--------------------------------------------------------------------------------
+  探针                   开关              rc  条数  口径        出处
+  verify_buttons         --source-only      1   10   declared   欠账 #32（硬编码 h-8/h-9）
+  verify_contrast        --tokens-only      0    0   cross      规范表 5 条近似值（非产品缺陷）
+  verify_design_tokens   --source-only      0    0   cross      绿（修 rglob 前 160s）
+  verify_focus_ring      --source-only      1    3   declared   欠账 #31（环宽/环色/令牌 0 调用点）
+  verify_font_scale      --source-only      1    6   declared   聚 1 根因（+18 条 T4 提示只报不判）
+  verify_grade_badges    --source-only      1    5   cross      欠账 #33（4 等级映射 + G6 份 GRADE_TONE）
+  verify_typography      --source-only      1   86   declared   欠账 #42（判对数 28）
+
+🚨 棘轮最大的风险 = 假绿（本设计的核心）
+--------------------------------------------------------------------------------
+「取条数」的口径**不统一**：4 个探针自报 `缺陷 N 条`，3 个只能数行首 `✗`
+（`verify_grade_badges` 压根不自报；`verify_font_scale` 自报 6 条但只有 1 行 `✗`）。
+⇒ 若正则**突然失配**，天真实现会数出 **0 条** ⇒ **棘轮永久绿**。
+⇒ 所以 `count_from()` 用 **`None` 区分「取不到」与「真的是 0」**，
+   `judge_ratchet()` 把 `None` **判红**。
+   **「取不到条数」不是通过，是「无法判定」。**
+
+控制组（不然就是一条只会绿的防线）
+--------------------------------------------------------------------------------
+· `R1–R9` 直接给 `judge_ratchet()` 喂**合成输入**：
+  R2 条数涨 ⇒ 必须红；**R4 取不到条数 ⇒ 必须红**；R5 rc 涨 ⇒ 必须红；
+  R8/R9 `cross` 口径涨/不涨；R6 rc=2 不红；R7 rc=124 超时 ⇒ 红。
+· **`W1` 端到端**：阶段 2 全绿 + 棘轮条数暴涨 ⇒ **`run_all()` 必须 exit=1**。
+  ⚠️ 为什么还要 W1：R 系列只证明「**判定函数**会红」——**接线断了它照样全绿**。
+· `--self-test` 现为 **S1–S4 + R1–R9 + W1 = 14 臂全绿**。
+
+顺带发现并修掉的两个真问题（都不是产品缺陷）
+--------------------------------------------------------------------------------
+**A. 判据 0c：`--self-test` 登记表不完整（与判据 0b 同形状）**
+   实测 **28 个探针有 `--self-test`，只有 17 个登记 ⇒ 11 个的自检从不执行**。
+   代价**已经出现过一次**：`verify_design_tokens.py` 的 `rglob` 挂死（160s）
+   **本该被阶段 1 逮到**（「工具坏了」），却因为没登记而一路溜到实测阶段。
+   ⇒ 补齐 **9 个**进 `SELFTEST_ONLY`（自检 ≤2s、不启浏览器）；
+     **6 个**进 `SELFTEST_ENV_BOUND`（自检要真起浏览器 / 真连服务，每条带实测耗时）；
+     新增**判据 0c**（有 `--self-test` 必须三选一登记）。
+
+**B. 🚨 阶段 1 没遵守它自己的 exit 三语义（真 bug）**
+   旧实现 `ok = rc == 0` ⇒ 把「**环境不支持自检**（exit 2）」也当成「**工具坏了**」。
+   实测踩到：`verify_runtime_health.py --self-test` 在**服务活着**时真起 Chromium
+   跑 4 个端（**151.6s / exit 0**）；而它自己 L287–292 写得很清楚 —— 服务未就绪
+   就 `return 2`（「不启动浏览器，产出的『干净』是假的」）。
+   ⇒ **CI 里四个 dev server 不存在 ⇒ 它会 exit 2 ⇒ 旧实现会让 CI 直接变红**。
+   ⚠️ 若按原计划把 11 个一起塞进阶段 1，**这条流水线会在 CI 上第一次跑就红**，
+   而本机（3000–3003 + 8001 **都在 LISTENING**）永远复现不出来。
+   ⇒ 修法：阶段 1 现在 `rc==2` 记作 **⏭ SKIP(环境)** 并打印「跳过不是通过」，
+     只有**其它非 0**才算「工具坏了」。
+   ⚠️ **诚实标注**：「CI 里必然 exit 2」这一句是**读源码**（L287–292）得出的，
+     **不是实测** —— 本机没有「服务不在」这个状态。
+
+⇒ 副产品结论：**本机「四个 dev server 活着」会让证据结果与 CI 不可比**
+  （同一个自检：本机 151.6s/exit 0，CI 立刻 exit 2）。
+  凡「依赖环境」的探针，**本机绿 ≠ CI 绿**，反之亦然。
+
+存证
+--------------------------------------------------------------------------------
+`ci_run_2026-09-22_round29_ratchet_final.txt`（含阶段 3 与判据 0c 的最终全量）
+`ci_run_2026-09-22_round28_final.txt`（棘轮首跑：阶段 3 = 7/7，暴露 151.6s 成本）
+`ci_run_2026-09-22_round27_ratchet.txt`（棘轮首验）
+================================================================================
+
+================================================================================
+【2026-09-23 更新】21 → 14 → **13**，并新增一档 `CI_ELSEWHERE`
+================================================================================
+
+本文件是 **2026-09-22 的快照**，里面的「21 个」在当天就已降到 **14 个**
+（7 个免浏览器探针被收进 `GATED_STATIC` 棘轮）。2026-09-23 又降一个：
+
+| 日期 | `NOT_GATED` | 变化 |
+|---|---|---|
+| 2026-09-22 审计时 | **21** | 快照 |
+| 2026-09-22 当天 | **14** | −7：免浏览器探针进 `GATED_STATIC`（阶段 3 棘轮） |
+| **2026-09-23** | **13** | −1：`verify_api_base_baked.py` 随「生产构建进 CI」**接进 `frontend` job** |
+
+**新增一档 `CI_ELSEWHERE`（「已在 CI、但**不在 `evidence` job**」）**：
+`verify_api_base_baked.py` **不能**进 `GATED` —— `GATED` 是 `evidence` job 跑的那一档，
+而那个 job **不装 pnpm、不构建** ⇒ 进去只会永远 `exit 2`（跳过）。
+⇒ **纪律：分档要按「哪个 job 提供前提」，不是按「它重不重要」。**
+把「在 CI 里跑」与「在 `evidence` job 里跑」混为一谈，会让名册**看起来接上了、实际没跑**
+（与坑 45「`NOT_GATED` 读起来像不需要跑」是同一族：**档位名要能被读对**）。
+
+**修法落点**：`ci.yml` 的 `frontend` job 加三步 ——
+`Seed build-time env (NEXT_PUBLIC_API_BASE)` → `Build (production)` → `python3 ../evidence/verify_api_base_baked.py`。
+⚠️ `.env.local` 被 `.gitignore` 忽略 ⇒ CI 里必须**播种**；播种之后 CI 里查不出
+「某端本地忘了建 `.env.local`」（属本机缺陷），CI 里它守的是「**内联机制**有没有被破坏」。
+
+**本机验证到什么程度**（诚实标注）：`pnpm typecheck` **exit 0**（实测）·
+本探针对当前产物 **exit 0**（实测）· 控制组（把 `apps/im/.env.local` 挪走）⇒ **exit 1 且精确点名**（实测）·
+报表快照 `diff` 只有**预期的那一行**（`CI 会执行 28 → 29` / `从不执行 14 → 13`）。
+⚠️ **`pnpm build` 本机未跑**：四端 dev server 正在跑（3000–3003），`next build` 会覆盖
+它们正在用的 `.next` ⇒ **首次 CI 运行即为这条接线的首次端到端验证**。
+
+存证：`ci_probes_run_2026-09-23_after_build_in_ci.txt` ·
+`roster_list_2026-09-23_after_build_in_ci.txt` ·
+`spec_coverage_report_2026-09-23_after_build_in_ci.txt`
+
+
+════════════════════════════════════════════════════════════════════════════
+【2026-09-23 更新 · 待裁定 ③：`evidence/` 的 lint 从来没真正跑过】
+════════════════════════════════════════════════════════════════════════════
+
+`ci.yml` 的 `backend` job 里那句 `ruff check .` 的 cwd 是 `backend/`
+⇒ **`evidence/` 从来不在任何 lint 范围内**。这一点是已知的。
+
+🚨 **但「补一步 lint」之前必须先看清一件事：那句「evidence 的 lint = 0 条」是假的。**
+
+旧记录（本文件上一段与 `README.md` 第 52 行）写的是：
+「从 `backend/`（CI 用的那份配置）= **0 条**；从仓库根（当时没有 ruff 配置 ⇒ 默认集）= **17 条**」。
+2026-09-23 复现时把结论换成 `--show-files` 一数，真相是：
+
+    $ cd backend && ruff check ../evidence/ --show-files | wc -l
+    20            # ← 而 evidence/ 下有 62 个 .py
+
+**42 个文件被静默排除，恰好是整套 `verify_*.py` 门禁。** 机理：
+`backend/pyproject.toml` 的 `extend-exclude = ["verify_*.py", …]`
+（那条排除是**为 backend 自己的根级诊断脚本写的** —— 它们必须在 `import app.*` 之前设
+环境变量，天然触发 E402）**按 basename 匹配** ⇒ 它同时命中了 `evidence/` 下**全部** `verify_*.py`。
+⇒ 「evidence 很干净」实为「**evidence 的门禁按名字被排除掉了**」（README 坑 61）。
+
+【修法】仓库根新增 `ruff.toml`：
+
+  · 规则集**逐字照抄** `backend/pyproject.toml`（`select=["E4","E7","E9","F","I"]` /
+    `ignore=["E501"]` / `line-length=100` / `target-version="py312"`）
+    ⇒ **全仓只有一套 lint 政策**，谁都不许靠「换一份配置」把自己洗绿。
+  · **刻意不写 `verify_*.py` 排除** —— 那正是本文件存在的原因。
+  · ⚠️ 初版还写了 `extend-exclude = ["backend", "frontend"]`（想避免重复报告），
+    实测发现 ruff **按文件就近发现配置**（`backend/x.py` 先找到 `backend/pyproject.toml`，
+    根本轮不到根配置）⇒ 那两行**只起一个作用**：让根级 `ruff check .` 整棵子树跳过
+    `backend/` —— 正是本段在骂的静默排除。**已删。**
+
+`ci.yml` 的 `evidence` job 新增一步（在 `Install dependencies` 之后、`Gate self-test` 之前）：
+
+      - name: Lint (ruff, evidence)
+        run: ruff check evidence/          # ⚠️ 必须在**仓库根**跑，换目录就换配置
+
+【改前 / 改后】`evidence/` 在**采用的那份配置**下的条数：
+
+| 时点 | 条数 | 明细 |
+|---|---|---|
+| 改前 | **47** | 21×`F541`（f-string 无占位符）· 12×`E741`（`l` 歧义名）· 8×`I001` · 4×`F401` · 3×`F841` |
+| 改后 | **0** | 33 条自动修（`--fix`）+ 14 条手工（`E741` 改名 12 处 · `F841` 删死变量 3 处） |
+
+存证：`lint_evidence_2026-09-23_before.txt`（47 条）· `lint_evidence_2026-09-23_after.txt`（All checks passed）。
+
+⚠️ **`--fix` 也随配置变（本轮踩到）**：先用
+`ruff check --isolated --select E4,E7,E9,F,I --ignore E501 --line-length 100 --fix evidence/`
+修了 32 条、并**在同一组 `--isolated` 参数下复验为 0 条**；换到正式配置下，
+`evidence/authz_probe.py:72` 仍报同一条 `I001`。
+根因：isort 的 first-party 判定依赖「项目根」—— `backend/` 是项目根时 `import app.*` 是
+first-party（须排在第三方之后），仓库根是项目根时 `app` 不是包（当第三方看）。
+⇒ **纪律：必须在「采用的那份配置」下 fix、并在同一份配置下复验。**
+
+【3 条 `F841` 逐个看过（不是机械修）】都是**死代码**，不是「漏掉的断言」：
+  · `verify_contrast.py:266` `no_vals` —— 非 ✓ 那一侧的阈值过滤由 `above` 承担，`no_vals` 冗余
+  · `verify_im_safe_area.py:196` `env_notes` —— 该文件用**就地 `return 2`** 报环境问题，从不收集
+  · `verify_register_abuse_defense.py:259` `prune` —— 函数已从 `rglob` 改成**非递归 `glob`**，剪枝无意义
+
+【零漂移校验（改了 20+ 个探针文件之后必须做）】
+  · `run_ci_probes.py` 全量复跑：**阶段 2 通过 21 / 失败 0** · **阶段 3 通过 6 / 失败 1** · `RUNNER_EXIT=1`
+    —— 与改前**逐项一致**（唯一红仍是外部欠账 `verify_typography.py` 87 > 86）。
+  · 两份快照 `diff`：**去掉耗时列后 exit 0**（`sed -E 's/\([0-9.]+s\)//g'` 后逐字节一致）；
+    `判对数 28，缺陷 87 条` 未变。
+  · `--list` 快照 `diff` **只 1 行**，且是**预期的那行**（页脚口径修正，见下）。
+  · `report_spec_coverage.py --self-test` **20/20**（未动其判据，只改了一处措辞）。
+
+【顺带修掉一处「改完仪器没回头修描述」】页脚原本印
+「CI 会执行 N 个门禁（`GATED` + `GATED_STATIC`）」，而 `_ci_gate_names()` 早已是
+`GATED | GATED_STATIC | CI_ELSEWHERE`（N=**29**，而 21+7=**28**）⇒ **标签漏了一档**。
+已改为「（`GATED` + `GATED_STATIC` + `CI_ELSEWHERE` —— **判据是「在 CI 里会不会跑」，
+与「在哪个 job 跑」无关**）」。⇒ **纪律：数字算对了不等于描述对了；改了并集就要回头改标签。**
+
+⚠️ **证据链上的一处小瑕疵（如实记录，不追改旧快照）**：
+`roster_list_2026-09-23_after_build_in_ci.txt` 是在 `_ci_gate_names()` 加入 `CI_ELSEWHERE`
+**之前**抓的，所以它那一行仍是「28 / 14」；口径修正后的页脚首次出现在
+`roster_list_2026-09-23_after_evidence_lint.txt`（「29 / 13」）。两份都留着。
+
+⚠️ **已知边界（不许把绿读成「什么都查过了」）**：这套规则集**不含 `W605`** ⇒
+`evidence/probe_switcher.py` 在 `compileall` 时的
+`SyntaxWarning: invalid escape sequence '\s'`（Python 字符串里写 JS 正则）**本门禁看不见**。
+要覆盖它得把 `W` 加进 `select` —— 那是**扩大政策**，需拍板。
+
+🚨 **另一条与本段无关、但同批发现的 CI 阻断项（不属 ③）—— ✅ 已解除**：
+**18:14 实测** `cd backend && ruff check .` 报 **1 条** ——
+`tests/test_contract_review_async.py:28:1 I001`（多一个空行），
+该文件 mtime **2026-09-23 15:56**，是**并行会话**当天新建的。
+已用「临时挪走根 `ruff.toml` 再跑」证明**与本轮改动无关**（报错不变）。
+按「不改并行会话正在写的文件」的纪律**我没有动它**，只上报。
+**✅ 18:24 复测已解除**：该文件 mtime 变为 **18:20:43**（8834 → 10745 字节，空行已删）
+⇒ `cd backend && ruff check .` = **`All checks passed!`**（连跑两次一致）⇒ **并行会话自己修掉了**。
+⚠️ **纪律**：**上报「别人的文件会红」之后，要在同一次会话里复测一次再收尾** ——
+过期的「现役红」**比不写更坏**（后来的人会去追一个不存在的问题，或反过来开始怀疑整份审计的可信度）。
+这是「改完仪器要回头修描述」的**跨会话版本**。
+
+存证：`lint_evidence_2026-09-23_{before,after}.txt` ·
+`ci_probes_run_2026-09-23_after_evidence_lint.txt` ·
+`roster_list_2026-09-23_after_evidence_lint.txt` · 新增 `ruff.toml`（仓库根）

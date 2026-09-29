@@ -1,0 +1,214 @@
+规范 deliverables/ui-design/design-spec.md：615 行 / 63 个节号
+已登记文档 3 份：deliverables/ui-design/design-spec.md · deliverables/ui-design/im-mobile-nav-spec.md · deliverables/ui-design/mobile-feature-integration-spec.md
+扫描 576 个活文件（排除门禁自身 / `evidence/*.txt|*.log` / 每日日志）
+合计：判红 **0** · G3s 11 · G4 507 · G5 110
+
+【G3s 只报：锚点在同号文档里找不到（可能是未登记文档的引用，或引文不够精确） —— 11 处】
+  G3s .workbuddy-ai/memory/MEMORY.md:46  `§5.1「✅ 定稿」` —— 锚点在同号文档里找不到（可能是未登记文档的引用，或引文不够精确）
+  G3s deliverables/ui-design/admin-gap-analysis.md:1334  `§7「已知遗留」` —— 锚点在同号文档里找不到（可能是未登记文档的引用，或引文不够精确）
+  G3s evidence/README.md:61  `§5.1「✅ 定稿」` —— 锚点在同号文档里找不到（可能是未登记文档的引用，或引文不够精确）
+  G3s evidence/report_spec_coverage.py:309  `§7.4「被后端契约阻塞 ⇒ 绝不建判据」` —— 锚点在同号文档里找不到（可能是未登记文档的引用，或引文不够精确）
+  G3s evidence/run_ci_probes.py:347  `§5.1「✅ 定稿」` —— 锚点在同号文档里找不到（可能是未登记文档的引用，或引文不够精确）
+  G3s evidence/verify_motion_tokens.py:262  `§4.4「{sc}」` —— 锚点含模板占位符 ⇒ 静态不可验
+  G3s evidence/verify_motion_tokens.py:296  `§4.4「{sc}」` —— 锚点含模板占位符 ⇒ 静态不可验
+  G3s evidence/verify_motion_tokens.py:306  `§4.4「{sc}」` —— 锚点含模板占位符 ⇒ 静态不可验
+  G3s evidence/verify_motion_tokens.py:309  `§4.4「{sc}」` —— 锚点含模板占位符 ⇒ 静态不可验
+  G3s evidence/verify_page_concepts.py:226  `§7.5「{m.group(1)}段式」` —— 锚点含模板占位符 ⇒ 静态不可验
+  G3s evidence/verify_radius_scale.py:611  `§4.3「废弃 {threshold:g}px 及以上圆角」` —— 锚点含模板占位符 ⇒ 静态不可验
+
+【G5 只报：疑似 design-spec 的裸行号（**分不出来**，需人工看） —— 110 处】
+  G5 .workbuddy-ai/memory/design-audit.md:98  `:286`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:277  `:156`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:305  `:190`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:340  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:355  `:148`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:386  `:400`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:387  `:337`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:702  `:190`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:744  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:864  `:357`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:883  `:8`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:883  `:40`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:884  `:305`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:885  `:423`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:925  `:357`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:1096  `:440`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:1213  `:276`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/design-audit.md:1246  `:112`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/methodology.md:1544  `:185`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/methodology.md:1544  `:191`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/methodology.md:1545  `:187`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/methodology.md:1546  `:193`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/product.md:222  `:294`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/product.md:222  `:313`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 .workbuddy-ai/memory/product.md:222  `:330`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:41  `:72`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:41  `:135`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:58  `:72`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:58  `:115`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:58  `:132`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:58  `:142`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:58  `:152`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:58  `:162`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:71  `:84`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:75  `:73`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:90  `:36`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:92  `:52`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:92  `:121`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:121  `:49`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:133  `:210`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:133  `:207`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:155  `:20`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:156  `:26`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:157  `:66`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:159  `:32`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:219  `:294`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:219  `:313`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/backend-cooperation-2026-09-21.md:219  `:330`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/prd-contract-review-2026-09-16.md:137  `:57`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/prd-contract-review-2026-09-16.md:137  `:363`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/product-strategy/prd-contract-review-2026-09-16.md:137  `:342`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:603  `:140`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:603  `:175`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:604  `:181`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:1284  `:286`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:1452  `:55`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:1452  `:62`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:1590  `:81`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:1702  `:542`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:1740  `:542`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2439  `:201`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2446  `:195`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2446  `:201`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2447  `:201`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2474  `:195`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2475  `:200`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2646  `:148`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2647  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2648  `:145`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2649  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2649  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2656  `:148`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2664  `:148`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2670  `:148`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2671  `:148`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/admin-gap-analysis.md:2677  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/design-draft-sheet-scroll-ownership-2026-09-26.md:29  `:56`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/design-draft-sheet-scroll-ownership-2026-09-26.md:29  `:63`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/design-draft-sheet-scroll-ownership-2026-09-26.md:150  `:335`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/design-draft-sheet-scroll-ownership-2026-09-26.md:163  `:233`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/design-spec-addendum-8.3-tap-targets.md:76  `:96`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/design-spec-addendum-8.3-tap-targets.md:77  `:35`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/design-spec-addendum-8.3-tap-targets.md:155  `:82`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:77  `:147`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:78  `:160`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:99  `:147`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:160  `:82`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:160  `:83`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:161  `:116`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:162  `:127`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/im-cases-nav-exit-audit.md:175  `:116`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1056  `:195`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1056  `:201`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1057  `:201`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1073  `:195`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1073  `:200`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1169  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1185  `:149`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mobile-feature-integration-spec.md:1191  `:148`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mono-coverage-feasibility.md:21  `:146`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 deliverables/ui-design/mono-coverage-feasibility.md:21  `:478`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/probe_pulltorefresh_in_sheet.py:18  `:55`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/probe_pulltorefresh_in_sheet.py:18  `:62`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/README.md:728  `:315`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/README.md:800  `:55`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/README.md:800  `:62`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/README.md:3005  `:123`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/run_ci_probes.py:346  `:195`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/verify_focus_ring.py:214  `:353`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+  G5 evidence/verify_motion_tokens.py:19  `:357`（同行既无文档名也无别的文件名） —— 若指 design-spec 请改成 `§x.y「锚点」`
+
+【G4 只报：`§x.y` 的节号不在任何已登记文档里 —— 507 处 / 78 个不同节号】
+   （多数是**别的文档**的编号体系，属正常；**出现次数少的**才可能是打错的号）
+  §3.19 ×27   .workbuddy-ai/memory/backend.md:648 · backend/tests/test_evidence_upload_scope.py:1 · backend/tests/test_notification_endpoint_layer.py:14
+  §3.28 ×26   .workbuddy-ai/memory/backend.md:759 · .workbuddy-ai/memory/design-audit.md:1273 · backend/tests/test_analysis_endpoint_layer.py:9
+  §3.26 ×25   .workbuddy-ai/memory/backend.md:732 · .workbuddy-ai/memory/backend.md:734 · .workbuddy-ai/memory/methodology.md:578
+  §3.32 ×25   .workbuddy-ai/memory/backend.md:312 · .workbuddy-ai/memory/design-audit.md:1272 · .workbuddy-ai/memory/methodology.md:1114
+  §3.33 ×24   .workbuddy-ai/memory/backend.md:312 · .workbuddy-ai/memory/design-audit.md:1272 · .workbuddy-ai/memory/methodology.md:849
+  §3.25 ×23   .workbuddy-ai/memory/backend.md:710 · .workbuddy-ai/memory/backend.md:719 · .workbuddy-ai/memory/methodology.md:567
+  §3.14 ×21   .workbuddy-ai/memory/backend.md:562 · .workbuddy-ai/memory/backend.md:688 · .workbuddy-ai/memory/methodology.md:541
+  §3.31 ×20   .workbuddy-ai/memory/backend.md:811 · .workbuddy-ai/memory/MEMORY.md.bak-2026-09-21:108 · .workbuddy-ai/memory/methodology.md:730
+  §3.27 ×18   .workbuddy-ai/memory/backend.md:732 · .workbuddy-ai/memory/backend.md:739 · .workbuddy-ai/memory/design-audit.md:1273
+  §3.30 ×18   .workbuddy-ai/memory/backend.md:790 · .workbuddy-ai/memory/MEMORY.md.bak-2026-09-21:96 · .workbuddy-ai/memory/MEMORY.md.bak-2026-09-21:103
+  §3.16 ×17   .workbuddy-ai/memory/backend.md:608 · .workbuddy-ai/memory/backend.md:678 · .workbuddy-ai/memory/methodology.md:549
+  §3.21 ×17   .workbuddy-ai/memory/backend.md:681 · .workbuddy-ai/memory/backend.md:685 · backend/tests/test_csrf_middleware_dispatch.py:1
+  §3.17 ×16   .workbuddy-ai/memory/backend.md:628 · .workbuddy-ai/memory/product.md:220 · backend/tests/test_evidence_upload_scope.py:17
+  §3.18 ×16   .workbuddy-ai/memory/backend.md:648 · backend/tests/test_evidence_upload_scope.py:1 · deliverables/product-strategy/decisions-2026-09-20.md:96
+  §11.4 ×15   .github/workflows/ci.yml:224 · .github/workflows/ci.yml:493 · evidence/README.md:3453
+  §3.13 ×14   .workbuddy-ai/memory/backend.md:562 · .workbuddy-ai/memory/backend.md:643 · .workbuddy-ai/memory/MEMORY.md.bak-2026-09-21:94
+  §3.29 ×14   .workbuddy-ai/memory/backend.md:781 · .workbuddy-ai/memory/backend.md:792 · .workbuddy-ai/memory/design-audit.md:1273
+  §3.22 ×13   .workbuddy-ai/memory/backend.md:681 · .workbuddy-ai/memory/backend.md:693 · backend/tests/test_role_health_config_guards.py:1
+  §3.15 ×12   .workbuddy-ai/memory/backend.md:587 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:937 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1563
+  §3.29.3 ×9   .workbuddy-ai/memory/design-audit.md:1273 · .workbuddy-ai/memory/methodology.md:1114 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1363
+  §3.24 ×8   .workbuddy-ai/memory/backend.md:710 · .workbuddy-ai/memory/backend.md:712 · .workbuddy-ai/memory/MEMORY.md.bak-2026-09-21:96
+  §11.6 ×7   .workbuddy-ai/memory/design-audit.md:3164 · evidence/run_browser_job.py:137 · evidence/run_browser_job.py:141
+  §5.5 ×7   deliverables/product-strategy/prd-contract-review-2026-09-16.md:130 · deliverables/product-strategy/prd-contract-review-2026-09-16.md:268 · deliverables/product-strategy/prd-contract-review-2026-09-16.md:458
+  §9.2 ×6   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:147 · deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:168 · deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:177
+  §3.27.1 ×5   .workbuddy-ai/memory/methodology.md:573 · deliverables/product-strategy/overview.md:243 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1172
+  §3.28.1 ×5   backend/app/api/v1/documents.py:54 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1344 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1580
+  §5.9 ×5   deliverables/product-strategy/code-review-optimization-2026-09-12.md:332 · deliverables/product-strategy/prd-contract-review-2026-09-16.md:7 · deliverables/product-strategy/prd-contract-review-2026-09-16.md:27
+  §6.7 ×5   deliverables/product-strategy/prd-contract-review-2026-09-16.md:504 · deliverables/ui-design/phase3-implementation.md:626 · evidence/verify_design_tokens.py:26
+  §14 ×4   deliverables/product-strategy/overview.md:572 · deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:154 · deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:168
+  §16 ×4   .workbuddy-ai/memory/design-audit.md:3265 · .workbuddy-ai/memory/MEMORY.md:30 · evidence/README.md:3390
+  §3.29.1 ×4   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1344 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1583 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1584
+  §9.4 ×4   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:149 · deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:172 · deliverables/ui-design/admin-gap-analysis.md:1651
+  §11.7 ×3   evidence/run_ci_probes.py:641 · evidence/run_ci_probes.py:900 · evidence/run_ci_probes.py:937
+  §14.4 ×3   deliverables/ui-design/mono-coverage-feasibility.md:3 · evidence/probe_mono_coverage.py:19 · evidence/README.md:2603
+  §3.11 ×3   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1796 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1859 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1915
+  §3.27.2 ×3   .workbuddy-ai/memory/methodology.md:578 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1579 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2048
+  §3.30.1 ×3   backend/tests/test_job_endpoint_layer.py:1 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1591 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2062
+  §3.30.2 ×3   backend/tests/test_archive_endpoint_layer.py:1 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1592 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2064
+  ? ×2   deliverables/product-strategy/round14-contract-review-overview-2026-09-16.md:295 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1968
+  §10.4 ×2   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:154 · deliverables/product-strategy/remaining-work-inventory-2026-09-16.md:173
+  §10.6 ×2   .workbuddy-ai/memory/methodology.md:1663 · evidence/README.md:2338
+  §13 ×2   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:214 · deliverables/product-strategy/roadmap-update-2026q3-2026-09-12.md:11
+  §14.11 ×2   .workbuddy-ai/memory/design-audit.md:2614 · .workbuddy-ai/memory/design-audit.md:2636
+  §14.12 ×2   .workbuddy-ai/memory/design-audit.md:2544 · .workbuddy-ai/memory/design-audit.md:2546
+  §3.12 ×2   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1550 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1797
+  §3.23 ×2   .workbuddy-ai/memory/MEMORY.md.bak-2026-09-21:94 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1823
+  §3.28.2 ×2   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1582 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2055
+  §3.29.2 ×2   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1585 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2060
+  §3.30.3 ×2   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1756 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2072
+  §3.32.2 ×2   backend/tests/test_complaint_endpoint_layer.py:1 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2204
+  §3.7 ×2   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1858 · deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1914
+  §5.6 ×2   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:152 · deliverables/product-strategy/round14-contract-review-overview-2026-09-16.md:295
+  §5.7 ×2   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:165 · deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:170
+  §1.5 ×1   reference/律小智AI法律助手PRD_v2.0.md:2159
+  §11 ×1   .workbuddy-ai/memory/design-audit.md:2680
+  §11.1 ×1   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:163
+  §12 ×1   reference/律小智AI法律助手PRD_v2.0.md:2159
+  §13.3 ×1   .workbuddy-ai/memory/design-audit.md:2348
+  §13.6 ×1   .workbuddy-ai/memory/design-audit.md:2469
+  §14.10 ×1   .workbuddy-ai/memory/MEMORY.md:59
+  §14.2 ×1   .workbuddy-ai/memory/design-audit.md:2412
+  §14.6 ×1   .workbuddy-ai/memory/design-audit.md:2404
+  §14.7 ×1   .workbuddy-ai/memory/design-audit.md:2405
+  §3.20 ×1   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1816
+  §3.27.3 ×1   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2072
+  §3.28.3 ×1   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:2072
+  §3.31.1 ×1   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1587
+  §3.31.3 ×1   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1499
+  §3.32.1 ×1   backend/tests/test_billing_endpoint_layer.py:1
+  §3.4 ×1   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:244
+  §3.6 ×1   deliverables/product-strategy/round15b-fixed-but-unguarded-sweep-2026-09-20.md:1850
+  §4.6 ×1   deliverables/product-strategy/round13-realtime-push-overview-2026-09-16.md:256
+  §470 ×1   deliverables/ui-design/admin-gap-analysis.md:1636
+  §5.10 ×1   deliverables/product-strategy/code-review-optimization-2026-09-12.md:332
+  §5.11 ×1   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:166
+  §9.1 ×1   deliverables/product-strategy/prd-v3-gap-closure-spec-2026-09-12.md:148
+  §9.6 ×1   .workbuddy-ai/memory/design-audit.md:3444
+  §9.7 ×1   deliverables/ui-design/motion-spin-audit.md:11
+
+G1 / G2 / G3 全部通过：无行号引用，且每个能定位的 `§x.y「锚点」` 的锚点都真在该节。
+⚠️ 本判据**只能证伪不能证真**：G3s / G4 / G5 三档是**只报**，需人工看；
+   它拦不住「引对了格式但引的节号本来就不该这么写」。

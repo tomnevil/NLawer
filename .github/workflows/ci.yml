@@ -1,0 +1,687 @@
+name: CI
+
+# 触发策略：
+# - PR 到 main：全量门禁（这是门禁的主战场——不让问题进主干）
+# - push 到 main：全量门禁（保证主干始终绿）
+# - 手动触发：便于排查
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+# 同一分支的新推送取消旧运行，避免排队浪费（保留最新一次的结果即可）
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 最小权限：CI 只读代码，不需要写任何东西
+permissions:
+  contents: read
+
+jobs:
+  # ══════════════════════════════════════════════════════════════
+  # 后端门禁：lint → 编译 → 回归测试
+  # ══════════════════════════════════════════════════════════════
+  backend:
+    name: Backend (lint + compile + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      # 回归测试用 SQLite，**不需要** Postgres / pgvector / Redis——
+      # 这是本项目「零强制外部服务」设计带来的红利，CI 因此无需起 sidecar，
+      # 既快又稳（sidecar 的启动竞态是 CI 最常见的 flaky 来源）。
+      DATABASE_URL: sqlite+aiosqlite:///./ci_test.db
+      DATABASE_URL_SYNC: sqlite:///./ci_test.db
+      ENVIRONMENT: test
+      # 关闭审核的「生产 fail-fast」守卫：CI 不是生产环境
+      MODERATION_ENABLED: "true"
+      # 明确不配外部审核 Key，走内置词库（避免 CI 依赖外部服务）
+      MODERATION_BACKEND: builtin
+      SECRET_KEY: ci-only-not-a-real-secret-0123456789abcdef
+      # 关掉沙箱批量删除守卫相关变量（本仓库验证脚本会用到；CI 上无副作用）
+      CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR: ""
+      CODEBUDDY_TOOL_CALL_ID: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ---- 门禁 1：静态检查 ----
+      - name: Lint (ruff)
+        run: ruff check .
+
+      # ---- 门禁 2：语法编译（比 lint 更弱但零误报，且能抓出语法级破坏）----
+      - name: Compile check
+        run: python -m compileall -q app/
+
+      # ---- 门禁 3：回归测试 ----
+      # 这是最有价值的一道：前几轮的实践证明，**静态检查全绿的缺陷只有
+      # 真库 I/O 与真并发执行能暴露**（丢失更新、事务回滚吞审计、字段类型不符）。
+      - name: Regression tests
+        run: pytest tests/ -q
+
+      # ---- 失败时上传产物，便于定位 ----
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-artifacts
+          path: |
+            backend/*.db
+            backend/_tmp_tests/
+            backend/storage/audit_archive/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ══════════════════════════════════════════════════════════════
+  # 前端门禁：类型检查（含 packages + 4 个应用）
+  # ══════════════════════════════════════════════════════════════
+  # 为什么以 typecheck 为主而非 lint：
+  # 第六轮批量改写 13 个页面守卫时，`tsc` 一次性报出 11 个编译错误
+  # （孤儿 else、调用了不存在的 load()），而静态 grep 完全看不出来。
+  # **编译器是唯一裁判**，因此类型检查必须进 CI。
+  frontend:
+    name: Frontend (typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 🚨 2026-09-24 用户拍板 ①（Phase 0）：`verify_typography.py --source-only` 必须跑在
+      # **既有 `node_modules` 又有 `.next`** 的 job 里 —— 本 job 是唯一满足的。
+      # 它需要 Python（探针是 Python 脚本）与 `websockets`（`cdp.py` 顶层 import；
+      # 判据只用到源码层，但模块级 import 无法回避）。版本与 `backend/requirements.txt` 一致。
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install evidence deps (websockets)
+        run: pip install websockets==13.1
+
+      # `typecheck` = 先检查共享包（sdk / ui），再递归检查 4 个应用。
+      # 顺序很重要：应用的类型依赖共享包，先包后应用能给出更清晰的错误定位。
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # ══════════════════════════════════════════════════════════════
+      # 生产构建（2026-09-23 接入 —— 待裁定 ⑥ 的落地）
+      # ══════════════════════════════════════════════════════════════
+      # 为什么必须进 CI：`pnpm typecheck` 只查**类型**，查不出**只在构建期**暴露的错误 ——
+      #   RSC 边界、`useSearchParams()` 缺 `<Suspense>`、非法 `"use client"`、
+      #   CSS / 资源管线、以及 **`NEXT_PUBLIC_*` 的内联**。
+      #   此前 CI **从不构建** ⇒ 这一类错误只有人肉跑才看得见
+      #   （见 `.workbuddy-ai/memory/design-audit.md`「CI 里跑不到」的**执行层**）。
+      #
+      # 🚨 `.env.local` 被根 `.gitignore` 忽略 ⇒ **CI 里本来不存在**，必须**显式播种**。
+      #    这不是多余步骤：`NEXT_PUBLIC_*` 是**构建期内联**的，不播种就会烘出
+      #    SDK 兜底的 `:8000`（而本仓库后端在 `:8001`）——
+      #    此时「构建 exit 0 + 路由 HTTP 200 + 全部静态门禁绿」**一个都不会报警**，
+      #    表现只是「浏览器里点登录毫无反应」。详见 `evidence/verify_api_base_baked.py` 的 docstring。
+      #
+      # ⚠️ 期望值出处：后端监听 **8001**（`docker-compose.yml` / 本机四端 `.env.local` 一致）。
+      #    这里**刻意写在步骤里**而不是 job 级 `env:` —— 目的是复刻**开发者本机**的契约
+      #    （应用读 `apps/<app>/.env.local`），让下面的断言读回**同一份**期望值。
+      - name: Seed build-time env (NEXT_PUBLIC_API_BASE)
+        run: |
+          for app in web lawyer admin im; do
+            echo "NEXT_PUBLIC_API_BASE=http://localhost:8001" > "apps/$app/.env.local"
+          done
+
+      - name: Build (production)
+        run: pnpm build
+
+      # 构建完**立刻**断言「期望值真的被烘进产物」。
+      # 这正是 `verify_api_base_baked.py` 存在的理由 —— 它此前因「CI 不构建」
+      # 而**从不执行**（登记在 `run_ci_probes.py` 的 `NOT_GATED` 里）。
+      # ⚠️ 它读的是 `apps/<app>/.env.local`（上一步播种的那份）与 `.next/static/chunks`。
+      - name: Assert NEXT_PUBLIC_API_BASE is baked into the artifacts
+        run: python3 ../evidence/verify_api_base_baked.py
+
+      # ══════════════════════════════════════════════════════════════
+      # 排印门禁（2026-09-24 接入 —— 用户拍板 ① / Phase 0）
+      # ══════════════════════════════════════════════════════════════
+      # 🚨 为什么在**这里**、而不是 `evidence` job：
+      #   它的 T2/T2b/T2c **同时**依赖两个前提 ——
+      #     ① `frontend/node_modules/tailwind-merge`（**真** merge，不是降级）
+      #     ② 四端 `.next` 产物 CSS（`leadings`；`judge_line_height` 拿不到值就**逐对跳过**）
+      #   实测四组合（T2 判对数 / exit）：
+      #     本机（两者都有）6/0 · **只补 node_modules 0/2** ·
+      #     **只补 `.next` 8/1（假阳）** · `evidence` job 现状（两者都缺）**0/2**
+      #   ⇒ `evidence` job 里 `judged=0` ⇒ `total==0` ⇒ exit 2 ⇒ 阶段 3 记 SKIP
+      #     ⇒ **棘轮从未被评估**（`evidence/README.md` **坑 65**）。
+      #   ⇒ **只补 `node_modules` 不够**（判对数仍是 0）—— 必须是同时有 `.next` 的 job。
+      #
+      # ⚠️ 断言 `exit 0` 与棘轮**等价且更强**：冻结值本就是 `rc_max=0 / count_max=0`，
+      #   而 `exit 0` ⇔ 0 缺陷 ⇒ `exit 2`（环境问题）**也会红**，不再静默跳过。
+      # ⚠️ 本机**不能**用 `pnpm build` 验证这条接线（四端 dev server 正在跑，
+      #   重建会毁掉它们的 `.next`）⇒ **首次 CI 运行即为它的端到端验证**。
+      # ⚠️ 历史明细：`evidence/cn_fix_execution_2026-09-24.txt` + `_t2c_*.log`。
+      - name: Assert typography source gate (T1/T1b/T1c/T2/T2b/T2c/T4)
+        run: python3 ../evidence/verify_typography.py --source-only
+
+  # ══════════════════════════════════════════════════════════════
+  # 证据门禁：`evidence/` 下的验证探针
+  # ══════════════════════════════════════════════════════════════
+  # 为什么需要这一道：
+  #   `pytest` 守后端，`pnpm typecheck` 守前端类型——但本项目有大量判据
+  #   **两边都不属于**：前端令牌不得落 Web Storage、组件是否真的被产品页接入、
+  #   枚举域是否漂移…… 前端**没有任何测试框架**（0 个测试文件、0 个 runner），
+  #   这些判据此前只以「手跑一遍、把数字抄进文档」的形态存在 ⇒ 会静静腐烂。
+  #
+  # 三条设计纪律（写在 `evidence/run_ci_probes.py` 里，这里只记为什么）：
+  #   1. 探针的 `exit 2`（环境问题）**不等于失败**也不等于通过 —— 翻译成「跳过」，
+  #      并**在全部跳过时判失败**：一条永远跳过的门禁等于没有门禁。
+  #   2. 只跑**不需要浏览器 / dev server / 生产构建产物**的那一档。
+  #      把 CDP 探针塞进来要同时起 4 个 Next + 后端，是 10 分钟级的 flaky 源。
+  #   3. 门禁必须**第一天就是绿的**：已知缺口靠探针自己的棘轮放行
+  #      （`verify_component_wiring.py` 的 `KNOWN_GAPS`），但**不许涨**、**不许赖**。
+  #
+  # 分四档（都在 `run_ci_probes.py` 里；数字以 `--list` 现读为准，别写死）：
+  #   `GATED`        直接跑的 21 个（阶段 2）
+  #   `GATED_STATIC` **免浏览器半边 + 棘轮**的 7 个（阶段 3，2026-09-22 接入）
+  #                  —— 它们只能靠 CDP 判的那部分仍跑不了，但**源码/令牌层**
+  #                     可以用 `--source-only` / `--tokens-only` 跑。
+  #                     做法是**冻结条数、只拦增长**（与 `GATE_BASELINE` 同构）：
+  #                     今天全绿（红的都是已登记欠账），欠账**再也无法悄悄变大**。
+  #                     ⚠️ 「取不到条数」判**红**（不是绿）—— 否则正则失配 = 永久绿。
+  #   `NOT_GATED`    ✅ **2026-09-26 起为 0** —— 拍板 §11.4-③ 落地，
+  #                  新增 `browser-all` job（四端生产构建 + 隔离库 + 真后端）后，
+  #                  原本「真需要浏览器/dev server/产物」的 **14 条全部接进 CI**。
+  #                  ⚠️ 这一档的语义是「**`ci.yml` 里没有任何 job 跑它**」，
+  #                     不是「不需要跑」—— 一条从不执行的门禁与没有门禁无法区分。
+  #                     留空是**结论**（欠账清零），不是「这一块没写」。
+  #   `CI_ELSEWHERE` 19 个**已在 CI、但不在本 job** 的（`frontend` job 的 2 条 +
+  #                  `browser-admin` 的 3 条 + `browser-all` 的 14 条）。
+  #                  ⚠️ 它们**不能**被「提为 `GATED`」—— 本 job 没有前端产物 / 没有浏览器，
+  #                     提进来只会永远 `exit 2`（跳过）⇒ 名册显示接上了、实际一条没跑。
+  #                  ⚠️ **「有个 job 会跑它」≠「每个 PR 都会跑它」**：`browser-all` 只在
+  #                     **主干 / 手动**触发（≈22–25 min）⇒ 那 14 条对 PR 而言依然不跑。
+  #
+  # ⚠️ 新增探针后必须同步 `run_ci_probes.py` 的 `GATED` / `GATED_STATIC` / `NOT_GATED`
+  #    （有 `--self-test` 的还要同步 `SELFTESTABLE` / `SELFTEST_ONLY` / `SELFTEST_*`），
+  #    否则这道门禁会**直接报错**（判据 0 / 0b / 0c：清单与仓库必须一致）。
+  evidence:
+    name: Evidence (probes)
+    runs-on: ubuntu-latest
+
+    env:
+      # 与 backend job 同一套：这些探针会 import `app.*`，需要可实例化的 settings
+      DATABASE_URL: sqlite+aiosqlite:///./ci_evidence.db
+      DATABASE_URL_SYNC: sqlite:///./ci_evidence.db
+      ENVIRONMENT: test
+      MODERATION_ENABLED: "true"
+      MODERATION_BACKEND: builtin
+      SECRET_KEY: ci-only-not-a-real-secret-0123456789abcdef
+      CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR: ""
+      CODEBUDDY_TOOL_CALL_ID: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      # ---- 门禁 0：`evidence/` 自己的静态检查（2026-09-23 接入 · 待裁定 ③）----
+      # 为什么需要单独一道：
+      #   `backend` job 里那句 `ruff check .` 的 cwd 是 `backend/`
+      #   ⇒ **`evidence/` 从来不在任何 lint 范围内**。
+      # ⚠️ 2026-09-25 复测（ruff 0.16.7）**修正了这里的归因** ——
+      #   本节原先写「从 `backend/` 跑 `ruff check ../evidence/` 会套用
+      #   `backend/pyproject.toml` 的 `extend-exclude`（按 basename 匹配）
+      #   ⇒ **实测 62 个 `.py` 里只扫到 20 个**」。**该现象实测不可复现**：
+      #   同一命令实际扫到 **69 个**（= `evidence/*.py` 全量），其中
+      #   **46 个 `verify_*.py` 未被排除** —— 因为 `evidence/` **不是** `backend/` 的子目录，
+      #   而 ruff 是**按文件所在目录向上**找配置 ⇒ 命中的是**仓库根 `ruff.toml`**。
+      #   ⇒ 真正的原因更简单：`ruff check .` 的 cwd 是 `backend/`，**根本走不到 `evidence/`**。
+      #     （对照：`ruff check .`（cwd=backend）扫 **200 个**，其中 `verify_*.py` **0 个**。）
+      #   ⚠️ `extend-exclude` 的「按 basename」语义本身**确实存在** —— 它只是**管不到 `../evidence/`**。
+      #   ⇒ 结论不变、且更硬：`evidence/` 必须有**自己的一步**，且必须在**仓库根**跑
+      #     （换目录会换配置）；仓库根 `ruff.toml` **刻意不排除 `verify_*.py`**。
+      #   （与 `evidence/README.md` 坑 46 第三形态同族。）
+      #
+      # 修法：仓库根新增 `ruff.toml` —— 规则集**逐字照抄** `backend/pyproject.toml`
+      #   （`select`/`ignore`/`line-length`/`target-version`，保证全仓只有一套政策），
+      #   但**刻意不排除 `verify_*.py`**。本步在**仓库根**跑，让 62 个文件全部进扫描。
+      # ⚠️ 必须在仓库根跑（**不要** `cd backend`）—— 换目录就会换配置。
+      # ✅ 2026-09-26（拍板 #74）：`W605`（无效转义序列）已**纳入 `select`**
+      #   ⇒ 这一类现在**有判据拦住**（此前只修了实例，没有判据防复发）。
+      #   ⚠️ **刻意只加 `W605`，不加整个 `W`** —— 实测整个 `W` 会连带引入
+      #   3 条 `W291`（行尾空格）纯风格红（evidence 1 + backend 2）。
+      #   两份配置**已同步**（`ruff.toml` + `backend/pyproject.toml`）。
+      #   见 `ruff.toml` 开头 + `evidence/README.md` 坑 71。
+      - name: Lint (ruff, evidence)
+        run: ruff check evidence/
+
+      # 先证明「门禁自己没坏」。这一条在正常环境里永远绿，所以**必须单独跑**：
+      # 它用合成故障触发「全部跳过 ⇒ 失败」「产品缺陷 ⇒ 失败」等四条判据。
+      # 一条从没被触发过的判据 = 一条没人知道存不存在的判据。
+      - name: Gate self-test (is the gate itself working?)
+        run: python evidence/run_ci_probes.py --self-test
+
+      # 打印分档清单：让「哪些探针在门禁内、哪些不在、为什么」每次都可见，
+      # 而不是埋在代码里等人来问。
+      - name: Print gating roster
+        run: python evidence/run_ci_probes.py --list
+
+      - name: Run gated probes
+        run: python evidence/run_ci_probes.py
+
+  # ══════════════════════════════════════════════════════════════
+  # 浏览器自检门禁（2026-09-24 接入 —— 用户拍板 ③ / Phase 1）
+  # ══════════════════════════════════════════════════════════════
+  # 为什么单独一道：
+  #   4 个 CDP 探针（breakpoints / dark_mode / mobile_375 / reduced_motion）的
+  #   `--self-test` 走 `data:text/html` **合成页** ⇒ 不需要 dev server / 后端 / 种子库，
+  #   **只需要一个浏览器**。它们此前登记在 `SELFTEST_ENV_BOUND`，理由写的是
+  #   「CI 里无 Chromium」—— 该理由的**前提已不成立**：
+  #   GitHub `ubuntu-latest`（Ubuntu 24.04）**预装 Chrome 152 / Chromium 152**
+  #   （出处 `actions/runner-images` 的 `Ubuntu2404-Readme.md`）⇒ **零安装成本**。
+  #
+  # 这一档守的是**仪器本身**（「测量机制没坏」），不是产品：它证明 `cdp.py` 能在 **Linux**
+  #   上起浏览器、能测 `env()` / 媒体查询 —— 这正是 Phase 2/3（接真判据）的**前置**。
+  #   一条从未被执行过的仪器 = 一台没人知道能不能用的仪器。
+  #
+  # 🚨 **探针名清单刻意不写在这里**（`evidence/README.md` 坑 64：第二份手写清单一定会漂移）
+  #   —— 只传 job 名，清单由运行器的 `SELFTEST_JOB_PROBES` 提供，两边由**判据 5** 强制一致。
+  #
+  # ⚠️ 探针**本体**仍留在 `NOT_GATED`：真判据要 dev server（属 Phase 2/3）。
+  # ⚠️ 平台差异（Linux headless 的 `env(safe-area-inset-*)` 取值等）**本档不判** ——
+  #   自检用的是合成页、与产品无关；平台差异只能在 Phase 2 用**真页面**验。
+  browser-selftest:
+    name: Evidence (browser self-tests)
+    runs-on: ubuntu-latest
+
+    env:
+      # 与 `evidence` job 同一套：`cdp.py` 的导入链会碰到 `app.*`
+      DATABASE_URL: sqlite+aiosqlite:///./ci_evidence.db
+      DATABASE_URL_SYNC: sqlite:///./ci_evidence.db
+      ENVIRONMENT: test
+      MODERATION_ENABLED: "true"
+      MODERATION_BACKEND: builtin
+      SECRET_KEY: ci-only-not-a-real-secret-0123456789abcdef
+      CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR: ""
+      CODEBUDDY_TOOL_CALL_ID: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      # 先证明「浏览器在哪」并**当场红**，而不是让 4 条自检各报一次 `RuntimeError`
+      # （那时分不清是「runner 没浏览器」还是「探针坏了」）。
+      # 这也是「唯一 Windows 绑定 = CHROME_CANDIDATES」那句改动的**验证点**。
+      - name: Locate browser (fail fast)
+        run: |
+          python -c "import os,sys; sys.path.insert(0,'evidence'); import cdp; print('os.name =', os.name); print('CHROME_BIN =', os.environ.get('CHROME_BIN')); [print('  ', p, 'FOUND' if p.exists() else '-') for p in cdp.CHROME_CANDIDATES]; print('find_chrome() =', cdp.find_chrome())"
+
+      - name: Run browser self-tests
+        run: python evidence/run_ci_probes.py --selftest-for-job browser-selftest
+
+  # ══════════════════════════════════════════════════════════════
+  # 浏览器**真判据**门禁（2026-09-24 接入 —— Phase 2）
+  # ══════════════════════════════════════════════════════════════
+  # 为什么单独一道、为什么只有 admin 一端：
+  #   `browser-selftest` 那一档守的是**仪器**（`cdp.py` 在 Linux 上能不能起浏览器），
+  #   用的是 `data:text/html` **合成页**。这一档守的是**产品** —— 真页面、真后端、
+  #   真种子库。两者**不能合并**：合成页永远测不出「深色下有没有浅色孤岛」
+  #   「reduce 档下还有没有东西在动」（那是**空真**）。
+  #
+  # 🚨 **为什么不写 4 端**：单端（admin）先跑通是**刻意**的 —— 四端要同时起
+  #   4 个 Next + 后端 + 种子库，是 10 分钟级的 flaky 源（`run_ci_probes.py` 里
+  #   记过这条教训）。Phase 2 只接 admin 的 2 条，Phase 3 再按需扩。
+  #   ⚠️ `verify_breakpoints.py` **没有 `--app`** ⇒ 它天然要四端 ⇒ **不在本 job**。
+  #
+  # 🚨 **为什么是 2 条、不是原计划的 3 条**（Phase 2 **首次真跑之后**据实测收窄）：
+  #   `verify_dark_mode.py --app admin` 的**前提已备齐**（编排器跑得动），但它**当前 rc=1**：
+  #   D0 在 admin 的 `/`、`/audit`、`/complaints` 三页 `@dark` 上全部命中
+  #   （observer 序列 `['dark','light','dark']`）—— 即任务 **#40**
+  #   「修深色模式首屏闪烁（`ThemeProvider` 挂载时摘掉 `.dark`）」。
+  #   ⇒ 接线即红。本仓库纪律是「**门禁必须第一天就是绿的**」（已知缺口靠棘轮放行），
+  #     而 CDP 探针**没有棘轮** ⇒ **按纪律不接线**，留在 `NOT_GATED` 写明阻塞项。
+  #     🚨 修 #40 后**必须重评**（它改的是 `packages/ui` ⇒ 需拍板）。
+  #   ⚠️ 它的 `--self-test` **仍在** `browser-selftest` job 跑 —— 仪器是好的，坏的是产品。
+  #
+  # 🚨 **前提有 5 个，全部由 `evidence/run_browser_job.py` 一次备齐**（那 5 条是
+  #   「后端 8001 / 已灌种子 / admin 生产产物 @3002 / `.env.local` 已播种 / 先 ready 再跑」）。
+  #   把它们写进 YAML 的 `run: |` 里就等于把编排塞进没有类型、没有自检的地方
+  #   （`README.md` 坑 64/65/66 就是这么来的）⇒ 这里**只留一行调用**。
+  #
+  # ⚠️ 探针清单**刻意不写在这里**：它在 `run_ci_probes.CI_JOB_PROBES`，
+  #   由**判据 5**（两张表互相兜住）与**判据 6**（本文件的对应 job 块里必须有下面那行命令）
+  #   双向钉住。手写第二份清单一定会漂移（坑 64）。
+  browser-admin:
+    name: Browser (admin · real assertions)
+    # 🚨 **只在 main / 手动触发**：本 job 要装 pnpm + 生产构建 + 起两个服务，
+    #   是**分钟级**的，挂在每个 PR 上会拖慢反馈回路。但它**必须真的跑** ——
+    #   「写了不跑」正是坑 65 的形状，所以主干每次 push 都跑。
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    env:
+      # 与 `evidence` job 同一套基线（`cdp.py` 的导入链会碰到 `app.*`）。
+      # ⚠️ `DATABASE_URL` **刻意不在这里**：编排器会把它换成 `tempfile.mkdtemp()`
+      #   下的隔离库 —— `seed_demo.py --reset` 会清空业务表，绝不能指向共享库。
+      ENVIRONMENT: test
+      MODERATION_ENABLED: "true"
+      MODERATION_BACKEND: builtin
+      SECRET_KEY: ci-only-not-a-real-secret-0123456789abcdef
+      CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR: ""
+      CODEBUDDY_TOOL_CALL_ID: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      # 🚨 `.env.local` 被 `.gitignore` 忽略 ⇒ CI 里**本来不存在**，必须**显式播种**。
+      #    `NEXT_PUBLIC_API_BASE` 是**构建期内联**的：不播种 ⇒ 烘出 SDK 兜底的 `:8000`
+      #    （本仓库后端在 `:8001`）⇒ 「构建 exit 0 + 页面 200 + 全部静态门禁绿」
+      #    **一个都不会报警**，表现只是「浏览器里点了登录毫无反应」。
+      #    ⚠️ 必须在 `Build` **之前** —— 内联发生在构建期，之后再写就没用了。
+      - name: Seed build-time env (NEXT_PUBLIC_API_BASE)
+        run: echo "NEXT_PUBLIC_API_BASE=http://localhost:8001" > apps/admin/.env.local
+
+      # 只构建**这一端**：本 job 只跑 admin 的判据，`pnpm build`（四端）是纯浪费。
+      # 产物 `apps/admin/.next/BUILD_ID` 是编排器的**硬前提** ——
+      # 缺了它会 exit 2 并在日志里点名「先跑 pnpm --filter app-admin build」。
+      - name: Build admin (production)
+        working-directory: frontend
+        run: pnpm --filter app-admin build
+
+      # 一行 = 起后端 → 灌种子 → 起 admin → 轮询就绪 → 跑真判据 → 收尾。
+      # 退出码三值：`0` 全过 / `1` **产品缺陷** / `2` **环境问题**（两者都会让 job 红）。
+      - name: Run browser probes (admin stack)
+        run: python evidence/run_browser_job.py --job browser-admin
+
+      # 失败时把服务日志收走：编排器**已经在日志里打了尾巴**，这里再留一份完整的
+      # （它失败时**刻意不删**临时目录 —— 清掉就什么都没了）。
+      - name: Upload browser job logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-admin-logs
+          path: /tmp/nlawer-browser-job-*/logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ══════════════════════════════════════════════════════════════
+  # 浏览器门禁（四端全量）：Phase 3 · 2026-09-26 拍板 §11.4-③
+  # ══════════════════════════════════════════════════════════════
+  # 与 `browser-admin` 同一套机制（前提由 `evidence/run_browser_job.py` 备齐），
+  # 区别只是**四端全起**：web 3000 / lawyer 3001 / admin 3002 / im 3003。
+  # 它把 `NOT_GATED` 的 **14 条**真判据一次接进 CI（那一档因此**清空**）。
+  #
+  # 🚨 **为什么单独一个 job、且只在主干跑**：
+  #   四端生产构建（本机 5m41s，runner 更慢）+ 探针 ≈14 min ⇒ **单次 22–25 min**。
+  #   挂在每个 PR 上会拖垮反馈回路。⇒ 分工：`browser-admin`（单端 ~2 min）守 PR，
+  #   本 job 守主干。⚠️ 两 job **零重叠** —— `browser-admin` 的 3 条是 `--app admin` 的单端判据，
+  #   本 job 的 14 条**不含**它们。
+  #
+  # ⚠️ 探针清单**刻意不写在这里**（同 `browser-admin`）：唯一事实来源是
+  #   `run_ci_probes.CI_JOB_PROBES["browser-all"]`，由**判据 5**（两张表互相兜住）
+  #   与**判据 6**（下面那行命令必须逐字出现在本 job 块里）双向钉住。
+  browser-all:
+    name: Browser (all 4 apps · real assertions)
+    # 与 `browser-admin` 同一条判据：`on.push.branches` 只有 main/master
+    # ⇒ `!= 'pull_request'` 等价于「**push 到主干 + 手动触发**」。
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    env:
+      # 与 `browser-admin` / `evidence` 同一套基线（`cdp.py` 的导入链会碰到 `app.*`）。
+      # ⚠️ `DATABASE_URL` **刻意不在这里**：编排器会把它换成 `tempfile.mkdtemp()` 下的隔离库
+      #    —— `seed_demo.py --reset` 会清空业务表，绝不能指向共享库。
+      ENVIRONMENT: test
+      MODERATION_ENABLED: "true"
+      MODERATION_BACKEND: builtin
+      SECRET_KEY: ci-only-not-a-real-secret-0123456789abcdef
+      CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR: ""
+      CODEBUDDY_TOOL_CALL_ID: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      # 🚨 `.env.local` 被 `.gitignore` 忽略 ⇒ CI 里**本来不存在**，必须**显式播种**。
+      #    `NEXT_PUBLIC_API_BASE` 是**构建期内联**的：不播种 ⇒ 烘出 SDK 兜底的 `:8000`
+      #    （本仓库后端在 `:8001`）⇒ 「构建 exit 0 + 页面 200 + 全部静态门禁绿」
+      #    **一个都不会报警**，表现只是「浏览器里点了登录毫无反应」。
+      #    ⚠️ **四端都要播种**（少一端 ⇒ 那一端点了没反应，只有控制台有 CORS 报错）。
+      #    ⚠️ 必须在 `Build` **之前** —— 内联发生在构建期，之后再写就没用了。
+      - name: Seed build-time env (NEXT_PUBLIC_API_BASE · 4 apps)
+        run: |
+          for a in web lawyer admin im; do
+            echo "NEXT_PUBLIC_API_BASE=http://localhost:8001" > "apps/$a/.env.local"
+          done
+
+      # 四端都要生产构建：`run_browser_job.py` 以 `apps/<app>/.next/BUILD_ID` 为**硬前提**，
+      # 缺任何一端都会 exit 2 并在日志里**一次列全**缺哪几端（编排器先查全部端再灌种子）。
+      # `pnpm -r build` 按拓扑序**串行**执行（不是 `--parallel`）—— 四端并发构建会互相抢内存。
+      - name: Build all 4 apps (production)
+        working-directory: frontend
+        run: pnpm build
+
+      # 一行 = 起后端 → 灌种子 → 起四端 → 逐端轮询就绪 → 跑真判据 → 收尾。
+      # 退出码三值：`0` 全过 / `1` **产品缺陷** / `2` **环境问题**（两者都会让 job 红）。
+      - name: Run browser probes (4-app stack)
+        run: python evidence/run_browser_job.py --job browser-all
+
+      # 失败时把服务日志收走：编排器**已经在日志里打了尾巴**，这里再留一份完整的
+      # （它失败时**刻意不删**临时目录 —— 清掉就什么都没了）。
+      # ⚠️ 四端的日志是**按端分文件**的（`frontend-<app>.log`）—— 共用一份会互相截断。
+      - name: Upload browser job logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-all-logs
+          path: /tmp/nlawer-browser-job-*/logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ══════════════════════════════════════════════════════════════
+  # 供应链安全门禁：依赖漏洞扫描
+  # ══════════════════════════════════════════════════════════════
+  # 为什么单独一道：
+  #   前九轮修的都是**我们自己写的代码**。但本项目 25 个已知漏洞**全部来自依赖**，
+  #   `ruff`/`pytest`/`tsc` 对此**完全无感**——它们只检查我们的代码对不对，
+  #   不检查我们依赖的代码是否已被攻破。这是最后一类"改坏了不会被发现"。
+  #
+  # ⚠️ 设计要点：门禁必须「第一天就是绿的」且**不能变成误报机器**。
+  #   做法是把"上游无补丁"的漏洞显式登记在 `security-allowlist.txt` 中并说明原因，
+  #   而不是让 CI 长期报红（长期红的门禁两天内必被注释掉——第九轮的教训）。
+  #   一旦上游发布补丁，allowlist 中对应条目必须删除（见文件内注释）。
+  security-audit:
+    name: Security (dependency audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: python -m pip install --upgrade pip pip-audit
+
+      # 只扫描 requirements.txt 声明的依赖，不做安装（快且不引入构建副作用）
+      #
+      # ⚠️ `--ignore-vuln` 必须**每个 ID 一个 flag**，不能写成 `--ignore-vuln A B`
+      #   （后者会把 B 当成 project_path，报 "not allowed with -r" 并退出码 2）。
+      #   这里的 sed 就是为每条豁免补一个 `--ignore-vuln` 前缀。已在本地实测:
+      #   退出码 0 + "No known vulnerabilities found, 10 ignored"。
+      # 另外：豁免项只能来自 security-allowlist.txt，**禁止**在本文件硬编码 ID
+      #   （否则豁免会散落两处、无法审计；脚本会检查这一点）。
+      - name: Audit Python dependencies
+        run: |
+          IGNORES=$(grep -v '^\s*#' security-allowlist.txt \
+                    | grep -v '^\s*$' \
+                    | sed 's/^/--ignore-vuln /' \
+                    | tr '\n' ' ')
+          echo "豁免集合: $IGNORES"
+          pip-audit -r requirements.txt $IGNORES
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 前端审计。项目内 `frontend/.npmrc` 已把 registry 指向官方源，
+      # 因此这里不再重复传参（保持"本地命令 == CI 命令"，避免两处漂移）。
+      #
+      # ⚠️ 为什么必须固定 registry：开发机默认走华为云镜像，该镜像**不支持 audit**，
+      #    返回 405。最危险的不是报错，而是**本地看不到任何漏洞**——
+      #    实测本地"干净"的同时，实际存在 39 个漏洞（含 3 个 critical RCE），
+      #    只有换官方源才暴露。本地与 CI 结论必须一致，否则门禁是假的。
+      - name: Audit frontend dependencies
+        working-directory: frontend
+        run: pnpm audit --audit-level high
+
+  # ══════════════════════════════════════════════════════════════
+  # 容器构建门禁：确认 Dockerfile 仍然可用
+  # ══════════════════════════════════════════════════════════════
+  # 为什么单独一道：`docker-compose.yml` 引用了 `backend/Dockerfile`，
+  # 若依赖变更后忘了同步 Dockerfile，本地 pip 装得动但镜像构建会挂——
+  # 而这个问题**只有构建时才暴露**，本地开发完全无感。
+  docker-build:
+    name: Docker build (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          load: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

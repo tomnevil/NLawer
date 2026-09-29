@@ -1,0 +1,17 @@
+── document.fonts 注册的 FontFace 数量: 4
+    {'family': '__nextjs-Geist', 'status': 'unloaded'}
+    {'family': '__nextjs-Geist Mono', 'status': 'unloaded'}
+    {'family': '__nextjs-Geist', 'status': 'unloaded'}
+    {'family': '__nextjs-Geist Mono', 'status': 'unloaded'}
+── check() 结果（含阴性对照）──
+   Inter                    -> True
+   PingFang SC              -> True
+   Songti SC                -> True
+   SimSun                   -> True
+   ZZZ_NoSuchFont_9f3a      -> True  ← 阴性对照
+── CSS.getPlatformFontsForNode（同一批，看**实际**回退到谁）──
+   不存在族 "ZZZ_NoSuchFont_9f3a"         -> Noto Sans SC(glyphs=10,custom=False)
+   var(--font-sans)                   -> Microsoft YaHei(glyphs=10,custom=False)
+   var(--font-serif)                  -> Noto Serif SC(glyphs=10,custom=False)
+
+【判定】check('不存在族') = True ⇒ **无判别力**（假绿风险：会把不存在的字体报成可用）

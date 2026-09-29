@@ -1,0 +1,10 @@
+
+=== im /  视口 390 ===
+  ① 全页计算字号去重（共 6 种）：11px×27, 12px×1, 13px×7, 14px×6, 16px×107, 22px×1
+  ② className 字面含 `text-[10px]` 的元素：0 个
+  ③ 对照：className 含 `text-caption` 的元素 17 个，计算字号集合=[11]
+
+=== web /qa  视口 390 ===
+  ① 全页计算字号去重（共 4 种）：11px×24, 13px×15, 14px×2, 16px×188
+  ② className 字面含 `text-[10px]` 的元素：0 个
+  ③ 对照：className 含 `text-caption` 的元素 13 个，计算字号集合=[11]

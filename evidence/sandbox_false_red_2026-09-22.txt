@@ -1,0 +1,133 @@
+================================================================================
+沙箱假红分诊记录：批量删除守卫给 Python 探针注入 SystemExit(1)
+日期：2026-09-22
+结论：round23b 的「2 个门禁失败」是**假红**（沙箱环境产物），不是产品缺陷。
+      真实计数为 18/18 全绿（round26）。
+================================================================================
+
+一、症状（round23b，2026-09-22 15:41）
+--------------------------------------------------------------------------------
+  ✗ verify_conversation_channel_500.py       exit=1   FAIL (1.2s)
+  ✗ verify_migration_enum_defaults.py        exit=1   FAIL (1.0s)
+  通过 16 · 失败 2 · 跳过 0 · 共 18   ⇒  EXIT=1
+
+三个「不该同时出现」的现象：
+  (1) 同一套件几分钟前（round21 15:0x / round22 15:1x）还是 18/18 全绿；
+  (2) 产品代码自 15:30 起**零改动**（find backend/app frontend/apps frontend/packages
+      -newermt "2026-09-22 15:30" ⇒ 空）；
+  (3) 两个探针文件本身很旧（09-20 21:12 / 09-19 09:38），且**单独重跑都 exit=0**。
+另有一个强指纹：耗时 **17.9s/17.1s → 1.2s/1.0s**（早退），且 CI 日志里
+**一个字节的输出都没有**。
+
+二、第一步：先修「可诊断性」，而不是先猜原因
+--------------------------------------------------------------------------------
+run_one() 原本只打 cp.stdout 的尾巴（注释还写着「省得再去翻日志」）。
+而 SystemExit / ImportError / 被信号杀掉 的痕迹**全在 stderr** 上
+⇒ 最需要诊断的那类失败，恰好没有记录。
+改动：stdout 与 stderr 分别打、各自标名；两者皆空时明确提示
+「没有任何输出就退出了 —— 先怀疑启动期崩溃，不要当成断言失败」。
+【这条修复直接让根因在下一轮（round24）暴露。】
+
+三、根因（round24 的 stderr 原文）
+--------------------------------------------------------------------------------
+  ── stderr 尾部 ──
+  [safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]
+    {"count":55,"threshold":50,"scope":"turn",
+     "targets":["C:\\...\\NLawer\\backend\\_verify_channel_41g43oml.db"],"targetCount":1}
+  ────────────
+  ✗ verify_conversation_channel_500.py       exit=1   FAIL (1.2s)
+
+  ── stderr 尾部 ──
+  [safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]
+    {"count":55,"threshold":50,"scope":"turn",
+     "targets":["C:\\...\\NLawer\\backend\\_mig_verify.db"],"targetCount":1}
+  ────────────
+  ✗ verify_migration_enum_defaults.py        exit=1   FAIL (1.0s)
+
+targets 正是两个探针**自己**的临时库：
+  verify_conversation_channel_500.py  l.68-71  tempfile…(prefix="_verify_channel_", dir=BACKEND) → DB_PATH.unlink()
+  verify_migration_enum_defaults.py   l.104-106  DB = backend/_mig_verify.db → DB.unlink()
+
+链条（逐层查证，不是推断）：
+  1) 沙箱把 PYTHONPATH 指向 cli/vendor/shim
+     $ env | grep PYTHONPATH
+     PYTHONPATH=C:\...\cli\vendor\shim
+  2) ⇒ 每个 Python 进程启动时 site.py 自动 import sitecustomize
+     （该目录下确有 sitecustomize.py，49,381 B）
+  3) sitecustomize.py 全局补丁：
+     _orig_unlink = os.unlink / _orig_shutil_rmtree = shutil.rmtree /
+     _orig_path_unlink = pathlib.Path.unlink
+  4) _check_bulk_delete_guard()（l.828）：
+         if not os.environ.get("CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR") \
+                 or not os.environ.get("CODEBUDDY_TOOL_CALL_ID"):
+             return          # ← 任一为空 ⇒ 短路，跳过守卫
+         ...
+         if result.returncode != 0:
+             _exit_bulk_guard_control(result.stderr.strip() or "...")
+  5) _exit_bulk_guard_control()（l.819）：
+         try:
+             sys.stderr.write(message); sys.stderr.flush()
+         finally:
+             raise SystemExit(1)      # ← 在 unlink() 内部被抛出
+
+为什么伪装得这么好：**SystemExit 不是 OSError**（继承自 BaseException）⇒
+  · verify_migration_enum_defaults.py 的 `try: DB.unlink() / except OSError:` 接不住；
+  · verify_conversation_channel_500.py 的 unlink() 写在模块层，同样无人接。
+两条路都退出 1 —— 与「产品缺陷」的退出码完全相同。
+
+四、对照实测（同一套件、同一台机器、产品代码未动）
+--------------------------------------------------------------------------------
+  轮次      前缀                              两个探针                        汇总
+  --------  --------------------------------  ------------------------------  ----------------
+  round23b  无                                exit=1 FAIL (1.2s / 1.0s)       16/2 → EXIT=1
+  round25   无（运行器已会改判）              exit=2 SKIP(环境)               16/0/2 → EXIT=0
+  round26   CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR=   exit=0 PASS (16.9s / 16.5s)  18/0/0 → EXIT=0
+
+round26 的耗时回到 16.9s/16.5s，与 round21/22 的 17.9s/17.1s 一致
+⇒ **判据可证伪**（若只是「碰巧绿了」，耗时应仍是 1s）。
+⇒ 诚实计数：**18/18**。
+
+五、解法
+--------------------------------------------------------------------------------
+正规（推荐）——只置空守卫的 state dir，删除**仍走回收站**：
+    CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR= backend/.venv/Scripts/python.exe evidence/run_ci_probes.py
+  ⚠️ 别用 CODEBUDDY_SAFE_DELETE_ENABLED=0 —— 那会跳过 _try_trash、**不进回收站**。
+
+已落地的防复发（改运行器，不改产品）：
+  run_one() 检测 stderr 里的 "[safe-delete]" ⇒ **把退出码改判成 2（环境问题）**
+  并打印解法提示。round25 实测：两个探针显示 exit=2 SKIP(环境)，
+  汇总 16/0/2，EXIT=0，且打出「跳过不是通过」的告警。
+
+⚠️ CI（GitHub Actions）里没有这个守卫 ⇒ 本坑是**纯本地沙箱产物**，
+   不能拿它当产品结论。
+
+六、附带发现（另一条独立结论，已登记为 README 坑 49）
+--------------------------------------------------------------------------------
+证据探针的成败会随 **cwd** 变：
+  backend/app/config.py:17   model_config = ConfigDict(env_file=".env", ...)   ← 相对 cwd
+  backend/app/config.py:39   DATABASE_URL: str = "sqlite+aiosqlite:///./storage/nlawer.db"
+  仓库根**没有** .env（只有 backend/.env，内容是 postgresql+asyncpg://…）
+  backend/app/database.py:36/44 **在 import 期**就 create_async_engine / create_engine
+  两个 venv 都没有 asyncpg / psycopg2
+
+实测（verify_conversation_channel_500.py）：
+  cwd = 仓库根 NLawer/   ⇒ settings 落类默认值（SQLite）        ⇒ EXIT=0
+  cwd = backend/         ⇒ settings 读 Postgres                ⇒ EXIT=1
+                           ModuleNotFoundError: No module named 'asyncpg'
+
+⇒ run_ci_probes.py 固定 cwd=str(ROOT) 是**必需的，不是可选**；手跑必须从仓库根。
+⇒ 姊妹脚本行为不一致：verify_migration_enum_defaults.py 显式设了
+   os.environ["DATABASE_URL"] 而免疫 cwd；verify_conversation_channel_500.py 没有。
+   **别用 A 的结论推断 B。**
+
+七、方法论沉淀
+--------------------------------------------------------------------------------
+  methodology #158  沙箱注入的假红：SystemExit 伪装 exit 1；退出码在「注入」与
+                    「被测对象」共用时不再是证据。
+  methodology #159  否证类结论的证据门槛要更高：先穷尽「所有注入点」再说不。
+                    （我最初只查了 BASH_FUNC_* 和 venv site-packages 两层，
+                     就写下「守卫只拦 shell、不拦 Python」——错的。）
+  methodology #160  失败诊断必须覆盖所有输出通道；「把尾巴打出来」要先问
+                    「我要逮的那类失败，尾巴在哪个流上」。
+  evidence/README   坑 47（bash rm）/ 坑 48（Python unlink，本条）/ 坑 49（cwd）
+================================================================================

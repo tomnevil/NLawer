@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>概念图 01 · 登录页 — 律小智设计系统 v2「墨与纸」</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--verified-500:#1E8E6E;--danger-50:#FDF0EE;--danger-500:#C0392B;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);--s3:0 16px 40px -8px rgba(16,24,40,.18);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+}
+html,body{margin:0;height:100%}
+body{font-family:var(--font-ui);font-size:14px;line-height:1.6;color:var(--ink-800);
+background:var(--ink-50);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.wrap{display:grid;grid-template-columns:minmax(420px,1.05fr) minmax(420px,1fr);min-height:100vh}
+
+/* ---------- 左：品牌叙事区（深墨蓝） ---------- */
+.brand{position:relative;overflow:hidden;padding:56px 64px;display:flex;flex-direction:column;justify-content:space-between;
+background:radial-gradient(120% 90% at 8% 0%,#16305F 0%,#102547 42%,#0A1830 100%);color:#fff}
+.brand::after{content:"";position:absolute;inset:0;pointer-events:none;
+background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+background-size:64px 64px;mask-image:linear-gradient(160deg,#000 0%,transparent 68%)}
+.brand > *{position:relative;z-index:1}
+.logo{display:flex;align-items:center;gap:12px}
+.logo .mark{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+background:linear-gradient(150deg,#274C93,#0F2A4A);border:1px solid rgba(198,164,105,.45);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.logo .mark svg{width:22px;height:22px;stroke:var(--gold-400)}
+.logo .name{font-size:17px;font-weight:600;letter-spacing:.02em}
+.logo .sub{font-size:11px;color:#8AA8E0;letter-spacing:.14em;text-transform:uppercase;margin-top:1px}
+.hero h1{font-size:38px;line-height:1.28;font-weight:600;letter-spacing:-.01em;margin:0 0 18px}
+.hero h1 em{font-style:normal;color:var(--gold-400)}
+.hero p{margin:0;max-width:30em;font-size:14px;line-height:1.85;color:#A9BEDD}
+.trust{display:flex;flex-direction:column;gap:14px;margin-top:36px}
+.trust .row{display:flex;gap:12px;align-items:flex-start}
+.trust .ico{flex:0 0 22px;height:22px;border-radius:var(--r2);display:grid;place-items:center;
+background:rgba(198,164,105,.14);border:1px solid rgba(198,164,105,.3)}
+.trust .ico svg{width:13px;height:13px;stroke:var(--gold-400)}
+.trust b{display:block;font-size:13px;font-weight:600;color:#fff}
+.trust span{font-size:12px;color:#8FA6C7;line-height:1.6}
+.legal{margin-top:44px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1);
+display:flex;justify-content:space-between;font-size:11px;color:#6E86A8}
+
+/* ---------- 右：表单区（纸） ---------- */
+.form-side{background:var(--ink-50);display:flex;align-items:center;justify-content:center;padding:48px 56px}
+.card{width:100%;max-width:392px}
+.card h2{margin:0;font-size:24px;font-weight:600;letter-spacing:-.01em;color:var(--ink-900)}
+.card .hint{margin:6px 0 0;font-size:13px;color:var(--ink-500)}
+.seg{display:flex;gap:2px;padding:3px;background:var(--ink-100);border-radius:var(--r3);margin:26px 0 22px}
+.seg button{flex:1;border:0;background:transparent;padding:8px 0;font:inherit;font-size:13px;font-weight:500;
+color:var(--ink-500);border-radius:var(--r2);cursor:pointer;transition:.15s}
+.seg button.on{background:#fff;color:var(--brand-700);box-shadow:var(--s1)}
+label{display:block;font-size:13px;font-weight:500;color:var(--ink-700);margin-bottom:6px}
+.field{margin-bottom:16px}
+.input{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--ink-200);
+border-radius:var(--r2);padding:0 12px;height:40px;transition:.15s}
+.input:focus-within{border-color:var(--brand-500);box-shadow:0 0 0 3px rgba(54,96,176,.18)}
+.input svg{width:15px;height:15px;stroke:var(--ink-400);flex:0 0 15px}
+.input input{flex:1;border:0;outline:0;font:inherit;font-size:14px;background:transparent;color:var(--ink-900)}
+.input input::placeholder{color:var(--ink-400)}
+.row-between{display:flex;align-items:center;justify-content:space-between;margin:4px 0 22px;font-size:12.5px}
+.check{display:flex;align-items:center;gap:7px;color:var(--ink-600)}
+.check i{width:15px;height:15px;border-radius:3px;border:1px solid var(--ink-300);background:#fff;
+display:grid;place-items:center;font-style:normal}
+.check.on i{background:var(--brand-600);border-color:var(--brand-600)}
+.check.on i::after{content:"";width:7px;height:4px;border-left:1.6px solid #fff;border-bottom:1.6px solid #fff;
+transform:rotate(-45deg) translateY(-1px)}
+a.link{color:var(--brand-600);text-decoration:none;font-weight:500}
+a.link:hover{text-decoration:underline}
+.btn{width:100%;height:42px;border:0;border-radius:var(--r2);background:var(--brand-600);color:#fff;
+font:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:var(--s1);transition:.15s}
+.btn:hover{background:var(--brand-700);box-shadow:var(--s2)}
+.err{display:flex;gap:8px;align-items:center;background:var(--danger-50);border:1px solid #F1C8C1;
+color:var(--danger-500);border-radius:var(--r2);padding:9px 12px;font-size:12.5px;margin-bottom:14px}
+.divider{display:flex;align-items:center;gap:12px;margin:24px 0 18px;color:var(--ink-400);font-size:11.5px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--ink-200)}
+.demo{border:1px solid var(--ink-200);background:#fff;border-radius:var(--r3);overflow:hidden}
+.demo .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;
+border-bottom:1px solid var(--ink-100);background:var(--ink-50)}
+.demo .hd b{font-size:12px;font-weight:600;color:var(--ink-600)}
+.demo .hd span{font-size:11px;color:var(--ink-400)}
+.demo .list{display:grid;grid-template-columns:1fr 1fr}
+.demo .item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;
+border-right:1px solid var(--ink-100);border-bottom:1px solid var(--ink-100);cursor:pointer;transition:.15s}
+.demo .item:nth-child(2n){border-right:0}
+.demo .item:hover{background:var(--brand-50)}
+.demo .item .r{font-size:12.5px;font-weight:500;color:var(--ink-700)}
+.demo .item .u{font-size:11px;color:var(--ink-400);font-family:ui-monospace,Menlo,Consolas,monospace}
+.tag{font-size:10.5px;padding:1px 6px;border-radius:99px;border:1px solid var(--ink-200);color:var(--ink-500);background:var(--ink-50)}
+.tag.gold{color:var(--gold-600);border-color:var(--gold-400);background:var(--gold-100)}
+.foot{margin-top:22px;text-align:center;font-size:11.5px;color:var(--ink-400);line-height:1.8}
+@media (max-width:960px){.wrap{grid-template-columns:1fr}.brand{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- ============ 品牌叙事区 ============ -->
+  <section class="brand">
+    <div>
+      <div class="logo">
+        <div class="mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7h6L5 7Zm14 0-3 7h6l-3-7Z"/><circle cx="12" cy="5" r="1.8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="name">律小智</div>
+          <div class="sub">NLawer · Legal Intelligence</div>
+        </div>
+      </div>
+
+      <div class="hero" style="margin-top:72px">
+        <h1>让每一次法律判断<br />都<em>有据可查</em>。</h1>
+        <p>律所智能协作平台与企业法务助手双产品线。四段式结构化回答、法条级引用溯源、三级复核全程留痕——AI 提效，律师担责。</p>
+      </div>
+
+      <div class="trust">
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Z"/><path d="M8 7h7M8 11h7"/></svg></div>
+          <div><b>法条库直连</b><span>现行有效法律法规、司法解释与地方规范性文件，标注生效日期与时效状态</span></div>
+        </div>
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div>
+          <div><b>引用可溯源</b><span>每条结论均可回溯至原文段落，AI 生成与律师确认内容边界清晰</span></div>
+        </div>
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <div><b>数据租户隔离</b><span>企业知识库与案件资料按租户物理隔离，操作审计全程留痕</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legal">
+      <span>© 2026 律小智 · NLawer</span>
+      <span>AI 生成内容仅供参考，不构成正式法律意见</span>
+    </div>
+  </section>
+
+  <!-- ============ 表单区 ============ -->
+  <section class="form-side">
+    <div class="card">
+      <h2>欢迎回来</h2>
+      <p class="hint">登录后进入企业法务工作台</p>
+
+      <!-- 角色切换：替代原先"6 个演示账号卡片"的杂乱布局 -->
+      <div class="seg">
+        <button class="on">企业 / 个人</button>
+        <button>律师工作台</button>
+        <button>运营后台</button>
+      </div>
+
+      <div class="err">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        用户名或密码不正确，请重试（剩余 4 次）
+      </div>
+
+      <div class="field">
+        <label>用户名</label>
+        <div class="input">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+          <input value="ent_admin" readonly />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>密码</label>
+        <div class="input">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <input type="password" value="password" readonly />
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+        </div>
+      </div>
+
+      <div class="row-between">
+        <span class="check on"><i></i>7 天内保持登录</span>
+        <a class="link" href="#">忘记密码？</a>
+      </div>
+
+      <button class="btn">登 录</button>
+
+      <div class="divider">演示环境快捷登录</div>
+
+      <div class="demo">
+        <div class="hd"><b>一键填充演示账号</b><span>点击即登录</span></div>
+        <div class="list">
+          <div class="item"><div><div class="r">企业管理员</div><div class="u">ent_admin</div></div><span class="tag">web</span></div>
+          <div class="item"><div><div class="r">执业律师</div><div class="u">lawyer_wang</div></div><span class="tag">lawyer</span></div>
+          <div class="item"><div><div class="r">律所管理员</div><div class="u">firm_admin</div></div><span class="tag">admin</span></div>
+          <div class="item"><div><div class="r">平台管理员</div><div class="u">admin</div></div><span class="tag gold">ops</span></div>
+        </div>
+      </div>
+
+      <p class="foot">登录即表示同意《服务条款》与《隐私政策》<br />AI 生成内容仅供参考，不构成正式法律意见</p>
+    </div>
+  </section>
+</div>
+</body>
+</html>

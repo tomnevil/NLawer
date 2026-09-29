@@ -1,0 +1,37 @@
+期望值来源：`frontend\packages\ui\src\tokens.css` 的 `@media (prefers-reduced-motion: reduce)` 块
+  声明值：`--dur-base`=0ms，`--dur-fast`=0ms，`--dur-pulse`=0ms，`--dur-slow`=0ms，`--dur-spin`=0ms，`--pulse-iter`=1，`--spin-iter`=1
+  视口：390、1280；判据 R1a/R1b/R1c/R1d **全部判红**（R1c 已于 2026-09-26 随 #75 拍板由「只报不判」升为判红）
+
+════════ 视口 390（390×844，mobile=True）
+  web/ @390              ✓  no-pref=13 reduce=0
+  web/qa @390            ✓  no-pref=10 reduce=0
+  lawyer/ @390           ✓  no-pref=12 reduce=0
+  lawyer/cases @390      ✓  no-pref=14 reduce=0
+  admin/ @390            ✓  no-pref=8 reduce=0
+  admin/audit @390       ✓  no-pref=8 reduce=0
+  im/ @390               ✓  no-pref=9 reduce=0
+  im/chat @390           ✓  no-pref=9 reduce=0
+════════ 视口 1280（1280×900，mobile=False）
+  web/ @1280             ✓  no-pref=17 reduce=0
+  web/qa @1280           ✓  no-pref=13 reduce=0
+  lawyer/ @1280          ✓  no-pref=15 reduce=0
+  lawyer/cases @1280     ✓  no-pref=21 reduce=0
+  admin/ @1280           ✓  no-pref=18 reduce=0
+  admin/audit @1280      ✓  no-pref=15 reduce=0
+  im/ @1280              ✓  no-pref=5 reduce=0
+  im/chat @1280          ✓  no-pref=8 reduce=0
+
+════════ 加载态采样（`Fetch` 挂起 `/api/*`；取数期间的 spinner / 骨架屏）
+  web/ @390·加载态              ✓  no-pref=15 reduce=0
+  lawyer/ @390·加载态           ✓  no-pref=12 reduce=0
+  admin/ @390·加载态            ✓  no-pref=10 reduce=0
+  im/ @390·加载态               ✓  no-pref=10 reduce=0
+  web/ @1280·加载态             ✓  no-pref=19 reduce=0
+  lawyer/ @1280·加载态          ✓  no-pref=15 reduce=0
+  admin/ @1280·加载态           ✓  no-pref=17 reduce=0
+  im/ @1280·加载态              ✓  no-pref=6 reduce=0
+
+==========================================================================
+测量 24 组（其中**加载态 8 组**）；不合格 0 组。
+`prefers-reduced-motion`：令牌机制（R2）、过渡（R1a）、装饰动画（R1b/R1d）—— 限已测到的组。
+⚠️ 已知边界：不含 WCAG 2.3.3 的主观判定、不含 JS 驱动动画、加载态只在**每端首页**采样、视口只取 390/1280 两档。

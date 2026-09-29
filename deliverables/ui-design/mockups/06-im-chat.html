@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>概念图 06 · IM 智能咨询 — 律小智设计系统 v2「墨与纸」</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--ai-50:#F4F2FD;--ai-100:#E8E4FA;--ai-200:#D2CAF4;--ai-500:#6E56CF;
+--verified-50:#EDF8F4;--verified-100:#D6EFE6;--verified-500:#1E8E6E;
+--pending-50:#FDF6E9;--pending-500:#B4791F;
+--danger-50:#FDF0EE;--danger-500:#C0392B;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);--s3:0 16px 40px -8px rgba(16,24,40,.18);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html,body{margin:0;height:100%}
+body{font-family:var(--font-ui);font-size:14px;line-height:1.6;color:var(--ink-800);background:var(--ink-50);
+-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow:hidden}
+.im{display:grid;grid-template-columns:288px 1fr 320px;height:100vh}
+
+/* 左：会话 */
+.rail{background:#fff;border-right:1px solid var(--ink-200);display:flex;flex-direction:column}
+.rail-hd{padding:16px 16px 12px;border-bottom:1px solid var(--ink-100)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.brand .mark{width:32px;height:32px;border-radius:var(--r3);display:grid;place-items:center;flex:0 0 32px;
+background:linear-gradient(150deg,#274C93,#0F2A4A);border:1px solid rgba(198,164,105,.4)}
+.brand .mark svg{width:18px;height:18px;stroke:var(--gold-400)}
+.brand b{display:block;font-size:14px;font-weight:600;color:var(--ink-900)}
+.brand span{font-size:10.5px;color:var(--ink-400);letter-spacing:.05em}
+.search{height:34px;border:1px solid var(--ink-200);background:var(--ink-50);border-radius:var(--r2);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink-400);font-size:12.5px}
+.search svg{width:14px;height:14px;stroke:var(--ink-400);fill:none;stroke-width:2}
+.rail-body{flex:1;overflow-y:auto;padding:8px}
+.gt{font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);padding:8px 10px 6px}
+.cv{display:flex;gap:10px;padding:11px 10px;border-radius:var(--r2);cursor:pointer;transition:.15s;margin-bottom:2px}
+.cv:hover{background:var(--ink-50)}
+.cv.on{background:var(--brand-50);box-shadow:inset 2px 0 0 var(--brand-600)}
+.cv .av{width:36px;height:36px;flex:0 0 36px;border-radius:var(--r2);display:grid;place-items:center;font-size:13px;font-weight:600;color:#fff}
+.cv .av.a{background:linear-gradient(140deg,#6E56CF,#5B45B5)}
+.cv .av.l{background:linear-gradient(140deg,#3660B0,#1E3C77)}
+.cv .av.c{background:var(--ink-300);color:var(--ink-700)}
+.cv .bd{flex:1;min-width:0}
+.cv .r1{display:flex;align-items:baseline;gap:8px}
+.cv .nm{font-size:13px;font-weight:600;color:var(--ink-800);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv .tm{font-size:10.5px;color:var(--ink-400);white-space:nowrap}
+.cv .msg{font-size:12px;color:var(--ink-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.cv .bdg{margin-top:4px}
+.tag{font-size:10.5px;padding:1px 6px;border-radius:99px;border:1px solid;font-weight:500;white-space:nowrap}
+.tag.ai{color:var(--ai-500);border-color:var(--ai-200);background:var(--ai-50)}
+.tag.ok{color:var(--verified-500);border-color:#BFE4D7;background:var(--verified-50)}
+.tag.wait{color:var(--pending-500);border-color:#EED9B4;background:var(--pending-50)}
+.tag.n{color:var(--ink-500);border-color:var(--ink-200);background:var(--ink-50)}
+.unread{margin-left:auto;min-width:18px;height:18px;border-radius:99px;background:var(--danger-500);color:#fff;font-size:10.5px;
+font-weight:600;display:grid;place-items:center;padding:0 5px}
+
+/* 中：对话 */
+.chat{display:flex;flex-direction:column;background:var(--ink-50);min-width:0}
+.chat-hd{height:60px;flex:0 0 60px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--ink-200);
+display:flex;align-items:center;gap:11px;padding:0 20px}
+.chat-hd .av{width:34px;height:34px;border-radius:var(--r2);background:linear-gradient(140deg,#6E56CF,#5B45B5);display:grid;place-items:center}
+.chat-hd .av svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.9}
+.chat-hd b{font-size:14px;font-weight:600;color:var(--ink-900);display:block}
+.chat-hd .st{font-size:11.5px;color:var(--verified-500);display:flex;align-items:center;gap:5px}
+.chat-hd .st::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--verified-500)}
+.chat-hd .r{margin-left:auto;display:flex;gap:8px}
+.ibtn{width:32px;height:32px;border-radius:var(--r2);border:1px solid var(--ink-200);background:#fff;display:grid;place-items:center;cursor:pointer}
+.ibtn svg{width:15px;height:15px;stroke:var(--ink-600);fill:none;stroke-width:1.8}
+.stream{flex:1;overflow-y:auto;padding:22px 24px 8px}
+.dayline{text-align:center;font-size:11px;color:var(--ink-400);margin:6px 0 18px}
+.dayline span{background:var(--ink-200);color:var(--ink-600);border-radius:99px;padding:2px 10px}
+.row{display:flex;gap:9px;margin-bottom:16px;max-width:660px}
+.row.me{margin-left:auto;flex-direction:row-reverse}
+.av2{width:28px;height:28px;flex:0 0 28px;border-radius:var(--r2);display:grid;place-items:center;font-size:11.5px;font-weight:600}
+.av2.a{background:linear-gradient(140deg,#6E56CF,#5B45B5);color:#fff}
+.av2.m{background:var(--ink-200);color:var(--ink-600)}
+.bub{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3) var(--r3) var(--r3) var(--r1);padding:11px 14px;
+font-size:13.5px;line-height:1.75;color:var(--ink-700);box-shadow:var(--s1)}
+.row.me .bub{background:var(--brand-600);border-color:var(--brand-600);color:#fff;border-radius:var(--r3) var(--r3) var(--r1) var(--r3)}
+.bub em{font-style:normal;background:var(--gold-100);padding:1px 3px;border-radius:3px}
+.row.me .bub em{background:rgba(255,255,255,.18);color:#fff}
+
+/* 卡片消息 */
+.cardmsg{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);box-shadow:var(--s1);overflow:hidden;margin-top:9px;width:340px}
+.cardmsg .h{padding:10px 13px;border-bottom:1px solid var(--ink-100);display:flex;align-items:center;gap:8px;background:var(--ink-50)}
+.cardmsg .h b{font-size:12.5px;font-weight:600;color:var(--ink-800)}
+.cardmsg .h .r{margin-left:auto}
+.cm-body{padding:13px}
+.gradebox{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.grade{width:38px;height:38px;flex:0 0 38px;border-radius:var(--r2);display:grid;place-items:center;font-size:16px;font-weight:700;color:#fff;background:var(--danger-500)}
+.gradebox .t{font-size:13px;font-weight:600;color:var(--ink-800)}
+.gradebox .d{font-size:11.5px;color:var(--ink-400);margin-top:2px;line-height:1.6}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--ink-100);padding-top:11px}
+.metrics div{font-size:11.5px;color:var(--ink-400)}
+.metrics b{display:block;font-size:13px;color:var(--ink-800);font-weight:600;margin-top:1px}
+.cm-ft{display:flex;gap:8px;padding:11px 13px;border-top:1px solid var(--ink-100);background:var(--ink-50)}
+.btn{border:0;border-radius:var(--r2);font:inherit;font-size:12.5px;font-weight:600;height:32px;padding:0 13px;
+display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-p{background:var(--brand-600);color:#fff;flex:1;justify-content:center}
+.btn-g{background:#fff;color:var(--ink-700);border:1px solid var(--ink-200);flex:1;justify-content:center}
+
+.quickchips{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 16px 37px}
+.chip{border:1px solid var(--brand-200);background:var(--brand-50);color:var(--brand-700);border-radius:99px;
+padding:6px 12px;font-size:12.5px;cursor:pointer;transition:.15s;font-weight:500}
+.chip:hover{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+
+.typing{display:flex;gap:4px;align-items:center;padding:13px 15px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-300);animation:bl 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bl{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+.composer{padding:12px 24px 16px;background:var(--ink-50)}
+.cbox{max-width:820px;margin:0 auto;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r4);box-shadow:var(--s2);overflow:hidden}
+.ta{display:block;width:100%;border:0;outline:0;font:inherit;font-size:13.5px;line-height:1.7;padding:11px 14px 2px;resize:none;background:transparent;color:var(--ink-900);height:46px}
+.ta::placeholder{color:var(--ink-400)}
+.cbar{display:flex;align-items:center;gap:6px;padding:6px 10px 10px}
+.cbtn{width:30px;height:30px;border-radius:var(--r2);border:1px solid var(--ink-200);background:#fff;display:grid;place-items:center;cursor:pointer}
+.cbtn svg{width:14px;height:14px;stroke:var(--ink-500);fill:none;stroke-width:1.9}
+.send{margin-left:auto;height:32px;padding:0 15px;border:0;border-radius:var(--r2);background:var(--brand-600);color:#fff;
+font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:var(--s1)}
+.send svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.disc{margin:9px auto 0;max-width:820px;text-align:center;font-size:10.5px;color:var(--ink-400)}
+
+/* 右：案件侧栏 */
+.side{background:#fff;border-left:1px solid var(--ink-200);display:flex;flex-direction:column;overflow-y:auto}
+.side-hd{padding:16px;border-bottom:1px solid var(--ink-200);font-size:13.5px;font-weight:600;color:var(--ink-900)}
+.blk{padding:14px 16px;border-bottom:1px solid var(--ink-100)}
+.blk .bt{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400);margin-bottom:9px}
+.step{display:flex;gap:10px;padding-bottom:14px;position:relative}
+.step:last-child{padding-bottom:0}
+.step::before{content:"";position:absolute;left:7px;top:18px;bottom:0;width:1.5px;background:var(--ink-200)}
+.step:last-child::before{display:none}
+.step.done::before{background:var(--verified-500)}
+.step .d{width:15px;height:15px;flex:0 0 15px;border-radius:50%;border:2px solid var(--ink-300);background:#fff;z-index:1;display:grid;place-items:center}
+.step.done .d{background:var(--verified-500);border-color:var(--verified-500)}
+.step.done .d::after{content:"";width:6px;height:3.5px;border-left:1.6px solid #fff;border-bottom:1.6px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+.step.cur .d{border-color:var(--pending-500);box-shadow:0 0 0 3px rgba(180,121,31,.16)}
+.step .t{font-size:12.5px;font-weight:500;color:var(--ink-800)}
+.step .m{font-size:11px;color:var(--ink-400);margin-top:2px;line-height:1.65}
+.lawyer{display:flex;align-items:center;gap:11px;padding:11px;border:1px solid var(--ink-200);border-radius:var(--r3);background:var(--ink-50)}
+.lawyer .av{width:40px;height:40px;flex:0 0 40px;border-radius:var(--r2);background:linear-gradient(140deg,#3660B0,#1E3C77);
+color:#fff;display:grid;place-items:center;font-size:14px;font-weight:600}
+.lawyer b{font-size:13px;color:var(--ink-800);display:block}
+.lawyer span{font-size:11px;color:var(--ink-400);display:block;margin-top:1px}
+.fee{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;color:var(--ink-500)}
+.fee b{color:var(--ink-800);font-weight:600}
+@media (max-width:1400px){.im{grid-template-columns:250px 1fr 280px}}
+</style>
+</head>
+<body>
+<div class="im">
+  <!-- ============ 左：会话列表 ============ -->
+  <aside class="rail">
+    <div class="rail-hd">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7h6L5 7Zm14 0-3 7h6l-3-7Z"/></svg></div>
+        <div><b>律小智</b><span>AI 法律助手</span></div>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>搜索会话
+      </div>
+    </div>
+    <div class="rail-body">
+      <div class="gt">进行中</div>
+      <div class="cv on">
+        <div class="av a">AI</div>
+        <div class="bd">
+          <div class="r1"><span class="nm">律小智助手</span><span class="tm">刚刚</span></div>
+          <div class="msg">已为您生成案件并派单，律师将在 2 小时内联系…</div>
+          <div class="bdg"><span class="tag wait">已派单 · 待接单</span></div>
+        </div>
+      </div>
+      <div class="cv">
+        <div class="av l">王</div>
+        <div class="bd">
+          <div class="r1"><span class="nm">王振宇 律师</span><span class="tm">12 分钟前</span></div>
+          <div class="msg">我已看过材料，明天上午方便电话沟通吗？</div>
+          <div class="bdg"><span class="tag ok">律师已接入</span></div>
+        </div>
+        <span class="unread">2</span>
+      </div>
+      <div class="cv">
+        <div class="av a">AI</div>
+        <div class="bd">
+          <div class="r1"><span class="nm">合同审查 · 房屋租赁</span><span class="tm">昨天</span></div>
+          <div class="msg">发现 3 处风险条款，第 5 条建议重点修改…</div>
+          <div class="bdg"><span class="tag ai">AI 会话</span></div>
+        </div>
+      </div>
+      <div class="gt">已结束</div>
+      <div class="cv">
+        <div class="av c">李</div>
+        <div class="bd">
+          <div class="r1"><span class="nm">李思远 律师</span><span class="tm">9/12</span></div>
+          <div class="msg">劳动仲裁申请书已发送至您的邮箱</div>
+          <div class="bdg"><span class="tag n">已完结</span></div>
+        </div>
+      </div>
+      <div class="cv">
+        <div class="av a">AI</div>
+        <div class="bd">
+          <div class="r1"><span class="nm">加班费计算咨询</span><span class="tm">9/10</span></div>
+          <div class="msg">根据您的月薪 12,000 元，加班费计算如下…</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ 中：对话 ============ -->
+  <section class="chat">
+    <header class="chat-hd">
+      <div class="av"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M12 8V4.5M9 3.5h6M8.5 13h.01M15.5 13h.01"/></svg></div>
+      <div>
+        <b>律小智 AI 助手</b>
+        <span class="st">在线 · 平均响应 1.8 秒</span>
+      </div>
+      <div class="r">
+        <button class="ibtn" title="转人工律师"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/></svg></button>
+        <button class="ibtn" title="历史记录"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></button>
+      </div>
+    </header>
+
+    <div class="stream">
+      <div class="dayline"><span>今天</span></div>
+
+      <div class="row">
+        <span class="av2 a">AI</span>
+        <div>
+          <div class="bub">您好，我是律小智 AI 法律助手。请描述您遇到的情况，我会给出结构化的法律分析；如涉及复杂纠纷，可一键委托执业律师。</div>
+        </div>
+      </div>
+
+      <div class="row me">
+        <span class="av2 m">我</span>
+        <div><div class="bub">公司拖欠我三个月工资，一共 36,000 元，已经离职了还能要回来吗？</div></div>
+      </div>
+
+      <div class="row">
+        <span class="av2 a">AI</span>
+        <div>
+          <div class="bub">
+            可以主张。用人单位拖欠劳动报酬的，您有权要求支付<em>全部欠付工资</em>，并可主张<em>加付赔偿金</em>。离职不影响追索权，但需注意仲裁时效为一年，自您知道权利被侵害之日起算。
+          </div>
+          <div class="cardmsg">
+            <div class="h">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#B4791F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/></svg>
+              <b>案件评估结果</b>
+              <span class="r tag wait">已派单 · 待接单</span>
+            </div>
+            <div class="cm-body">
+              <div class="gradebox">
+                <div class="grade">B</div>
+                <div>
+                  <div class="t">劳动争议 · 追索劳动报酬</div>
+                  <div class="d">案件等级 B 级 · 建议委托律师代理仲裁<br />系统已完成证据清单梳理与仲裁申请书草稿</div>
+                </div>
+              </div>
+              <div class="metrics">
+                <div>预估可主张金额<b style="font-family:var(--mono)">¥ 36,000 – 54,000</b></div>
+                <div>预估周期<b>45 – 60 天</b></div>
+                <div>已识别证据<b>4 项 / 需补 2 项</b></div>
+                <div>匹配律师<b>3 位</b></div>
+              </div>
+            </div>
+            <div class="cm-ft">
+              <button class="btn btn-g"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/></svg>查看分析报告</button>
+              <button class="btn btn-p"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>确认委托律师</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quickchips">
+        <span class="chip">需要准备哪些证据？</span>
+        <span class="chip">仲裁要花多少钱？</span>
+        <span class="chip">律师费用怎么算？</span>
+      </div>
+
+      <div class="row">
+        <span class="av2 a">AI</span>
+        <div>
+          <div class="bub" style="padding:0">
+            <div class="typing"><i></i><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <div class="cbox">
+        <textarea class="ta" placeholder="继续描述您的情况，或上传聊天记录 / 合同照片…"></textarea>
+        <div class="cbar">
+          <button class="cbtn" title="上传图片"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-5-5-9 9"/></svg></button>
+          <button class="cbtn" title="上传文件"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2 9.2a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg></button>
+          <button class="cbtn" title="语音输入"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+          <button class="send"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>发送</button>
+        </div>
+      </div>
+      <p class="disc">AI 生成内容仅供参考，不构成正式法律意见。涉及重大权益请委托执业律师。</p>
+    </div>
+  </section>
+
+  <!-- ============ 右：案件与委托 ============ -->
+  <aside class="side">
+    <div class="side-hd">案件进度</div>
+    <div class="blk">
+      <div class="step done">
+        <span class="d"></span>
+        <div><div class="t">AI 初步评估</div><div class="m">09-16 00:12 · 等级 B · 已生成分析报告</div></div>
+      </div>
+      <div class="step done">
+        <span class="d"></span>
+        <div><div class="t">生成案件并派单</div><div class="m">09-16 00:15 · 案件号 <span style="font-family:var(--mono)">NL-2026-0149</span></div></div>
+      </div>
+      <div class="step cur">
+        <span class="d"></span>
+        <div><div class="t">等待律师接单</div><div class="m">已推送至 3 位匹配律师 · 剩余 1 小时 42 分自动指派</div></div>
+      </div>
+      <div class="step">
+        <span class="d"></span>
+        <div><div class="t">律师沟通与办案</div><div class="m">未开始</div></div>
+      </div>
+      <div class="step">
+        <span class="d"></span>
+        <div><div class="t">复核与交付</div><div class="m">未开始</div></div>
+      </div>
+    </div>
+
+    <div class="blk">
+      <div class="bt">承办律师</div>
+      <div class="lawyer">
+        <div class="av">王</div>
+        <div style="flex:1">
+          <b>王振宇</b>
+          <span>劳动争议 · 执业 9 年 · 好评率 98%</span>
+          <span style="margin-top:5px"><span class="tag ok">已接单</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="blk">
+      <div class="bt">费用预估</div>
+      <div class="fee"><span>律师代理费</span><b>¥ 3,000 起</b></div>
+      <div class="fee"><span>仲裁受理费</span><b>免收</b></div>
+      <div class="fee"><span>风险代理（可选）</span><b>回款的 15%</b></div>
+      <div style="margin-top:10px;padding:9px 11px;border-radius:var(--r2);background:var(--pending-50);border:1px solid #EED9B4;
+      font-size:11.5px;color:#8A5A12;line-height:1.7">费用以律师确认的委托协议为准，平台不代收。</div>
+    </div>
+
+    <div class="blk" style="border-bottom:0">
+      <div class="bt">已识别证据</div>
+      <div style="font-size:12.5px;line-height:2;color:var(--ink-600)">
+        <div>✅ 劳动合同 / 入职登记表</div>
+        <div>✅ 银行工资流水（近 12 个月）</div>
+        <div>✅ 离职证明</div>
+        <div>✅ 微信催讨记录</div>
+        <div style="color:var(--danger-500)">⚠ 缺：考勤记录（需向公司调取）</div>
+        <div style="color:var(--danger-500)">⚠ 缺：欠薪确认书（建议补签）</div>
+      </div>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

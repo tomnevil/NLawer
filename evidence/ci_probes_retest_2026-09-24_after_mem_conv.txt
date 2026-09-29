@@ -1,0 +1,44 @@
+── 阶段 1：探针自检（合成夹具，与产品无关）──
+  ✓ verify_appshell.py                       exit=0 (0.9s)  门禁内
+  ✓ verify_component_refactor.py             exit=0 (1.0s)  门禁内
+  ✓ verify_component_wiring.py               exit=0 (1.0s)  门禁内
+  ✓ verify_endpoint_authz.py                 exit=0 (1.0s)  门禁内
+  ✓ verify_enum_domain_drift.py              exit=0 (0.9s)  门禁内
+  ✓ verify_font_stack.py                     exit=0 (1.3s)  门禁内
+  ✓ verify_im_mobile_nav.py                  exit=0 (0.9s)  门禁内
+  ✓ verify_motion_tokens.py                  exit=0 (1.0s)  门禁内
+  ✓ verify_page_concepts.py                  exit=0 (0.9s)  门禁内
+  ✓ verify_page_padding.py                   exit=0 (0.8s)  门禁内
+  ✓ verify_provenance_tristate.py            exit=0 (0.9s)  门禁内
+  ✓ verify_radius_scale.py                   exit=0 (1.0s)  门禁内
+  ✓ verify_register_abuse_defense.py         exit=0 (0.9s)  门禁内
+  ✓ verify_request_text_limits.py            exit=0 (0.9s)  门禁内
+  ✓ verify_shadow_tokens.py                  exit=0 (1.0s)  门禁内
+  ✓ verify_token_storage.py                  exit=0 (0.8s)  门禁内
+  —— 以下探针**测不了**（要浏览器/服务/产物），只验「工具没坏」——
+  ✓ verify_adjacent_targets.py               exit=0 (1.2s)  仅自检
+  ✓ verify_buttons.py                        exit=0 (1.6s)  仅自检
+  ✓ verify_contrast.py                       exit=0 (1.5s)  仅自检
+  ✓ verify_design_tokens.py                  exit=0 (0.9s)  仅自检
+  ✓ verify_focus_ring.py                     exit=0 (1.8s)  仅自检
+  ✓ verify_font_scale.py                     exit=0 (1.2s)  仅自检
+  ✓ verify_grade_badges.py                   exit=0 (1.3s)  仅自检
+  ✓ verify_spacing_scale.py                  exit=0 (1.0s)  仅自检
+  ✓ verify_typography.py                     exit=0 (2.1s)  仅自检
+  —— 以下自检**读真实仓库**：红先读成「**登记表落后**」，不是工具坏了 ——
+      ── stdout 尾部 ──
+      ==================================================================================
+      自检：19/20 通过
+        ✗ Q14 扫盘无「未分类」文档（新文档必须登记）
+            实际 ['deliverables/product-strategy/loop-closure-verification-2026-09-23.md']
+            期望 []
+      ==================================================================================
+      ────────────
+  ✗ report_spec_coverage.py                  exit=1 (1.1s)  **登记表落后**
+
+❌ 1 个「读仓库」自检不一致 ⇒ **登记表落后**（exit 1）
+   先查这两件事（都不是产品缺陷）：
+   ① 是不是**新增了规范文档**却没在 `report_spec_coverage.py` 里表态
+      （`SPEC_FILES` 纳入 / `EXCLUDED_DOCS` 显式排除）；
+   ② 是不是**新增/改名的探针**没在运行器里分类（判据 0/0b）。
+   ⚠️ **别去产品代码里找，也别改仪器** —— 仪器是对的，欠的是分诊。

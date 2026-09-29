@@ -1,0 +1,9 @@
+  · 规范 §4.1 现读：侧栏 240px · 顶栏 56px · 内容最大宽 workbench=1280px / wide=1600px / reading=720px · 图标条禁令 64px · 三端 web / lawyer / admin
+  · （顶部 56px 本门禁**不判**：`verify_component_refactor.py` J3 已在 CI 里判，避免两处期望值）
+  · `w-sidebar` 的令牌映射实测在 preset 的 `spacing` 段（`width` / `spacing` 都接受）
+  · 抽屉子树：`lg:hidden` 在第一个 `z-drawer` 之前（偏移 25 < 89）⇒ 守卫落在祖先元素上
+  · 图标条禁令检查的字面量：w-[64px] / w-16（实测命中 0 处）
+  · R1 应用切换器**机制**：在（`apps` + `onAppChange` prop）；§4.1 点名的三端 = web / lawyer / admin —— **清单在调用方**，本条只报不判（`AppShell` 是共享组件，不该知道谁在用）
+  · R2 🚨 第 8.2 节的 `wide` 断点**规范自己矛盾**：§4.2 写「断点 640 / 1024 / 1280 / 1600」，第 8.2 节的表写 `wide ≥ 1440px`；preset 现值 = 1600px，且全仓 **0 处** `wide:` 工具类（**死配置**）⇒ **本门禁不判断点**（判哪一边都等于替规范选一个）
+
+✅ §4.1 静态地板：**0 欠账**

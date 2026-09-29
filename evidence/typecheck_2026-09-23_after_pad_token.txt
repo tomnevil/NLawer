@@ -1,0 +1,13 @@
+
+> nlaw-frontend@0.1.0 typecheck C:\Users\RS\Documents\trae_projects\NLawer\frontend
+> tsc -p tsconfig.packages.json --noEmit && pnpm -r typecheck
+
+Scope: 7 of 8 workspace projects
+apps/admin typecheck$ tsc --noEmit
+apps/im typecheck$ tsc --noEmit
+apps/lawyer typecheck$ tsc --noEmit
+apps/web typecheck$ tsc --noEmit
+apps/web typecheck: Done
+apps/lawyer typecheck: Done
+apps/admin typecheck: Done
+apps/im typecheck: Done

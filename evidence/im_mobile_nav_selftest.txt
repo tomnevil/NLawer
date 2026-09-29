@@ -1,0 +1,26 @@
+  ✓ Q1 规范读不出「N 项 Tab」⇒ exit 2
+  ✓ Q2 §4 表读不出 ⇒ exit 2
+  ✓ Q3 TABS 数组在、条目解析不出 ⇒ exit 2
+  ✓ Q4 TABS 整个不存在 ⇒ exit 1（产品缺陷）
+  ✓ Q5 根容器 style 定位不到 ⇒ exit 2
+  ✓ Q6 真实形状的合成夹具 ⇒ exit 0
+  ✓ Q7 少一项 Tab ⇒ exit 1
+  ✓ Q8 顺序颠倒 ⇒ exit 1
+  ✓ Q9 href 与 §4 表不符 ⇒ exit 1
+  ✓ Q10 id != 一级路径段 ⇒ exit 1
+  ✓ Q11 TabBar 丢 lg:hidden ⇒ exit 1
+  ✓ Q12 根容器加 paddingBottom ⇒ exit 1（双算）
+  ✓ Q13 内容区丢 actionbar 令牌 ⇒ exit 1
+  ✓ Q14 内容区丢桌面回退 ⇒ exit 1
+  ✓ Q15 根容器换 min-h-dvh ⇒ exit 1
+  ✓ Q16 根容器丢 overflow-hidden ⇒ exit 1
+  ✓ Q17 只有占位分支有 h-dvh（根容器没有）⇒ exit 1
+  ✓ Q18 注释写「不能改成 min-h-dvh」⇒ 仍 exit 0
+  ✓ Q19 注释写「根容器不得加 paddingBottom: var(--safe-bottom)」⇒ 仍 exit 0
+  ✓ Q20 块注释里写 --safe-top 不得被当成根容器 ⇒ 仍 exit 0
+  ✓ Q21 四个落地页都不存在 ⇒ exit 1 且 4 条缺陷
+  ✓ Q22 exists 恒真 ⇒ 无落地页缺陷
+
+==================================================================================
+自检：22/22 通过
+==================================================================================

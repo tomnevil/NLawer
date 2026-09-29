@@ -1,0 +1,12 @@
+// 改前快照 —— frontend/packages/ui/src/lib/cn.ts
+// 采集于 2026-09-24（#42 修法 C 执行前），用于回溯「改了什么」。
+// 改后版本见同目录 `cn_ts_after_2026-09-24.ts.txt`。
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+/**
+ * 合并 Tailwind 类名：clsx 处理条件类，tailwind-merge 消解冲突类。
+ */
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
+}

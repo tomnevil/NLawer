@@ -1,0 +1,189 @@
+==============================================================================
+probe_mono_coverage.py —— §1 原则 4「全站等宽」静态可判性实测（**只测量**）
+==============================================================================
+语料：frontend 下 89 个 .tsx（已排除 .next, .turbo, __pycache__, dist, node_modules 与 *.test.*）
+回溯窗口：向前 6 行找最近 className
+
+── 总览 ──
+  锚点命中（行次）合计        : 126
+  ① 同行即含 num              : 24
+  ② 同行无、回溯窗口内命中 num : 13   ⚠️ 这一档**可能误判为覆盖**
+  ③ 两者都没有（= 未覆盖）    : 89（**去重后 85 行**，同一行命中多锚点会重复计数）
+  ⇒ 覆盖（①+②）: 37/126 = 29.4%
+  ⇒ 未覆盖     : 89/126 = 70.6%
+
+── 按锚点拆开（kind / anchor / 同行 / 窗口 / 未覆盖）──
+  日期  fmtDate(            3     1     17
+  案号  case_no             7     2     16
+  金额  claim_amount        3     2     13
+  日期  deadline            0     0     12
+  金额  fmtAmount(          3     1     11
+  日期  created_at          1     0      4
+  案号  order_no            1     2      4
+  金额  price_cents         2     1      4
+  金额  yuan(               3     1      4
+  日期  due_at              1     2      3
+  金额  total_cents         0     0      1
+  日期  fmtTime(            0     1      0
+
+── 🚨 未覆盖点**按行形状分桶**（决定「写不写门禁」的就是这张表）──
+  桶            条数   说明
+  jsx          12   **JSX 文本位**（`{row.case_no}`）⇒ **最可能是真渲染点**
+  other        11   其他（需人工看）
+  logic         7   **非 JSX 逻辑**（`reduce(...)` / `daysLeft(...)` / 赋值）
+  prop          4   **组件属性值**（`<KpiCard value={yuan(...)}`）⇒ 等宽可能在组件内部
+  def          12   函数/常量**定义**行（`function fmtDate(` / `const yuan = (`）
+  type         39   TS **类型声明**（`order_no: string;`）
+  comment       4   **注释/说明**行
+
+  ⇒ **确定假红**（def/type/key/comment 四桶，锚点不在渲染位）: 55/89
+  ⇒ **需人工分诊**（其余桶）: 34/89 —— 这才是「全站等宽」静态判据的**真实噪声底**
+
+── 未覆盖点分布（共 89 条，落在 17 个文件）──
+   12  frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx
+   12  frontend/apps/web/app/components-preview/page.tsx
+   11  frontend/apps/admin/app/(app)/cases/page.tsx
+    9  frontend/apps/admin/app/(app)/billing/page.tsx
+    7  frontend/apps/lawyer/app/(app)/archives/page.tsx
+    6  frontend/apps/lawyer/app/(app)/cases/page.tsx
+    6  frontend/apps/lawyer/app/(app)/dispatches/page.tsx
+    5  frontend/apps/admin/app/(app)/audit/page.tsx
+    5  frontend/apps/admin/app/(app)/complaints/page.tsx
+    4  frontend/apps/web/app/(app)/billing/page.tsx
+    3  frontend/apps/admin/app/(app)/reviews/page.tsx
+    3  frontend/apps/im/app/(app)/cases/[id]/page.tsx
+    2  frontend/apps/im/app/(app)/chat/page.tsx
+    1  frontend/apps/admin/app/(app)/page.tsx
+    1  frontend/apps/lawyer/app/(app)/notifications/page.tsx
+    1  frontend/packages/ui/src/components/JobRow.tsx
+    1  frontend/packages/ui/src/components/NotificationCenter.tsx
+
+── 未覆盖明细（按桶排序，最多 60 条）──
+  [jsx/案号/case_no] frontend/apps/admin/app/(app)/cases/page.tsx:318
+        {row.case_no}
+  [jsx/案号/case_no] frontend/apps/admin/app/(app)/reviews/page.tsx:732
+        {c.case_no ? `${c.case_no}　` : ""}
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:86
+        { id: "c1", caseNo: "(2026)京0105民初1234号", title: "张某诉某科技公司劳动争议", grade: "S", stage: "一审举证", owner: "王律师", amount: 486000
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:87
+        { id: "c2", caseNo: "(2026)京0105民初1188号", title: "李某诉某置业公司房屋买卖合同纠纷", grade: "A", stage: "庭前调解", owner: "王律师", amount: 12
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:88
+        { id: "c3", caseNo: "(2026)沪0115民初2077号", title: "某贸易公司诉某物流公司运输合同纠纷", grade: "B", stage: "一审开庭", owner: "陈律师", amount: 3
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:89
+        { id: "c4", caseNo: "(2026)粤0304民初3391号", title: "赵某与某餐饮公司股权转让纠纷", grade: "A", stage: "二审", owner: "刘律师", amount: 245000
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:90
+        { id: "c5", caseNo: "(2026)京0108民初4412号", title: "某文化传媒公司著作权侵权纠纷", grade: "B", stage: "证据交换", owner: "陈律师", amount: 1560
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:91
+        { id: "c6", caseNo: "(2026)苏0508民初5520号", title: "某制造企业买卖合同货款纠纷", grade: "C", stage: "一审举证", owner: "刘律师", amount: 88000
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:92
+        { id: "c7", caseNo: "(2026)京0105民初6603号", title: "孙某诉某保险公司人身损害赔偿", grade: "A", stage: "一审开庭", owner: "王律师", amount: 6750
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:93
+        { id: "c8", caseNo: "(2026)浙0106民初7714号", title: "某网络公司侵害商标权纠纷", grade: "B", stage: "庭前调解", owner: "陈律师", amount: 210000
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:94
+        { id: "c9", caseNo: "(2026)京0108民初8825号", title: "某教育公司服务合同纠纷", grade: "C", stage: "一审举证", owner: "刘律师", amount: 64000, 
+  [jsx/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:140
+        { key: "deadline", header: "期限", numeric: true, width: "112px", sortable: true },
+  [other/金额/price_cents] frontend/apps/admin/app/(app)/billing/page.tsx:219
+        const shownCents = orders.reduce((n, o) => n + (o.price_cents ?? 0), 0);
+  [other/金额/fmtAmount(] frontend/apps/admin/app/(app)/cases/page.tsx:366
+        render: (_v, row) => fmtAmount(row.claim_amount),
+  [other/金额/claim_amount] frontend/apps/admin/app/(app)/cases/page.tsx:366
+        render: (_v, row) => fmtAmount(row.claim_amount),
+  [other/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/archives/page.tsx:219
+        render: (v: number | null) => fmtAmount(v),
+  [other/日期/fmtDate(] frontend/apps/lawyer/app/(app)/archives/page.tsx:228
+        return a?.archived_at ? fmtDate(a.archived_at) : <span className="text-ink-400">—</span>;
+  [other/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/cases/page.tsx:242
+        render: (v: number | null) => fmtAmount(v),
+  [other/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/dispatches/page.tsx:224
+        render: (_v: unknown, row) => fmtAmount(briefs[row.case_id]?.claim_amount),
+  [other/金额/claim_amount] frontend/apps/lawyer/app/(app)/dispatches/page.tsx:224
+        render: (_v: unknown, row) => fmtAmount(briefs[row.case_id]?.claim_amount),
+  [other/日期/created_at] frontend/apps/lawyer/app/(app)/notifications/page.tsx:362
+        <span>{formatRelativeTime(n.created_at)}</span>
+  [other/日期/deadline] frontend/apps/web/app/components-preview/page.tsx:322
+        const [sortKey, setSortKey] = React.useState<string | null>("deadline");
+  [other/日期/created_at] frontend/packages/ui/src/components/NotificationCenter.tsx:269
+        <span>{formatRelativeTime(item.created_at)}</span>
+  [prop/金额/fmtAmount(] frontend/apps/im/app/(app)/cases/[id]/page.tsx:146
+        <Row label="标的额" value={fmtAmount(info.claim_amount)} mono />
+  [prop/金额/claim_amount] frontend/apps/im/app/(app)/cases/[id]/page.tsx:146
+        <Row label="标的额" value={fmtAmount(info.claim_amount)} mono />
+  [prop/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1170
+        <KV k="标的额" v={fmtAmount(detail.claim_amount)} mono />
+  [prop/金额/claim_amount] frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1170
+        <KV k="标的额" v={fmtAmount(detail.claim_amount)} mono />
+  [logic/日期/fmtDate(] frontend/apps/admin/app/(app)/audit/page.tsx:395
+        截点 {fmtDate(dryRun.cutoff ?? null)} · 保留 {dryRun.retained_days ?? 0} 天 · {dryRun.note}
+  [logic/金额/yuan(] frontend/apps/admin/app/(app)/billing/page.tsx:365
+        value={yuan(dash?.work_orders?.amount_cents ?? 0)}
+  [logic/金额/yuan(] frontend/apps/admin/app/(app)/billing/page.tsx:371
+        value={yuan(shownCents)}
+  [logic/日期/due_at] frontend/apps/admin/app/(app)/complaints/page.tsx:319
+        const d = daysLeft(row.due_at);
+  [logic/案号/case_no] frontend/apps/admin/app/(app)/reviews/page.tsx:93
+        | { case_no?: string; title?: string; court?: string; holding?: string; citation_id?: number }[]
+  [logic/日期/fmtDate(] frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1046
+        at={analysis.confirmed_at ? fmtDateTime(analysis.confirmed_at) : undefined}
+  [logic/金额/yuan(] frontend/apps/web/app/(app)/billing/page.tsx:236
+        value={yuan(dash?.work_orders.amount_cents ?? 0)}
+  [def/日期/fmtDate(] frontend/apps/admin/app/(app)/audit/page.tsx:64
+        function fmtDate(iso: string | null): string {
+  [def/金额/yuan(] frontend/apps/admin/app/(app)/billing/page.tsx:98
+        function yuan(cents?: number): string {
+  [def/金额/fmtAmount(] frontend/apps/admin/app/(app)/cases/page.tsx:128
+        function fmtAmount(n?: number | null): string {
+  [def/日期/fmtDate(] frontend/apps/admin/app/(app)/cases/page.tsx:133
+        function fmtDate(iso?: string | null): string {
+  [def/日期/fmtDate(] frontend/apps/admin/app/(app)/complaints/page.tsx:139
+        function fmtDate(iso: string | null): string {
+  [def/日期/fmtDate(] frontend/apps/admin/app/(app)/reviews/page.tsx:151
+        function fmtDate(iso?: string | null): string {
+  [def/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/archives/page.tsx:88
+        function fmtAmount(n?: number | null): string {
+  [def/日期/fmtDate(] frontend/apps/lawyer/app/(app)/archives/page.tsx:93
+        function fmtDate(raw?: string | null): string {
+  [def/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:365
+        function fmtAmount(n?: number | null): string {
+  [def/日期/fmtDate(] frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:370
+        function fmtDateTime(raw?: string | null): string {
+  [def/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/cases/page.tsx:86
+        function fmtAmount(n?: number | null): string {
+  [def/金额/fmtAmount(] frontend/apps/lawyer/app/(app)/dispatches/page.tsx:87
+        function fmtAmount(n?: number | null): string {
+  [type/日期/fmtDate(] frontend/apps/admin/app/(app)/audit/page.tsx:272
+        time: fmtDate(stats?.oldest ?? null),
+  [type/日期/fmtDate(] frontend/apps/admin/app/(app)/audit/page.tsx:279
+        time: fmtDate(stats?.cutoff ?? null),
+  [type/日期/fmtDate(] frontend/apps/admin/app/(app)/audit/page.tsx:286
+        time: fmtDate(stats?.newest ?? null),
+  [type/案号/order_no] frontend/apps/admin/app/(app)/billing/page.tsx:58
+        order_no: string;
+  [type/金额/price_cents] frontend/apps/admin/app/(app)/billing/page.tsx:64
+        price_cents: number;
+  [type/案号/order_no] frontend/apps/admin/app/(app)/billing/page.tsx:224
+        key: "order_no",
+  [type/金额/price_cents] frontend/apps/admin/app/(app)/billing/page.tsx:272
+        key: "price_cents",
+  [type/案号/case_no] frontend/apps/admin/app/(app)/cases/page.tsx:30
+        case_no: string;
+  [type/金额/claim_amount] frontend/apps/admin/app/(app)/cases/page.tsx:43
+        claim_amount?: number | null;
+  [type/案号/case_no] frontend/apps/admin/app/(app)/cases/page.tsx:299
+        key: "case_no",
+  [type/金额/claim_amount] frontend/apps/admin/app/(app)/cases/page.tsx:361
+        key: "claim_amount",
+  [type/日期/fmtDate(] frontend/apps/admin/app/(app)/cases/page.tsx:662
+        time: fmtDate(e.occurred_at),
+  [type/日期/created_at] frontend/apps/admin/app/(app)/complaints/page.tsx:50
+        created_at: string | null;
+  [type/日期/due_at] frontend/apps/admin/app/(app)/complaints/page.tsx:51
+        due_at: string | null;
+  …（还有 29 条，见 --list 全量）
+
+── 读数须知（别把下面三条读反）──
+  · ② 档让结果**偏乐观**（外层容器的 num 被算到内层头上）⇒ 真实未覆盖率 **≥** ③ 的数字。
+  · ③ 档**不等于缺陷**：要先分桶，只有 `jsx`/`other` 桶才可能是真渲染点。
+  · `prop` 桶要**单独看**：`<KpiCard value={yuan(...)}>` 的等宽是**组件内部**加的
+    ⇒ 按「调用点必须写 num」判，这一桶**全是假红**。
+  · 「条款号」四类里唯一**没有稳定标识符**的 ⇒ 本遍**没测**（本身就是一条缺口）。

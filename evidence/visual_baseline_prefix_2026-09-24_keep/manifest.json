@@ -1,0 +1,68 @@
+{
+  "created_at": "2026-09-24T10:36:03",
+  "admin": "http://localhost:3002",
+  "profiles": {
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "dsf": 3,
+      "mobile": true
+    },
+    "desktop": {
+      "width": 1280,
+      "height": 900,
+      "dsf": 2,
+      "mobile": false
+    }
+  },
+  "tol": 12,
+  "max_ratio": 0.002,
+  "fingerprint": {
+    "platform": {
+      "in_progress": 4,
+      "work_orders_pending": 1,
+      "work_orders_total": 3
+    },
+    "firm_hlw": {
+      "in_progress": 10,
+      "work_orders_pending": 2,
+      "work_orders_total": 6
+    }
+  },
+  "pages": {
+    "mobile__login": "mobile__login.png",
+    "mobile__cockpit": "mobile__cockpit.png",
+    "mobile__reviews": "mobile__reviews.png",
+    "mobile__cases": "mobile__cases.png",
+    "mobile__dispatches": "mobile__dispatches.png",
+    "mobile__compliance": "mobile__compliance.png",
+    "mobile__billing": "mobile__billing.png",
+    "mobile__complaints": "mobile__complaints.png",
+    "desktop__login": "desktop__login.png",
+    "desktop__cockpit": "desktop__cockpit.png",
+    "desktop__reviews": "desktop__reviews.png",
+    "desktop__cases": "desktop__cases.png",
+    "desktop__dispatches": "desktop__dispatches.png",
+    "desktop__compliance": "desktop__compliance.png",
+    "desktop__billing": "desktop__billing.png",
+    "desktop__complaints": "desktop__complaints.png"
+  },
+  "sha256": {
+    "mobile__login": "7bb25f15d4b59474",
+    "mobile__cockpit": "0ad10e5e55cc467d",
+    "mobile__reviews": "c6bd79d934ecfc05",
+    "mobile__cases": "0a5e35ff14b678ee",
+    "mobile__dispatches": "111d865623f7a1ea",
+    "mobile__compliance": "a5071b90f13f5048",
+    "mobile__billing": "918c96c9e8c21aa7",
+    "mobile__complaints": "11df726758088f62",
+    "desktop__login": "1f013ef92820655e",
+    "desktop__cockpit": "6ee078ca2cc50a15",
+    "desktop__reviews": "aaf728c936bec108",
+    "desktop__cases": "5bef1bbc6977109e",
+    "desktop__dispatches": "6a2125a804911805",
+    "desktop__compliance": "7697af928f331dd7",
+    "desktop__billing": "064589acf6e56762",
+    "desktop__complaints": "9225a17d3cd1730e"
+  }
+}

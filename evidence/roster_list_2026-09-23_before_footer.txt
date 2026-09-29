@@ -1,0 +1,62 @@
+【门禁内 GATED（直接跑，18 个）】
+  ✓ verify_component_wiring.py               组件接线（含棘轮：已知缺口不阻断、新掉线必红、已收口必须删豁免）
+  ✓ verify_conversation_channel_500.py       conversations.channel 的枚举残留风险（模型层 / raw SQL 仍可落脏值 ⇒ 整租户 500）
+  ✓ verify_enum_domain_drift.py              枚举域漂移：写入侧必须拒绝越界值
+  ✓ verify_migration_enum_defaults.py        迁移的枚举默认值与越界归一化
+  ✓ verify_token_storage.py                  前端令牌不得落 Web Storage（**前端零测试框架**，这是它唯一的门）
+  ✓ verify_register_abuse_defense.py         公开自助注册的滥用防线（Q-A 派生；棘轮管 XFF 信任 / 注册采集邮箱两条欠账）
+  ✓ verify_route_coverage.py                 路由 × 端点层覆盖棘轮（基线 **22**：零覆盖条数**只能降不能涨**；55→49→39→29→22→16→11，B 类已归零）
+  ✓ verify_spacing_scale.py                  §4.2 间距刻度：任意值间距必须是令牌引用、规范点名禁止的 5/13/18px 不得出现（只读源码）
+  ✓ verify_font_stack.py                     §3.1 三套字体栈：族名/顺序/通用族收尾必须合规范；衬线使用点普查（只读源码；渲染层 F3 实测「衬线≠无衬线」需 `--render`，CI 不跑）
+  ✓ verify_endpoint_authz.py                 写端点 × **端点层授权证据**（Q-R 那一类形状）：43 条写路由分 `GATE`（`require_permissions`/`require_roles`）/ `OWNER`（`*_or_404` 或到人引用）/ `TENANT`（只查 tenant_id，横向没堵，**只报**）/ `NONE`（连租户都没查，**棘轮管**）四档。两条判据：① `BASELINE_UNGUARDED=2`（`auth/login` + `auth/refresh` 天然豁免，发生在拿到身份之前）；② 🚨 **门控清单不得减少** —— 只管 NONE 抓不到「把已有门控摘掉」这种回归（掉进 TENANT/OWNER 就不红了），而 Q-R 恰恰是那个形状，故逐条钉住 10 条基线路由。🚨 **仪器三处失真全靠自检逮到**：`defmap` 扫整个 `app/` ⇒ 服务层同名函数抢先命中、读到服务层源码（4 条假红）；只认 `require_permissions` ⇒ `require_roles` 的 3 条假红；门控挂在**签名默认值**里（`ctx=Depends(require_roles(...))`）⇒ 装饰器+函数体都扫不到。**两臂故障注入均已转红**：摘 `billing/quota/adjust` 门控 ⇒ 点名该路由；新增无授权写端点 ⇒ 棘轮红
+  ✓ verify_request_text_limits.py            请求体**自由文本**字段的长度上限（Q-F 同范式的「旧账登记棘轮」）：缺陷类是写端点的自由文本入参没有 `max_length` ⇒ 提示词成本/存储被单次请求放大，而全库 `grep max_length tests/` **零命中** ⇒ 此前零判据。口径**收窄过一版**：首版扫全部 schema 得 170 个 str 字段，绝大多数是**响应模型**与**枚举/代码型**字段 ⇒ **总数不是信号，分类才是**；现只取端点签名里当入参用的模型、排除 `*Out`/`*Response` 与代码型字段。判据两条：**A 守卫**（≥8 模型 / ≥10 字段，防解析器静默退化成「0 欠账」）+ **B 棘轮**（OPEN ⊆ `KNOWN_OPEN_TEXT_FIELDS`，清单外的**新**字段红并点名；实测 18 条旧账全部登记）。🚨 自检 Q3/Q5 当场抓到分类漏洞：`type` / `kind` 这类**不带前缀**的代码名匹配不到 `_type` 后缀⇒ 补了 `CODE_EXACT` 整名集合。🚨 计数**必须去重**：`ComplianceScanCreate` 在两个 schema 文件各定义一次 ⇒ 不去重报 21、去重后 18。**故障注入两臂**：新增无上限自由文本 ⇒ 点名转红；同一字段补 `max_length` ⇒ **回到绿**（后一臂证明它不是「只会红」的判据）
+  ✓ verify_service_tenant_param.py           「服务层不收 `tenant_id`」模式横扫棘轮（基线 20，**只防新增**：存量 20 条里有不少在端点层已收口，判红会淹没有效信号；派单 §3.28 与文书 §3.29 是这个模式查出的两个 P0）
+  ✓ verify_provenance_tristate.py            §5 责任边界三态系统**五条使用规则**（三态组件早已全建、产品页 8 处徽章，但 §5 一条判据都没有 ⇒「已实现 ≠ 有判据」）。判 F1 三重编码 / F2 规范点名三页的图例 / F3 三态单一真源（结构式识别手抄联合，**不做关键词匹配**）/ F4 徽章可点击留痕；棘轮三条欠账：#45 文书页缺图例 · #46 手抄三态联合 · #47 徽章不可点击
+  ✓ verify_radius_scale.py                   §4.3「圆角 / 阴影 / 边框」的圆角部分（焦点环那条归 `verify_focus_ring.py`，**不重叠**）：`--r1..--r4` 阶梯 + 明文禁令「废弃 16px 及以上圆角」。🚨 **判据按「解析后的 px 值」判，不按类名判** —— preset 把存量档位 `2xl/3xl` 映射到 `var(--r4)`=12px，按类名判会对合法代码产生**稳定假红**。当前 **0 欠账**（迁移已完成）：0 处 ≥16px、0 处废弃值、preset 11 档全指向令牌
+  ✓ verify_component_refactor.py             §6.3「现有组件改造要点」六条 bullet（Sidebar / Header / Card / KpiCard / Button / LoginShell）里**已实现且无人认领**的那部分：J1 侧栏底色 · J2 激活项 3px 金色指示条 · J3 顶栏 56px · J4 AppShell 无 `dark:` · J5 Card hover 无位移 · J6 Card 1px 边框 + `--s1` · J7 KpiCard 28px 等宽 · J8 单位小字 · J9 Button 无渐变 · J10 登录页网格纹理 + 分段切换。**分工**：Card 圆角归 §4.3 门禁 / Button 变体尺寸归 `verify_buttons.py` / 侧栏 240px 归 `verify_breakpoints.py` / KpiCard `color` 归 `verify_grade_badges.py` —— 不重叠。🚨 **J4/J5/J9 必须在「剥掉注释」的源码上判**：项目用 `dark:` 这个字面量来声明它的缺席（`AppShell.tsx:373` 的 JSDoc「本组件不含任何 dark: 变体」）⇒ 扫全文是**稳定假红**。当前 **0 欠账**；三条功能缺口（迷你趋势线 / Button `loading` 态 / 手机号短信端点）**只报不判**
+  ✓ verify_motion_tokens.py                  §4.4「动效」的**时长/缓动令牌表**（reduced-motion **行为**归 `verify_reduced_motion.py`，**不重叠**）：§4.4 给 4 行表 + 「必须响应 `prefers-reduced-motion`」。**为什么此前零判据**：`verify_reduced_motion.py` 的 `LIVE = {"--dur-fast": "120ms", …}` 是**夹具里硬编码的期望值**，**没有任何门禁断言 `tokens.css` 的 `--dur-*`/`--ease-*` == §4.4 表**（那三个数字恰好是对的，但「恰好对」不是判据）。判 **A0** 守卫（表行数 / 令牌数 / preset 缓动表）/ **A1** 🎯 **按「场景名 ↔ 令牌注释」精确配对**逐条判时长（**不按顺序** —— 令牌注释逐字抄了规范场景名，这是可验证的对应关系）/ **A2** 缓动（令牌化的必须指向 `var(--ease-*)`；`cubic-bezier` 字面量必须有等价令牌，**归一化后比较**）/ **A3** 机制（`.flow-typing::after` 必须接在 `var(--dur-pulse)` 上）。**R 组只报**：R1 🚨 **打字光标时长规范 1.2s vs 实现 1.6s**（**合并令牌**，改它会连带改骨架屏 ⇒ 需拍板）· R2 `--dur-pulse` 的消费者（直接 2 + 间接 4）· R3 规范**没有骨架屏那一行** · R4 `ease-out` 被重定义为 `cubic-bezier(0,0,0.2,1)`（≠ CSS 关键字标准值，项目有意为之）· R5 裸 ms/s 时长 · R6 未令牌化的 CSS 原生关键字缓动。🚨 **判据过宽被自检逮到**：第一版对**所有** `ease-*` 都要求 preset 有同名键 ⇒ 对 `ease-in-out`（项目里走**原生关键字**）**假红**；且 `token_cb` 误从只含 `--dur-*` 的表建 ⇒ **缓动令牌根本没进表**。两条都修掉后 23/23。🚨 **`REQUIRED_FILES` 守卫当场咬合**：`SPEC_REL` 是 `.md`、不在被遍历的两棵树里，而 R3 要读它 ⇒ 必须补进 `EXTRA_RELS`，否则 R3 会**拿空串下结论**。**产品侧**：**0 欠账**（A1 3 行精确配对全部一致、A2/A3 通过）+ 6 条只报。**注入反证**：`--dur-fast: 120ms→160ms` ⇒ A1 红；`var(--dur-pulse)→1.6s` ⇒ A3 红；两文件「备份→注入→还原→`cmp` 逐字节一致」，复跑与注入前**字节一致**
+  ✓ verify_page_concepts.py                  §7「页面概念图」8 个**页面级**「核心改动」。**为什么此前零判据**：`## 07 页面概念图` **没有编号子标题**，8 个小节全是**表格首列** ⇒ 基于标题的扫描根本不知道它们存在，§7.1–§7.7 从未进入任何门禁视野（`verify_runtime_health.py` 只查运行时错误，不查页面结构）。判 **A0** 守卫（§7 表必须解析出 8 行 + 核心改动非空，否则 **exit 2**——不在一张空表上「全部通过」）/ **A1** 8 个页面归属文件存在（🚨 **文件缺失是产品缺陷 exit 1**，与「规范缺失 ⇒ exit 2」语义不同，**不混进同一个守卫**）/ **A2** §7.5「六段式」⇒ `SECTIONS` 长度 == **从规范现读**的中文段数 + `n` 从 1 连续 / **A3** §7.3「引用溯源**常驻**面板」⇒ `CitationPanel` 同时带 `hidden` 与 `lg:` 可见类，**且** `--citation-panel-w` == 规范写明的「常驻面板 380px」，**且** preset 把 `citation` 映射到该令牌 / **A4** §7.2 渲染 `KpiCard` / **A5** §7.6 存在 `aria-label` 含「案件/委托」的 `aside`。🚨 **② 契约阻塞项绝不建判据**：§7.4 环比 / 流失标注 / 质量趋势被 `CaseOut`/`ReviewOut`/`DispatchOut` **全无时间字段**阻塞（`admin-gap-analysis.md:499` 已根因定位**「不可做」**，后端已冻结）⇒ 建判据 = 每天一条无法修的假红；③ §7.3 三栏化 / 会话历史 未实现且无人跟踪 ⇒ 与 ② 一并进 `KNOWN_GAPS` 并带登记号。🚨 **A2 的排版假设**：`SECTION_N_RE` 首版**锚行首**，真实文件是多行对象所以「恰好」绿 —— 等于把「Prettier 不会内联短对象」偷偷当成判据前提，自检 Q3d 用**紧凑单行**夹具逮到；改为不锚行首 + `(?<![\w$.])` 挡 `icon:` 里的子串 `n:`。**注入反证 12/12**（全部在**内存**注入、不碰产品文件）：控制组绿 · A0 缺行 / 清空改动 ⇒ exit 2 · A1 文件不存在 ⇒ exit 1 · A2 删一段 · A3a 令牌 360≠380 · A3b 去 `hidden lg:flex` · A3c 去 preset 映射 · A3d **注释掉常驻类 ⇒ 仍须红** · A4 去 `KpiCard` · A5 去案件语义 · 对照「**同一份注入文本**：不剥注释 ⇒ **假绿**，剥注释 ⇒ 红」（证明 `strip_comments` 接在主流程上）。**自检反证 5/5**（把自检该抓的弄坏 ⇒ 必须红）。产品侧 **0 欠账** + 2 条只报（§7.1 规范「2×2」vs 实现 6 个演示账号 · §7.6 `aside` 计数）
+  ✓ verify_im_mobile_nav.py                  `im-mobile-nav-spec.md` §6.1 / §6.2 / §6.3 的**静态地板**。🚨 **为什么需要它**：这三节的判据**不是不存在**，而是**全在渲染级探针里** —— `verify_im_safe_area.py`（§6.2 安全区双算）与 `verify_im_tabs.py`（§6.1 桌面隐藏）都要 CDP + im dev server，在 `run_ci_probes.py` 里是 **`NOT_GATED`** ⇒ **CI 里一条守 §6.1/§6.2 的判据都没有**；§6.3（高度与滚动）则**哪里都没判**（`verify_im_safe_area.py` 的 docstring 里出现过 `h-dvh`，但那是**描述**根容器、不是断言 —— 拿「关键词命中」当判据正是坑 14）。判 **A0** 守卫（规范读不出「N 项 Tab」或 §4 映射表 ⇒ **exit 2**）/ **A1** §8.4+§4：`TABS` 恰好 N 项、名字与**顺序** == 规范现读、`href` == §4 表现读、`id` == 一级路径段（§4 的约束；错则高亮**静默失效**）/ **A2** §6.1：`TabBar.tsx` 必须仍带 `lg:hidden`（去掉后**三端**桌面端都会多出一条底栏）/ **A3** §6.2：根容器 `style` **不得**含 `paddingBottom`（`TabBar` 内部已加过一次 ⇒ 刘海屏多 34px），内容区**必须**同时有 `pb-[var(--actionbar-bottom)]` 与 `lg:pb-[var(--safe-bottom)]` / **A4** §6.3：根容器**必须**有 `h-dvh` 与 `overflow-hidden`，全文件**不得**有 `min-h-dvh` / **A5** §4：四个落地页必须存在（Tab 指向 404 是本项目 #15 的原缺陷形态）。🚨 **必须锚到根容器**：`layout.tsx` 的**会话恢复占位**分支里**也有一个 `h-dvh`** ⇒ 全文件搜 `h-dvh` 会在根容器被改坏时**假绿**（Q17 就是这条臂）。🚨 **`strip_comments()` 必须在判据函数内部**：`layout.tsx` 的注释里**明写了** `paddingBottom` / `--safe-bottom` / 「不能改成 `min-h-dvh`」—— 不剥就是**假红**；第一版把它放在 `main()` 里 ⇒ 自检传的是**原始**文本，Q18 当场**假红**、Q19/Q20 只是**碰巧**绿（于是「剥注释真的接在主流程上」**没有任何臂在守**）。**注入反证 16/16**（**内存**注入、不碰产品文件；每条都**断言锚点命中数** —— 实测 `TABS` 在文件里出现 **2** 次，锚点不唯一会让整条臂**静默空转**）：控制组绿 · A3 根容器加回 `paddingBottom` · 内容区丢两个令牌 · A4 `h-dvh→min-h-dvh` / 丢 `overflow-hidden` / **只留占位分支的 `h-dvh`** · A1 少一项 / 顺序对调 / href 不符 / id 不符 / `TABS` 整体改名 · A2 丢 `lg:hidden` · 对照「注释里写 `paddingBottom: var(--safe-bottom)`」与「注释里写 `min-h-dvh`」**均须绿**。**自检 22 臂**（全合成夹具）。⚠️ 与渲染级探针是**互补不是重复**：静态地板拦「**改错了**」，渲染探针拦「**量出来不对**」（几何量只有真浏览器有值）。产品侧 **0 欠账**
+
+【门禁内 · 静态半边棘轮 GATED_STATIC（7 个）】
+   用免浏览器开关跑；**冻结条数、只拦增长**（2026-09-22 用户拍板 ①）。
+  ⇅ verify_buttons.py                        --source-only · 冻结 rc≤1 / 条数≤10（declared）
+      **10 条**（`<button>` 硬编码 `h-8`/`h-9` 绕过 `Button` ⇒ 移动端不足 §6.1 的 48px；带 `min-h-tap` 补偿的**已正确排除**）。欠账 #32。
+  ⇅ verify_contrast.py                       --tokens-only · 冻结 rc≤0 / 条数≤0（cross）
+      **0 条（绿）**。唯一发现是规范表 5 条对比度**近似值**，探针自己标「不是产品缺陷」（属规范侧改数）。
+  ⇅ verify_design_tokens.py                  --source-only · 冻结 rc≤0 / 条数≤0（cross）
+      **0 条（绿）**。⚠️ 修 `rglob` 剪枝前要 **160s** ⇒ 曾被当挂死；改 `os.walk` + `dirnames[:]` 后 1.3s，输出**逐字节不变**（对照组文件集 116==116）。
+  ⇅ verify_focus_ring.py                     --source-only · 冻结 rc≤1 / 条数≤3（declared）
+      **3 条**（F3 环宽 `ring-2`=2px ≠ 规范 3px ×48 处、F4 环色 5 种不统一、F5 令牌 `shadow-focus` **0 调用点**）。欠账 #31。
+  ⇅ verify_font_scale.py                     --source-only · 冻结 rc≤1 / 条数≤6（declared）
+      **6 条**（聚 1 条根因）+ 18 条 T4 提示（**只报不判**，供拍板）。
+  ⇅ verify_grade_badges.py                   --source-only · 冻结 rc≤1 / 条数≤5（cross）
+      **5 条**（4 个等级映射不符 §2.4，其中 `brand`/`ink` 两个变体**组件层根本不存在**；+ G2 六份 `GRADE_TONE` 重复来源）。⚠️ 该探针**不自报** `缺陷 N 条` ⇒ 只能数 `✗`。欠账 #33。
+  ⇅ verify_typography.py                     --source-only · 冻结 rc≤1 / 条数≤86（declared）
+      **86 条**（判对数 28；含 `cn()` 吞掉 `text-body-sm` 一类），本批**条数最多**的欠账。欠账 #42。
+
+【门禁外 NOT_GATED（14 个；含「要接进来还差什么」）】
+  · verify_adjacent_targets.py               CDP（渲染级，`elementFromPoint` 测真实几何）+ 需要 4 个 dev server。要接进来得等「CI 里能起浏览器与 dev server」这个前提。
+  · verify_api_base_baked.py                 需要**生产构建产物**（`.next/static/chunks`）；CI 只跑 typecheck。要接进来得先 `next build`（分钟级）。
+  · verify_ws_msg_type_bypass.py             需要**运行中的后端**（WebSocket 握手）。
+  · verify_breakpoints.py                    需要真浏览器（CDP）测量 `env()`/媒体查询。
+  · verify_dark_mode.py                      CDP。
+  · verify_im_safe_area.py                   CDP + im dev server。
+  · verify_im_tabs.py                        CDP + im dev server。
+  · verify_mobile_375.py                     CDP + 四端 dev server（26 页 × 3 档）。
+  · verify_mobile_actionbar.py               CDP + lawyer dev server。
+  · verify_mobile_safe_area.py               CDP + 四端 dev server。
+  · verify_reduced_motion.py                 CDP。
+  · verify_render_e2e.py                     CDP + 后端 + 四端 dev server（21 项真实渲染断言）。
+  · verify_runtime_health.py                 CDP + 后端 + 四端 dev server（26 页 × 6 账号）。
+  · verify_tap_targets.py                    CDP + 四端 dev server。
+
+✅ 上面 7 个**已接进 CI**（阶段 3 棘轮：欠账再也无法悄悄变大）。
+🚨 **仍有 14 个探针在 CI 里从不执行**（`ci.yml` 的 evidence job 只跑 GATED + GATED_STATIC）。
+   这 14 个缺的是**环境前提**（浏览器 / dev server / 生产产物），不是「不重要」—— 一条从不执行的门禁与没有门禁在效果上无法区分。
+   明细：`evidence/ci_coverage_audit_2026-09-22.txt`
+
+【非门禁脚本：20 个已表态（判据 0b 守卫）】
+   库 / 工具 / 一次性诊断 —— **不是门禁，不该跑进 CI**。
+   ⚠️ 判据 0 只按 `verify_*.py` 守 ⇒ 新增的 `.py` **必须在这里表态**，
+      否则它可能是「一个不叫 verify_ 的真门禁」，会静默逃过（README 坑 46）。

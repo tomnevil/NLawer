@@ -1,0 +1,59 @@
+=== 一、真实调用点（取自源码，逐条可核） ===
+
+[Card.tsx:66 CardTitle（text-h4 在前）]
+  in  = ["text-h4 font-semibold text-ink-900","mt-2"]
+  out = font-semibold text-ink-900 mt-2
+  text-h4        → **被吃掉**
+  font-semibold  → 存活
+
+[Card.tsx:76 CardDescription（text-body-sm 在前）]
+  in  = ["mt-1 text-body-sm text-ink-500","mb-3"]
+  out = mt-1 text-ink-500 mb-3
+  text-body-sm   → **被吃掉**
+
+[Table.tsx:88 <th>（text-label 在前）]
+  in  = ["border-b border-line px-4 py-2.5 text-label font-medium","text-ink-500","text-center"]
+  out = border-b border-line px-4 py-2.5 font-medium text-ink-500 text-center
+  text-label     → **被吃掉**
+  font-medium    → 存活
+
+[Table.tsx:116 <td>（text-body-sm 与颜色在**同一字面量**内）]
+  in  = ["px-4 py-2.5 text-body-sm text-ink-700","text-center"]
+  out = px-4 py-2.5 text-ink-700 text-center
+  text-body-sm   → **被吃掉**
+
+[Timeline.tsx:41（同上，单字面量内）]
+  in  = ["py-6 text-center text-body-sm text-ink-500",null]
+  out = py-6 text-center text-ink-500
+  text-body-sm   → **被吃掉**
+
+=== 二、对照组：Tailwind 标准字号档**不受影响** ===
+  text-xs    + text-ink-700 → text-xs text-ink-700   （存活）
+  text-sm    + text-ink-700 → text-sm text-ink-700   （存活）
+  text-base  + text-ink-700 → text-base text-ink-700   （存活）
+  text-lg    + text-ink-700 → text-lg text-ink-700   （存活）
+
+=== 三、本项目 8 个语义字号档**全部**受影响 ===
+  text-caption   + text-ink-700 → text-ink-700   （**被吃**）
+  text-label     + text-ink-700 → text-ink-700   （**被吃**）
+  text-body-sm   + text-ink-700 → text-ink-700   （**被吃**）
+  text-body      + text-ink-700 → text-ink-700   （**被吃**）
+  text-body-lg   + text-ink-700 → text-ink-700   （**被吃**）
+  text-h4        + text-ink-700 → text-ink-700   （**被吃**）
+  text-h3        + text-ink-700 → text-ink-700   （**被吃**）
+  text-h2        + text-ink-700 → text-ink-700   （**被吃**）
+
+=== 四、顺序决定谁被吃（同一对类，两种顺序） ===
+  text-body-sm 在前 → text-white   （text-body-sm 被吃, text-white 存活）
+  text-white   在前 → text-body-sm   （text-body-sm 存活, text-white 被吃）
+  ⇒ 是「**后写的赢**」的组内覆盖，不是「总是丢字号」。
+
+=== 五、非字号/颜色组不受影响（对照） ===
+  text-body-sm   + font-medium        → text-body-sm font-medium   （存活）
+  text-body-sm   + bg-brand-600       → text-body-sm bg-brand-600   （存活）
+  text-body-sm   + leading-relaxed    → text-body-sm leading-relaxed   （存活）
+  text-body-sm   + text-center        → text-body-sm text-center   （存活）
+
+=== 六、同一字面量内部也会发生（无需多参数） ===
+  'px-4 text-body-sm text-ink-700' → px-4 text-ink-700   （text-body-sm **被吃**）
+  ⇒ 只要该字面量**经过 cn()**，同一串里的字号也会被吃掉。

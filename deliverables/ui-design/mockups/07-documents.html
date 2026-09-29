@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>概念图 07 · 文书工作台 — 律小智设计系统 v2「墨与纸」</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--ai-50:#F4F2FD;--ai-100:#E8E4FA;--ai-200:#D2CAF4;--ai-500:#6E56CF;
+--verified-50:#EDF8F4;--verified-100:#D6EFE6;--verified-500:#1E8E6E;
+--pending-50:#FDF6E9;--pending-500:#B4791F;
+--danger-50:#FDF0EE;--danger-500:#C0392B;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);--s3:0 16px 40px -8px rgba(16,24,40,.18);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html,body{margin:0;height:100%}
+body{font-family:var(--font-ui);font-size:14px;line-height:1.6;color:var(--ink-800);background:var(--ink-50);
+-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow:hidden}
+.doc{display:grid;grid-template-columns:260px 1fr 340px;height:100vh}
+
+/* 左 */
+.rail{background:#fff;border-right:1px solid var(--ink-200);display:flex;flex-direction:column}
+.rail-hd{padding:14px;border-bottom:1px solid var(--ink-100)}
+.back{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-500);text-decoration:none;margin-bottom:12px}
+.back svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.newbtn{width:100%;height:36px;border:1px solid var(--brand-200);background:var(--brand-50);color:var(--brand-700);border-radius:var(--r2);
+font:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.newbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2}
+.rail-body{flex:1;overflow-y:auto;padding:10px 8px}
+.gt{font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);padding:8px 8px 6px}
+.item{padding:9px 10px;border-radius:var(--r2);cursor:pointer;transition:.15s;margin-bottom:2px}
+.item:hover{background:var(--ink-50)}
+.item.on{background:var(--brand-50);box-shadow:inset 2px 0 0 var(--brand-600)}
+.item .t{font-size:12.5px;font-weight:500;color:var(--ink-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .m{font-size:11px;color:var(--ink-400);margin-top:3px;display:flex;gap:8px}
+.tag{font-size:10.5px;padding:1px 6px;border-radius:var(--r1);border:1px solid;font-weight:500;white-space:nowrap;line-height:1.6}
+.tag.ai{color:var(--ai-500);border-color:var(--ai-200);background:var(--ai-50)}
+.tag.ok{color:var(--verified-500);border-color:#BFE4D7;background:var(--verified-50)}
+.tag.wait{color:var(--pending-500);border-color:#EED9B4;background:var(--pending-50)}
+.tag.n{color:var(--ink-500);border-color:var(--ink-200);background:var(--ink-50)}
+
+/* 中：编辑器 */
+.editor{display:flex;flex-direction:column;background:var(--ink-100);min-width:0}
+.ehd{height:52px;flex:0 0 52px;background:#fff;border-bottom:1px solid var(--ink-200);display:flex;align-items:center;gap:11px;padding:0 18px}
+.ehd .t{font-size:14px;font-weight:600;color:var(--ink-900)}
+.ehd .meta{font-size:11.5px;color:var(--ink-400)}
+.ehd .r{margin-left:auto;display:flex;gap:7px}
+.btn{border:0;border-radius:var(--r2);font:inherit;font-size:12.5px;font-weight:600;height:32px;padding:0 12px;
+display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:.15s}
+.btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-p{background:var(--brand-600);color:#fff}
+.btn-v{background:var(--verified-500);color:#fff}
+.btn-g{background:#fff;color:var(--ink-700);border:1px solid var(--ink-200)}
+.paper-wrap{flex:1;overflow-y:auto;padding:26px 0 60px}
+.paper{width:640px;margin:0 auto;background:#fff;border:1px solid var(--ink-200);border-radius:2px;
+box-shadow:var(--s2);padding:56px 62px;font-family:var(--font-serif);font-size:14.5px;line-height:2.1;color:var(--ink-900)}
+.paper h1{font-size:21px;font-weight:600;text-align:center;letter-spacing:.08em;margin:0 0 6px}
+.paper .sub{text-align:center;font-size:11.5px;color:var(--ink-400);font-family:var(--font-ui);margin-bottom:34px;letter-spacing:.04em}
+.paper p{margin:0 0 16px;text-indent:2em}
+.paper .noid{text-indent:0}
+.var{background:var(--gold-100);border-bottom:1.5px dashed var(--gold-500);padding:1px 3px;border-radius:2px;cursor:pointer}
+.var.filled{background:transparent;border-bottom:0;color:var(--ink-900)}
+.risk{background:rgba(192,57,43,.09);box-shadow:inset 0 -2px 0 var(--danger-500);border-radius:2px;position:relative}
+.risk::after{content:"!";position:absolute;top:-7px;right:-7px;width:15px;height:15px;border-radius:50%;background:var(--danger-500);
+color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;font-family:var(--font-ui)}
+.sig{margin-top:40px;text-align:right;text-indent:0}
+.sig div{margin-bottom:12px}
+
+/* 右 */
+.side{background:#fff;border-left:1px solid var(--ink-200);display:flex;flex-direction:column;overflow-y:auto}
+.side-hd{padding:14px 16px;border-bottom:1px solid var(--ink-200);display:flex;align-items:center;gap:8px}
+.side-hd b{font-size:13.5px;font-weight:600;color:var(--ink-900)}
+.side-hd .c{margin-left:auto;font-size:11px;background:var(--danger-50);color:var(--danger-500);border:1px solid #F1C8C1;
+border-radius:99px;padding:1px 8px;font-weight:600}
+.blk{padding:14px 16px;border-bottom:1px solid var(--ink-100)}
+.bt{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400);margin-bottom:10px}
+.riskcard{border:1px solid #F1C8C1;background:var(--danger-50);border-radius:var(--r3);padding:11px 12px;margin-bottom:9px}
+.riskcard .h{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.riskcard .h b{font-size:12.5px;color:var(--danger-500)}
+.riskcard .h .lvl{margin-left:auto;font-size:10px;font-weight:700;color:#fff;background:var(--danger-500);border-radius:3px;padding:1px 5px}
+.riskcard .d{font-size:11.5px;line-height:1.75;color:#9C4034}
+.riskcard .fix{margin-top:8px;display:flex;gap:6px}
+.mini{border:1px solid #E5B4AC;background:#fff;color:var(--danger-500);border-radius:var(--r1);font:inherit;font-size:11px;
+font-weight:600;padding:3px 9px;cursor:pointer}
+.riskcard.warn{border-color:#EED9B4;background:var(--pending-50)}
+.riskcard.warn .h b,.riskcard.warn .d{color:#8A5A12}
+.riskcard.warn .h .lvl{background:var(--pending-500)}
+.riskcard.warn .mini{border-color:#EED9B4;color:#8A5A12}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11.5px;color:var(--ink-500);margin-bottom:4px}
+.input{height:34px;border:1px solid var(--ink-200);border-radius:var(--r2);background:#fff;display:flex;align-items:center;
+padding:0 10px;font-size:13px;color:var(--ink-800)}
+.input.done{border-color:var(--verified-500);background:var(--verified-50)}
+.input.todo{border-style:dashed;color:var(--ink-400)}
+.input .ck{margin-left:auto;width:14px;height:14px;stroke:var(--verified-500);fill:none;stroke-width:2.4}
+.ver{display:flex;gap:10px;font-size:11.5px;padding:7px 0;border-bottom:1px solid var(--ink-100)}
+.ver:last-child{border-bottom:0}
+.ver .v{font-family:var(--mono);color:var(--brand-700);font-weight:600;flex:0 0 42px}
+.ver .d{color:var(--ink-500);flex:1;line-height:1.65}
+.ver .t{color:var(--ink-400);white-space:nowrap}
+@media (max-width:1400px){.doc{grid-template-columns:230px 1fr 300px}}
+</style>
+</head>
+<body>
+<div class="doc">
+  <!-- 左：文书列表 -->
+  <aside class="rail">
+    <div class="rail-hd">
+      <a class="back" href="#"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>返回工作台</a>
+      <button class="newbtn"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>从模板新建</button>
+    </div>
+    <div class="rail-body">
+      <div class="gt">我的文书</div>
+      <div class="item on">
+        <div class="t">民事起诉状 · 买卖合同纠纷</div>
+        <div class="m"><span>草稿</span><span>2 分钟前</span></div>
+        <div style="margin-top:5px"><span class="tag wait">待律师复核</span></div>
+      </div>
+      <div class="item">
+        <div class="t">律师函 · 催告履行</div>
+        <div class="m"><span>已定稿</span><span>昨天</span></div>
+        <div style="margin-top:5px"><span class="tag ok">律师已确认</span></div>
+      </div>
+      <div class="item">
+        <div class="t">保密与数据处理协议</div>
+        <div class="m"><span>草稿</span><span>9/14</span></div>
+        <div style="margin-top:5px"><span class="tag ai">AI 生成</span></div>
+      </div>
+      <div class="gt">模板库 · 常用</div>
+      <div class="item"><div class="t">劳动仲裁申请书</div><div class="m"><span>32 个变量</span><span>劳动</span></div></div>
+      <div class="item"><div class="t">买卖合同（通用版）</div><div class="m"><span>46 个变量</span><span>商事</span></div></div>
+      <div class="item"><div class="t">法律意见书</div><div class="m"><span>28 个变量</span><span>通用</span></div></div>
+      <div class="item"><div class="t">股东会决议</div><div class="m"><span>18 个变量</span><span>公司</span></div></div>
+    </div>
+  </aside>
+
+  <!-- 中：编辑器 -->
+  <section class="editor">
+    <header class="ehd">
+      <span class="t">民事起诉状 · 买卖合同纠纷</span>
+      <span class="meta">已自动保存 · 版本 v4 · 1,842 字</span>
+      <div class="r">
+        <button class="btn btn-g"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>导出</button>
+        <button class="btn btn-g"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>请律师复核</button>
+        <button class="btn btn-v"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>确认定稿</button>
+      </div>
+    </header>
+
+    <div class="paper-wrap">
+      <div class="paper">
+        <h1>民事起诉状</h1>
+        <div class="sub">案号：NL-2026-0148　·　由律小智 AI 生成草稿，待执业律师复核</div>
+
+        <p class="noid"><b>原告：</b><span class="var filled">智元科技（上海）有限公司</span>，住所地上海市浦东新区张江路 <span class="var filled">88</span> 号，统一社会信用代码 <span class="var filled">91310115MA1K3XXX2B</span>，法定代表人 <span class="var filled">陈晓明</span>，职务董事长。</p>
+
+        <p class="noid"><b>被告：</b><span class="var filled">恒达机电设备有限公司</span>，住所地 <span class="var filled">江苏省苏州市工业园区星湖街 328 号</span>，法定代表人 <span class="var filled">刘恒达</span>。</p>
+
+        <p class="noid"><b>诉讼请求：</b></p>
+        <p>一、判令被告向原告支付逾期交货违约金 <span class="var">¥____（待律师确认计算基数）</span>；</p>
+        <p>二、判令被告赔偿原告因逾期交货造成的实际损失 <span class="var filled">人民币 420,000 元</span>；</p>
+        <p>三、本案诉讼费用由被告承担。</p>
+
+        <p class="noid"><b>事实与理由：</b></p>
+        <p>2026 年 3 月 12 日，原告与被告签订《设备采购合同》（合同编号 HT-2026-0412），约定由被告向原告供应精密加工设备 8 台，合同总价款人民币 <span class="var filled">1,860,000</span> 元，交货期限为 2026 年 6 月 30 日前。</p>
+
+        <p>合同签订后，原告已依约支付预付款 <span class="var filled">558,000</span> 元。然被告直至 2026 年 8 月 15 日方完成全部设备交付，逾期交付达 <span class="var filled">46</span> 天。<span class="risk">被告的迟延履行行为已构成根本违约</span>，原告多次催告，被告均未予以合理回应。</p>
+
+        <p>因被告逾期交货，原告无法按期向客户 <span class="var filled">上海远东精密制造有限公司</span> 交付产品，被迫以高于原合同价格的条件另行采购，并承担工期违约金，合计产生损失人民币 <span class="var filled">420,000</span> 元。</p>
+
+        <p>综上，被告的行为已构成违约，依据《中华人民共和国民法典》第五百七十七条、第五百八十三条、第五百八十四条之规定，被告应当承担赔偿损失的违约责任。为维护原告合法权益，特依法提起诉讼，恳请贵院支持原告全部诉讼请求。</p>
+
+        <div class="sig">
+          <div>此致</div>
+          <div><span class="var filled">上海市浦东新区人民法院</span></div>
+          <div style="margin-top:24px">具状人：智元科技（上海）有限公司</div>
+          <div><span class="var">____年____月____日</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右：风险与变量 -->
+  <aside class="side">
+    <div class="side-hd">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#C0392B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      <b>实时风险提示</b>
+      <span class="c">3 项</span>
+    </div>
+
+    <div class="blk">
+      <div class="riskcard">
+        <div class="h"><b>诉请金额计算依据缺失</b><span class="lvl">高</span></div>
+        <div class="d">第 1 项诉讼请求中违约金金额为空。本合同未约定违约金条款，直接主张违约金可能被驳回，建议改为按实际损失主张或援引法定标准。</div>
+        <div class="fix"><button class="mini">应用修改建议</button><button class="mini">忽略</button></div>
+      </div>
+      <div class="riskcard">
+        <div class="h"><b>「根本违约」表述偏强</b><span class="lvl">高</span></div>
+        <div class="d">逾期交货 46 天通常不构成根本违约（除非导致合同目的不能实现）。建议改为「构成违约」以避免被对方抓住表述漏洞。</div>
+        <div class="fix"><button class="mini">应用修改建议</button><button class="mini">忽略</button></div>
+      </div>
+      <div class="riskcard warn">
+        <div class="h"><b>损失金额需补充凭证</b><span class="lvl">中</span></div>
+        <div class="d">420,000 元损失目前仅有客户《索赔函》，缺少付款凭证，建议在举证期限内补充，否则该项主张存在不被支持的风险。</div>
+        <div class="fix"><button class="mini">查看证据清单</button></div>
+      </div>
+    </div>
+
+    <div class="blk">
+      <div class="bt">待填写变量 · 2 / 34</div>
+      <div class="field">
+        <label>原告住所地</label>
+        <div class="input done">上海市浦东新区张江路 88 号<svg class="ck" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg></div>
+      </div>
+      <div class="field">
+        <label>被告住所地</label>
+        <div class="input done">江苏省苏州市工业园区星湖街 328 号<svg class="ck" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg></div>
+      </div>
+      <div class="field">
+        <label>逾期交货违约金金额 <span style="color:var(--danger-500)">必填</span></label>
+        <div class="input todo">点击填写…</div>
+      </div>
+      <div class="field">
+        <label>具状日期</label>
+        <div class="input todo">点击填写…</div>
+      </div>
+    </div>
+
+    <div class="blk" style="border-bottom:0">
+      <div class="bt">版本历史</div>
+      <div class="ver"><span class="v">v4</span><span class="d">律师复核意见已合入</span><span class="t">09-15 16:40</span></div>
+      <div class="ver"><span class="v">v3</span><span class="d">AI 生成初稿 · 补充事实与理由</span><span class="t">09-15 11:12</span></div>
+      <div class="ver"><span class="v">v2</span><span class="d">套用模板 · 变量自动填充</span><span class="t">09-15 11:05</span></div>
+      <div class="ver"><span class="v">v1</span><span class="d">从模板「民事起诉状」新建</span><span class="t">09-15 11:02</span></div>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

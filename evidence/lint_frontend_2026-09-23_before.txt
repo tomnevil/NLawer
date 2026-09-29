@@ -1,0 +1,71 @@
+# 前端 lint 实测 · **改前**（待裁定 ⑤ 的「可用层」取证 · 2026-09-23）
+#
+# 命令：cd frontend && pnpm lint </dev/null        （非 TTY，复刻 CI 环境）
+# 退出码：1
+#
+# 结论：这 5 个 `lint` 脚本（根 `pnpm -r lint` + 4 个 app 的 `next lint`）
+#       **从来没有 lint 过任何东西**。
+#   · 没有 eslint 配置、没有 eslint 依赖 ⇒ `next lint` 直接**进入交互式初始化向导**
+#     （`? How would you like to configure ESLint?` / `❯ Strict (recommended)` / `Base`），
+#     非 TTY 下拿不到输入 ⇒ 四端各自 Cancel ⇒ pnpm `ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL` ⇒ exit 1。
+#   · 它自己就打印了「`next lint` is deprecated and will be removed in Next.js 16」
+#     ⇒ **「把它修好」不是出路**（上游已弃用，要走 ESLint CLI）。
+#
+# ⚠️ 另一个静默事实：`Scope: 7 of 8 workspace projects` ——
+#    `packages/ui`（**设计系统本体**）**连 `lint` 脚本都没有** ⇒ `pnpm -r lint` **静默跳过它**。
+#    ⇒ 「有 lint 脚本」与「lint 覆盖到了设计系统」是两件事。
+#
+# ⇒ 处置（用户已授权「按我的建议推进」）：删掉这 5 个装饰性脚本，
+#    并在 `package.json` 里留 `//lint` 说明「为什么没有 + 要重引入先拍板规则集」。
+
+=== 原始输出 ===
+
+> nlaw-frontend@0.1.0 lint C:\Users\RS\Documents\trae_projects\NLawer\frontend
+> pnpm -r lint
+
+Scope: 7 of 8 workspace projects
+apps/im lint$ next lint
+apps/admin lint$ next lint
+apps/lawyer lint$ next lint
+apps/web lint$ next lint
+apps/lawyer lint: `next lint` is deprecated and will be removed in Next.js 16.
+apps/lawyer lint: For new projects, use create-next-app to choose your preferred linter.
+apps/lawyer lint: For existing projects, migrate to the ESLint CLI:
+apps/lawyer lint: npx @next/codemod@canary next-lint-to-eslint-cli .
+apps/im lint: `next lint` is deprecated and will be removed in Next.js 16.
+apps/im lint: For new projects, use create-next-app to choose your preferred linter.
+apps/im lint: For existing projects, migrate to the ESLint CLI:
+apps/im lint: npx @next/codemod@canary next-lint-to-eslint-cli .
+apps/web lint: `next lint` is deprecated and will be removed in Next.js 16.
+apps/web lint: For new projects, use create-next-app to choose your preferred linter.
+apps/web lint: For existing projects, migrate to the ESLint CLI:
+apps/web lint: npx @next/codemod@canary next-lint-to-eslint-cli .
+apps/admin lint: `next lint` is deprecated and will be removed in Next.js 16.
+apps/admin lint: For new projects, use create-next-app to choose your preferred linter.
+apps/admin lint: For existing projects, migrate to the ESLint CLI:
+apps/admin lint: npx @next/codemod@canary next-lint-to-eslint-cli .
+apps/im lint: ? How would you like to configure ESLint? https://nextjs.org/docs/app/api-reference/config/eslint
+apps/im lint: ❯  Strict (recommended)
+apps/im lint:    Base
+apps/im lint:  ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+apps/lawyer lint: ? How would you like to configure ESLint? https://nextjs.org/docs/app/api-reference/config/eslint
+apps/admin lint: ? How would you like to configure ESLint? https://nextjs.org/docs/app/api-reference/config/eslint
+apps/lawyer lint: ❯  Strict (recommended)
+apps/lawyer lint:  ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+apps/lawyer lint:    Base
+apps/web lint: ? How would you like to configure ESLint? https://nextjs.org/docs/app/api-reference/config/eslint
+apps/admin lint: ❯  Strict (recommended)
+apps/admin lint:    Base
+apps/admin lint:  ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+apps/web lint: ❯  Strict (recommended)
+apps/web lint:    Base
+apps/web lint:  ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+apps/im lint:    Cancel
+apps/im lint: Failed
+C:\Users\RS\Documents\trae_projects\NLawer\frontend\apps\im:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  app-im@0.1.0 lint: `next lint`
+Exit status 1
+apps/lawyer lint:    Cancel
+ ELIFECYCLE  Command failed with exit code 1.
+
+=== 原始输出结束 ===

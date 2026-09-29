@@ -1,0 +1,69 @@
+{
+  "created_at": "2026-09-26T09:54:32",
+  "admin": "http://localhost:3002",
+  "profiles": {
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "dsf": 3,
+      "mobile": true
+    },
+    "desktop": {
+      "width": 1280,
+      "height": 900,
+      "dsf": 2,
+      "mobile": false
+    }
+  },
+  "tol": 12,
+  "max_ratio": 0.002,
+  "server_mode": "prod",
+  "fingerprint": {
+    "platform": {
+      "in_progress": 4,
+      "work_orders_pending": 1,
+      "work_orders_total": 3
+    },
+    "firm_hlw": {
+      "in_progress": 10,
+      "work_orders_pending": 2,
+      "work_orders_total": 6
+    }
+  },
+  "pages": {
+    "mobile__login": "mobile__login.png",
+    "mobile__cockpit": "mobile__cockpit.png",
+    "mobile__reviews": "mobile__reviews.png",
+    "mobile__cases": "mobile__cases.png",
+    "mobile__dispatches": "mobile__dispatches.png",
+    "mobile__compliance": "mobile__compliance.png",
+    "mobile__billing": "mobile__billing.png",
+    "mobile__complaints": "mobile__complaints.png",
+    "desktop__login": "desktop__login.png",
+    "desktop__cockpit": "desktop__cockpit.png",
+    "desktop__reviews": "desktop__reviews.png",
+    "desktop__cases": "desktop__cases.png",
+    "desktop__dispatches": "desktop__dispatches.png",
+    "desktop__compliance": "desktop__compliance.png",
+    "desktop__billing": "desktop__billing.png",
+    "desktop__complaints": "desktop__complaints.png"
+  },
+  "sha256": {
+    "mobile__login": "cf36ca6630bf3c92",
+    "mobile__cockpit": "3f75d7b23bd5fd7e",
+    "mobile__reviews": "18d07cc90949cef4",
+    "mobile__cases": "2a63aa8188213c27",
+    "mobile__dispatches": "30dbe7f0326b9345",
+    "mobile__compliance": "2ad0f54332afda8f",
+    "mobile__billing": "856d039178fa8a05",
+    "mobile__complaints": "94b13584756d1216",
+    "desktop__login": "6e1bbe8be1346878",
+    "desktop__cockpit": "13a6ed85b427d166",
+    "desktop__reviews": "f2ee6d030460f30f",
+    "desktop__cases": "86417a0f2656b34d",
+    "desktop__dispatches": "6bb5dacf7def6a41",
+    "desktop__compliance": "8bf39d63d931b93d",
+    "desktop__billing": "1717227e22c8a351",
+    "desktop__complaints": "531ecff5a7b05270"
+  }
+}

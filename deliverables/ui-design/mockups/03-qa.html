@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>概念图 03 · 智能问答工作台 — 律小智设计系统 v2「墨与纸」</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--ai-50:#F4F2FD;--ai-100:#E8E4FA;--ai-200:#D2CAF4;--ai-500:#6E56CF;--ai-600:#5B45B5;
+--verified-50:#EDF8F4;--verified-100:#D6EFE6;--verified-500:#1E8E6E;
+--pending-50:#FDF6E9;--pending-500:#B4791F;
+--danger-50:#FDF0EE;--danger-500:#C0392B;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);--s3:0 16px 40px -8px rgba(16,24,40,.18);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+}
+html,body{margin:0;height:100%}
+body{font-family:var(--font-ui);font-size:14px;line-height:1.6;color:var(--ink-800);background:var(--ink-50);
+-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow:hidden}
+.qa{display:grid;grid-template-columns:240px 1fr 380px;height:100vh}
+
+/* ---------- 左：会话列表 ---------- */
+.rail{background:#fff;border-right:1px solid var(--ink-200);display:flex;flex-direction:column;min-width:0}
+.rail-hd{padding:14px 14px 12px;border-bottom:1px solid var(--ink-100)}
+.back{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-500);text-decoration:none;margin-bottom:12px}
+.back svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.newbtn{width:100%;height:36px;border:1px solid var(--brand-200);background:var(--brand-50);color:var(--brand-700);
+border-radius:var(--r2);font:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.newbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2}
+.rail-body{flex:1;overflow-y:auto;padding:10px 8px}
+.gt{font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);padding:6px 8px}
+.conv{padding:9px 10px;border-radius:var(--r2);cursor:pointer;transition:.15s;margin-bottom:2px}
+.conv:hover{background:var(--ink-50)}
+.conv.on{background:var(--brand-50);box-shadow:inset 2px 0 0 var(--brand-600)}
+.conv .t{font-size:13px;font-weight:500;color:var(--ink-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv .m{font-size:11px;color:var(--ink-400);margin-top:3px;display:flex;gap:8px}
+
+/* ---------- 中：对话 ---------- */
+.chat{display:flex;flex-direction:column;min-width:0;background:var(--ink-50)}
+.chat-hd{height:56px;flex:0 0 56px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);
+border-bottom:1px solid var(--ink-200);display:flex;align-items:center;gap:12px;padding:0 20px}
+.chat-hd h2{margin:0;font-size:15px;font-weight:600;color:var(--ink-900)}
+.legend{display:flex;gap:14px;margin-left:auto;font-size:11px;color:var(--ink-500)}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:14px;height:3px;border-radius:2px;display:block}
+.legend i.ai{background:repeating-linear-gradient(90deg,var(--ai-500) 0 4px,transparent 4px 7px)}
+.legend i.ok{background:var(--verified-500)}
+.legend i.wa{background:var(--pending-500)}
+
+.stream{flex:1;overflow-y:auto;padding:24px 28px 8px}
+.msg{max-width:820px;margin:0 auto 22px}
+.who{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.who .av{width:24px;height:24px;border-radius:var(--r2);display:grid;place-items:center;flex:0 0 24px;font-size:11px;font-weight:600}
+.who .av.u{background:var(--ink-200);color:var(--ink-600)}
+.who .av.a{background:linear-gradient(140deg,#6E56CF,#5B45B5);color:#fff}
+.who b{font-size:12.5px;font-weight:600;color:var(--ink-700)}
+.who .tm{font-size:11px;color:var(--ink-400)}
+.bubble{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);padding:14px 16px;font-size:13.5px;
+line-height:1.75;color:var(--ink-700);box-shadow:var(--s1)}
+
+/* 用户消息 */
+.umsg{margin-left:auto;max-width:560px;background:var(--brand-600);color:#fff;border-radius:var(--r3) var(--r3) var(--r1) var(--r3);
+padding:11px 14px;font-size:13.5px;line-height:1.7;box-shadow:var(--s1)}
+
+/* AI 四段式回答卡 */
+.answer{background:#fff;border:1px solid var(--ai-200);border-radius:var(--r3);box-shadow:var(--s1);overflow:hidden}
+.answer-hd{display:flex;align-items:center;gap:9px;padding:11px 16px;background:var(--ai-50);border-bottom:1px dashed var(--ai-200)}
+.answer-hd .ico{width:20px;height:20px;border-radius:5px;background:linear-gradient(140deg,#6E56CF,#5B45B5);display:grid;place-items:center}
+.answer-hd .ico svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
+.answer-hd b{font-size:12.5px;font-weight:600;color:var(--ai-600)}
+.answer-hd .sp{font-size:11px;color:var(--ink-400)}
+.answer-hd .tools{margin-left:auto;display:flex;gap:6px}
+.tbtn{width:26px;height:26px;border-radius:var(--r1);border:1px solid var(--ink-200);background:#fff;display:grid;place-items:center;cursor:pointer}
+.tbtn svg{width:13px;height:13px;stroke:var(--ink-500);fill:none;stroke-width:1.8}
+
+.sec{padding:14px 16px;border-bottom:1px solid var(--ink-100);display:flex;gap:12px}
+.sec:last-child{border-bottom:0}
+.sec .idx{flex:0 0 20px;height:20px;border-radius:var(--r1);display:grid;place-items:center;font-size:11px;font-weight:600;
+background:var(--ink-100);color:var(--ink-600);margin-top:1px}
+.sec.c .idx{background:var(--brand-600);color:#fff}
+.sec.a .idx{background:var(--verified-500);color:#fff}
+.sec.r .idx{background:var(--pending-500);color:#fff}
+.sec .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--ink-400);text-transform:uppercase;margin-bottom:5px}
+.sec .txt{font-size:13.5px;line-height:1.8;color:var(--ink-700)}
+.sec .txt em{font-style:normal;background:var(--gold-100);padding:1px 3px;border-radius:3px;box-shadow:inset 0 -1px 0 var(--gold-400)}
+.ref{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;margin:0 2px;
+border-radius:4px;background:var(--brand-50);border:1px solid var(--brand-200);color:var(--brand-700);
+font-size:10.5px;font-weight:600;cursor:pointer;vertical-align:1px;transition:.15s}
+.ref:hover{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+.sec.r .txt{color:#8A5A12}
+.sec.r{background:var(--pending-50)}
+
+.answer-ft{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--ink-50);border-top:1px solid var(--ink-100);
+font-size:11.5px;color:var(--ink-500)}
+.answer-ft .grow{flex:1}
+.pill{border:1px solid var(--ink-200);background:#fff;border-radius:99px;padding:4px 11px;font-size:11.5px;color:var(--ink-600);
+cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-weight:500}
+.pill svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+.pill.pri{background:var(--verified-500);border-color:var(--verified-500);color:#fff}
+
+/* 输入区 */
+.composer{flex:0 0 auto;padding:12px 28px 18px;background:var(--ink-50)}
+.composer .box{max-width:820px;margin:0 auto;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r4);
+box-shadow:var(--s2);overflow:hidden}
+.modes{display:flex;gap:4px;padding:9px 12px 0}
+.modes button{border:0;background:transparent;font:inherit;font-size:12px;color:var(--ink-500);padding:5px 10px;border-radius:99px;cursor:pointer;font-weight:500}
+.modes button.on{background:var(--brand-50);color:var(--brand-700);box-shadow:inset 0 0 0 1px var(--brand-200)}
+.ta{display:block;width:100%;border:0;outline:0;font:inherit;font-size:13.5px;line-height:1.7;padding:10px 14px 4px;
+resize:none;background:transparent;color:var(--ink-900);height:52px}
+.ta::placeholder{color:var(--ink-400)}
+.cbar{display:flex;align-items:center;gap:8px;padding:8px 12px 11px}
+.cbtn{border:1px solid var(--ink-200);background:#fff;border-radius:var(--r2);height:30px;padding:0 10px;font:inherit;
+font-size:12px;color:var(--ink-600);display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.cbtn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.9}
+.send{margin-left:auto;height:32px;padding:0 16px;border:0;border-radius:var(--r2);background:var(--brand-600);color:#fff;
+font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;cursor:pointer;box-shadow:var(--s1)}
+.send svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.disc{margin:9px auto 0;max-width:820px;text-align:center;font-size:10.5px;color:var(--ink-400)}
+
+/* ---------- 右：引用溯源面板 ---------- */
+.src{background:#fff;border-left:1px solid var(--ink-200);display:flex;flex-direction:column;min-width:0}
+.src-hd{height:56px;flex:0 0 56px;border-bottom:1px solid var(--ink-200);display:flex;align-items:center;gap:9px;padding:0 18px}
+.src-hd svg{width:15px;height:15px;stroke:var(--brand-600);fill:none;stroke-width:1.9}
+.src-hd b{font-size:13.5px;font-weight:600;color:var(--ink-900)}
+.src-hd .c{margin-left:auto;font-size:11px;color:var(--ink-400);background:var(--ink-100);border-radius:99px;padding:2px 8px}
+.src-body{flex:1;overflow-y:auto;padding:16px}
+.cite{border:1px solid var(--ink-200);border-radius:var(--r3);overflow:hidden;margin-bottom:12px;transition:.15s}
+.cite.on{border-color:var(--brand-400);box-shadow:0 0 0 3px rgba(54,96,176,.12)}
+.cite-hd{display:flex;align-items:flex-start;gap:9px;padding:11px 12px;background:var(--ink-50);border-bottom:1px solid var(--ink-100)}
+.cite-hd .n{flex:0 0 18px;height:18px;border-radius:var(--r1);background:var(--brand-600);color:#fff;font-size:10.5px;
+font-weight:600;display:grid;place-items:center}
+.cite-hd .ti{font-size:12.5px;font-weight:600;color:var(--ink-800);line-height:1.5}
+.cite-hd .mt{font-size:10.5px;color:var(--ink-400);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.cite-bd{padding:12px;font-family:var(--font-serif);font-size:12.5px;line-height:1.95;color:var(--ink-700);
+border-left:3px solid var(--gold-400);background:#fff}
+.cite-bd mark{background:var(--gold-100);box-shadow:inset 0 -1px 0 var(--gold-500);color:var(--ink-900)}
+.cite-ft{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--ink-100);background:var(--ink-50)}
+.src-note{margin:16px;padding:10px 12px;border-radius:var(--r2);background:var(--ai-50);border:1px dashed var(--ai-200);
+font-size:11.5px;color:var(--ai-600);line-height:1.7}
+@media (max-width:1400px){.qa{grid-template-columns:220px 1fr 320px}}
+</style>
+</head>
+<body>
+<div class="qa">
+  <!-- ============ 左：会话列表 ============ -->
+  <aside class="rail">
+    <div class="rail-hd">
+      <a class="back" href="#"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>返回工作台</a>
+      <button class="newbtn"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新建咨询</button>
+    </div>
+    <div class="rail-body">
+      <div class="gt">今天</div>
+      <div class="conv on">
+        <div class="t">供应商逾期交货如何主张损失</div>
+        <div class="m"><span>4 段式</span><span>3 条引用</span><span>09:24</span></div>
+      </div>
+      <div class="conv">
+        <div class="t">竞业限制补偿金标准是否有效</div>
+        <div class="m"><span>4 段式</span><span>5 条引用</span><span>08:10</span></div>
+      </div>
+      <div class="gt">昨天</div>
+      <div class="conv">
+        <div class="t">分公司注销流程与债权债务承接</div>
+        <div class="m"><span>文书</span><span>已转律师</span><span>16:40</span></div>
+      </div>
+      <div class="conv">
+        <div class="t">员工手册加班条款修订建议</div>
+        <div class="m"><span>合规</span><span>2 条引用</span><span>14:02</span></div>
+      </div>
+      <div class="gt">更早</div>
+      <div class="conv">
+        <div class="t">数据出境安全评估申报条件</div>
+        <div class="m"><span>4 段式</span><span>4 条引用</span><span>9/12</span></div>
+      </div>
+      <div class="conv">
+        <div class="t">技术服务合同验收标准约定</div>
+        <div class="m"><span>合同审查</span><span>6 条引用</span><span>9/11</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ 中：对话 ============ -->
+  <section class="chat">
+    <header class="chat-hd">
+      <h2>供应商逾期交货如何主张损失</h2>
+      <span style="font-size:11px;color:var(--ink-400);border:1px solid var(--ink-200);border-radius:99px;padding:2px 8px">商业合同</span>
+      <div class="legend">
+        <span><i class="ai"></i>AI 生成</span>
+        <span><i class="ok"></i>律师已确认</span>
+        <span><i class="wa"></i>风险提示</span>
+      </div>
+    </header>
+
+    <div class="stream">
+      <!-- 用户提问 -->
+      <div class="msg">
+        <div class="who" style="justify-content:flex-end">
+          <span class="tm">09:24</span><b>我</b>
+          <span class="av u">陈</span>
+        </div>
+        <div class="umsg">
+          我们向供应商采购了一批设备，合同约定 6 月 30 日前交货，实际到 8 月 15 日才到。合同里没有约定违约金条款，我们可以主张哪些损失？需要准备什么证据？
+        </div>
+      </div>
+
+      <!-- AI 四段式回答 -->
+      <div class="msg">
+        <div class="who">
+          <span class="av a">AI</span><b>律小智</b>
+          <span class="tm">09:24 · 耗时 6.2 秒 · 检索 14 部法规</span>
+        </div>
+        <div class="answer">
+          <div class="answer-hd">
+            <div class="ico"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/></svg></div>
+            <b>四段式结构化回答</b>
+            <span class="sp">结论 / 法律依据 / 行动建议 / 风险提示</span>
+            <div class="tools">
+              <button class="tbtn" title="复制"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+              <button class="tbtn" title="导出"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></button>
+              <button class="tbtn" title="委托律师复核"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></button>
+            </div>
+          </div>
+
+          <div class="sec c">
+            <span class="idx">1</span>
+            <div style="flex:1">
+              <div class="lbl">结论</div>
+              <div class="txt">
+                合同虽未约定违约金，贵司仍可主张<em>逾期交货造成的实际损失</em>，并可依据法定标准主张损失赔偿。核心请求权基础为违约责任，
+                赔偿范围以「实际损失 + 可得利益损失」为限，且不超过违约方订立合同时<em>可预见</em>的损失
+                <span class="ref">1</span><span class="ref">2</span>。若能证明设备已转售且客户因此取消订单，可得利益损失可获支持。
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <span class="idx">2</span>
+            <div style="flex:1">
+              <div class="lbl">法律依据</div>
+              <div class="txt">
+                1. 《中华人民共和国民法典》第五百七十七条、第五百八十三条——违约方应承担继续履行、采取补救措施或赔偿损失等违约责任
+                <span class="ref">1</span>；<br />
+                2. 《民法典》第五百八十四条——损失赔偿额相当于因违约造成的损失，包括合同履行后可以获得的利益，但不得超过违约方订立合同时预见到或应当预见到的损失
+                <span class="ref">2</span>；<br />
+                3. 《最高人民法院关于审理买卖合同纠纷案件适用法律问题的解释》第二十一条——逾期交货情形下买受人的救济路径
+                <span class="ref">3</span>。
+              </div>
+            </div>
+          </div>
+
+          <div class="sec a">
+            <span class="idx">3</span>
+            <div style="flex:1">
+              <div class="lbl">行动建议</div>
+              <div class="txt">
+                ① <b>立即固定证据</b>：合同原件、往来函件、催告通知（建议以 EMS 并保留回执）、物流签收记录；<br />
+                ② <b>计算损失</b>：列明停工损失、替代采购差价、对外违约赔偿、仓储费用，逐项附凭证；<br />
+                ③ <b>发送律师函</b>：明确主张金额与 15 日履行期限，为后续诉讼固定催告事实；<br />
+                ④ <b>评估诉讼时效</b>：自 8 月 15 日交付之日起 3 年内主张，建议先发函中断时效。
+              </div>
+            </div>
+          </div>
+
+          <div class="sec r">
+            <span class="idx">4</span>
+            <div style="flex:1">
+              <div class="lbl">风险提示</div>
+              <div class="txt">
+                ⚠ 可得利益损失举证难度较高，法院通常要求「必然发生」且计算方式明确，建议以实际支出损失为主张基础；<br />
+                ⚠ 若贵司在对方逾期后仍接收货物且未及时提出异议，可能被认定为接受迟延履行，影响损失主张；<br />
+                ⚠ 需核查合同是否存在免责条款或不可抗力约定，对方可能据此抗辩。
+              </div>
+            </div>
+          </div>
+
+          <div class="answer-ft">
+            <span>本回答由 AI 生成，未经律师复核</span>
+            <span class="grow"></span>
+            <span class="pill"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>采纳</span>
+            <span class="pill"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/></svg>转律师复核</span>
+            <span class="pill pri"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/></svg>生成律师函</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="composer">
+      <div class="box">
+        <div class="modes">
+          <button class="on">问答</button>
+          <button>文书起草</button>
+          <button>合同审查</button>
+          <button>合规扫描</button>
+        </div>
+        <textarea class="ta" placeholder="继续追问，或上传合同 PDF 让我逐条审查…"></textarea>
+        <div class="cbar">
+          <button class="cbtn"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2 9.2a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg>上传文件</button>
+          <button class="cbtn"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/></svg>引用知识库</button>
+          <button class="cbtn"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>深度检索</button>
+          <button class="send"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>发送</button>
+        </div>
+      </div>
+      <p class="disc">AI 生成内容仅供参考，不构成正式法律意见。重要决策请委托执业律师复核。</p>
+    </div>
+  </section>
+
+  <!-- ============ 右：引用溯源 ============ -->
+  <aside class="src">
+    <div class="src-hd">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Z"/><path d="M8 7h7M8 11h7"/></svg>
+      <b>引用溯源</b>
+      <span class="c">3 条</span>
+    </div>
+    <div class="src-body">
+      <div class="cite on">
+        <div class="cite-hd">
+          <span class="n">1</span>
+          <div>
+            <div class="ti">《中华人民共和国民法典》第五百七十七条</div>
+            <div class="mt"><span>法律</span><span>2021-01-01 生效</span><span style="color:var(--verified-500)">● 现行有效</span></div>
+          </div>
+        </div>
+        <div class="cite-bd">
+          当事人一方不履行合同义务或者履行合同义务不符合约定的，应当承担<mark>继续履行、采取补救措施或者赔偿损失</mark>等违约责任。
+        </div>
+        <div class="cite-ft">
+          <span style="font-size:11px;color:var(--ink-400)">来源：全国人大 · 官方文本</span>
+          <span style="margin-left:auto;font-size:11.5px;color:var(--brand-600);font-weight:500;cursor:pointer">查看全文 →</span>
+        </div>
+      </div>
+
+      <div class="cite">
+        <div class="cite-hd">
+          <span class="n">2</span>
+          <div>
+            <div class="ti">《中华人民共和国民法典》第五百八十四条</div>
+            <div class="mt"><span>法律</span><span>2021-01-01 生效</span><span style="color:var(--verified-500)">● 现行有效</span></div>
+          </div>
+        </div>
+        <div class="cite-bd">
+          当事人一方不履行合同义务或者履行合同义务不符合约定，造成对方损失的，损失赔偿额应当相当于因违约所造成的损失，
+          包括合同履行后可以获得的利益；但是，<mark>不得超过违约一方订立合同时预见到或者应当预见到的因违约可能造成的损失</mark>。
+        </div>
+        <div class="cite-ft">
+          <span style="font-size:11px;color:var(--ink-400)">来源：全国人大 · 官方文本</span>
+          <span style="margin-left:auto;font-size:11.5px;color:var(--brand-600);font-weight:500;cursor:pointer">查看全文 →</span>
+        </div>
+      </div>
+
+      <div class="cite">
+        <div class="cite-hd">
+          <span class="n">3</span>
+          <div>
+            <div class="ti">买卖合同司法解释（2020 修正）第二十一条</div>
+            <div class="mt"><span>司法解释</span><span>2021-01-01 生效</span><span style="color:var(--verified-500)">● 现行有效</span></div>
+          </div>
+        </div>
+        <div class="cite-bd">
+          出卖人逾期交付标的物的，买受人可以主张解除合同、请求赔偿损失；买受人主张<mark>替代购买差价损失</mark>的，人民法院应予支持。
+        </div>
+        <div class="cite-ft">
+          <span style="font-size:11px;color:var(--ink-400)">来源：最高人民法院</span>
+          <span style="margin-left:auto;font-size:11.5px;color:var(--brand-600);font-weight:500;cursor:pointer">查看全文 →</span>
+        </div>
+      </div>
+
+      <div class="src-note">
+        <b>责任边界说明</b><br />
+        左侧回答中，紫色标记为 AI 生成内容；经执业律师复核后，将转为绿色「律师已确认」状态并记录复核人与时间。
+      </div>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

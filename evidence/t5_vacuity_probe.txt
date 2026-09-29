@@ -1,0 +1,10 @@
+
+=== im /  视口 390 ===
+  叶子短文本元素 41 个；字号不在阶梯且 <18px 的 0 个
+  其中 line-height 为 `normal`（比率算不出）的 0 个
+  全页 line-height 为 `normal` 的元素占比：0/41 = 0%
+
+=== web /qa  视口 390 ===
+  叶子短文本元素 38 个；字号不在阶梯且 <18px 的 0 个
+  其中 line-height 为 `normal`（比率算不出）的 0 个
+  全页 line-height 为 `normal` 的元素占比：0/38 = 0%

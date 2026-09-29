@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>律小智 · 视觉设计规范 v2「墨与纸」— 评审稿</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-50:#FBF7EF;--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--ai-50:#F4F2FD;--ai-100:#E8E4FA;--ai-200:#D2CAF4;--ai-500:#6E56CF;--ai-600:#5B45B5;
+--verified-50:#EDF8F4;--verified-100:#D6EFE6;--verified-500:#1E8E6E;--verified-600:#167055;
+--pending-50:#FDF6E9;--pending-100:#F8EAD1;--pending-500:#B4791F;--pending-600:#8F5F14;
+--danger-50:#FDF0EE;--danger-100:#F9DCD7;--danger-500:#C0392B;--danger-600:#9C2C20;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);--s3:0 16px 40px -8px rgba(16,24,40,.18);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font-ui);font-size:14.5px;line-height:1.75;color:var(--ink-800);background:var(--ink-50);
+-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.layout{display:grid;grid-template-columns:264px 1fr}
+
+/* 侧目录 */
+.toc{position:sticky;top:0;height:100vh;background:var(--brand-950);color:#AFC0D8;overflow-y:auto;padding:24px 18px}
+.toc .mark{display:flex;align-items:center;gap:10px;padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.toc .mark i{width:32px;height:32px;border-radius:var(--r3);display:grid;place-items:center;flex:0 0 32px;
+background:linear-gradient(150deg,#274C93,#0F2A4A);border:1px solid rgba(198,164,105,.4)}
+.toc .mark i svg{width:18px;height:18px;stroke:var(--gold-400);fill:none;stroke-width:1.7}
+.toc .mark b{display:block;font-size:13.5px;color:#fff;font-weight:600}
+.toc .mark span{font-size:10.5px;color:#7E97BC;letter-spacing:.06em}
+.toc .ver{font-size:10.5px;color:#7E97BC;margin-bottom:18px;padding:5px 8px;border:1px solid rgba(255,255,255,.1);border-radius:var(--r1);display:inline-block}
+.toc a{display:block;padding:6px 10px;border-radius:var(--r2);color:#AFC0D8;text-decoration:none;font-size:12.5px;transition:.15s;margin-bottom:1px}
+.toc a:hover{background:rgba(255,255,255,.07);color:#fff}
+.toc a.sub{padding-left:22px;font-size:12px;color:#8FA6C7}
+.toc .gt{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5E769B;padding:14px 10px 6px}
+
+/* 内容 */
+main{max-width:1080px;padding:0 56px 120px}
+section{padding-top:64px;scroll-margin-top:20px}
+h1.cover{font-size:38px;line-height:1.25;font-weight:600;letter-spacing:-.02em;color:var(--ink-900);margin:0 0 14px}
+h2{font-size:23px;font-weight:600;letter-spacing:-.01em;color:var(--ink-900);margin:0 0 6px;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-family:var(--mono);font-size:14px;color:var(--brand-500);font-weight:600}
+h3{font-size:16px;font-weight:600;color:var(--ink-900);margin:32px 0 10px}
+h4{font-size:13.5px;font-weight:600;color:var(--ink-700);margin:20px 0 8px}
+p{margin:0 0 14px;color:var(--ink-700)}
+.lead{font-size:15.5px;line-height:1.85;color:var(--ink-600)}
+.rule{height:1px;background:var(--ink-200);margin:18px 0 26px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--ink-100);border:1px solid var(--ink-200);border-radius:3px;padding:1px 5px;color:var(--ink-700)}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin-bottom:6px;color:var(--ink-700)}
+strong{color:var(--ink-900);font-weight:600}
+
+.hero{margin:56px 0 0;padding:40px 44px;border-radius:var(--r4);color:#fff;position:relative;overflow:hidden;
+background:radial-gradient(120% 100% at 0% 0%,#16305F 0%,#102547 45%,#0A1830 100%)}
+.hero::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:56px 56px;
+mask-image:linear-gradient(150deg,#000,transparent 70%);pointer-events:none}
+.hero > *{position:relative;z-index:1}
+.hero .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-400);font-weight:600;margin-bottom:14px}
+.hero h1{margin:0 0 12px;font-size:34px;line-height:1.3;font-weight:600;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--gold-400)}
+.hero p{margin:0;color:#A9BEDD;font-size:14.5px;line-height:1.85;max-width:44em}
+.hero .stats{display:flex;gap:36px;margin-top:30px;padding-top:24px;border-top:1px solid rgba(255,255,255,.12)}
+.hero .stats div b{display:block;font-size:24px;font-weight:600;letter-spacing:-.01em}
+.hero .stats div span{font-size:11.5px;color:#8FA6C7}
+
+/* 卡片 */
+.card{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);box-shadow:var(--s1);padding:20px 22px;margin-bottom:14px}
+.card h4{margin-top:0}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+
+/* 色板 */
+.sw{border-radius:var(--r3);overflow:hidden;border:1px solid var(--ink-200);background:#fff}
+.sw .chip{height:64px;display:flex;align-items:flex-end;padding:8px 10px;font-size:10.5px;font-family:var(--mono);font-weight:600}
+.sw .info{padding:9px 11px;font-size:11.5px;color:var(--ink-500);line-height:1.65;border-top:1px solid var(--ink-100)}
+.sw .info b{display:block;font-size:12.5px;color:var(--ink-800);font-weight:600;margin-bottom:2px}
+.scale{display:grid;grid-template-columns:repeat(11,1fr);border-radius:var(--r3);overflow:hidden;border:1px solid var(--ink-200);margin-bottom:10px}
+.scale div{height:52px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;font-size:9.5px;font-family:var(--mono)}
+.scale-row{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;margin-bottom:8px}
+.scale-row .nm{font-size:12.5px;font-weight:600;color:var(--ink-700)}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px}
+thead th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400);
+padding:9px 12px;background:var(--ink-50);border-bottom:1px solid var(--ink-200)}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--ink-100);color:var(--ink-700);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+.tbl-wrap{border:1px solid var(--ink-200);border-radius:var(--r3);overflow:hidden;background:#fff;margin-bottom:18px}
+.mono{font-family:var(--mono);font-size:12px}
+
+/* 徽章 / 责任边界 */
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 9px;border-radius:var(--r1);
+border:1px solid;font-weight:500;line-height:1.7;white-space:nowrap}
+.tag.ai{color:var(--ai-600);border-color:var(--ai-200);background:var(--ai-50)}
+.tag.ok{color:var(--verified-600);border-color:#BFE4D7;background:var(--verified-50)}
+.tag.wait{color:var(--pending-600);border-color:#EED9B4;background:var(--pending-50)}
+.tag.risk{color:var(--danger-600);border-color:#F1C8C1;background:var(--danger-50)}
+.tag.n{color:var(--ink-500);border-color:var(--ink-200);background:var(--ink-50)}
+.tag.gold{color:var(--gold-600);border-color:var(--gold-400);background:var(--gold-100)}
+
+.prov{border-radius:var(--r3);padding:14px 16px;font-size:13px;line-height:1.8}
+.prov.ai{background:var(--ai-50);border:1px dashed var(--ai-200);border-left:3px solid var(--ai-500);color:var(--ai-600)}
+.prov.ok{background:var(--verified-50);border:1px solid #BFE4D7;border-left:3px solid var(--verified-500);color:var(--verified-600)}
+.prov.wait{background:var(--pending-50);border:1px solid #EED9B4;border-left:3px solid var(--pending-500);color:var(--pending-600)}
+.prov b{display:block;font-size:12.5px;font-weight:600;margin-bottom:4px}
+
+/* 按钮示例 */
+.btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.b{height:34px;padding:0 14px;border-radius:var(--r2);font:inherit;font-size:13px;font-weight:600;border:1px solid transparent;
+display:inline-flex;align-items:center;gap:7px;cursor:default}
+.b.pri{background:var(--brand-600);color:#fff;box-shadow:var(--s1)}
+.b.sec{background:#fff;color:var(--ink-700);border-color:var(--ink-200)}
+.b.gho{background:transparent;color:var(--brand-700)}
+.b.dgr{background:var(--danger-500);color:#fff}
+.b.vfy{background:var(--verified-500);color:#fff}
+.b.sm{height:28px;font-size:12px;padding:0 10px}
+.b.lg{height:40px;font-size:14px;padding:0 18px}
+.b:disabled{opacity:.45}
+
+/* 线框图 */
+.wf{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);padding:16px;margin-bottom:16px;box-shadow:var(--s1)}
+.wf h4{margin:0 0 4px;font-size:14px}
+.wf .desc{font-size:12px;color:var(--ink-500);margin:0 0 14px;line-height:1.7}
+.wf svg{width:100%;height:auto;display:block;border-radius:var(--r2);background:var(--ink-50)}
+.wf .link{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:12.5px;font-weight:600;color:var(--brand-600);text-decoration:none}
+.wf .link:hover{text-decoration:underline}
+
+/* 对比 */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ink-200);border-radius:var(--r3);overflow:hidden;background:#fff;margin-bottom:14px}
+.cmp > div{padding:16px 18px}
+.cmp .before{background:var(--danger-50);border-right:1px solid var(--ink-200)}
+.cmp .after{background:var(--verified-50)}
+.cmp h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.cmp .before h4{color:var(--danger-600)}
+.cmp .after h4{color:var(--verified-600)}
+.cmp ul{margin:0;padding-left:18px;font-size:13px}
+.cmp .before li{color:#9C4034}
+.cmp .after li{color:var(--verified-600)}
+
+/* 决策清单 */
+.dec{border:1px solid var(--gold-400);background:var(--gold-50);border-radius:var(--r3);padding:18px 22px;margin-bottom:12px}
+.dec .h{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.dec .h b{font-size:14px;color:var(--gold-600)}
+.dec .h .no{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;background:var(--gold-500);border-radius:var(--r1);padding:2px 7px}
+.dec p{font-size:13px;color:#7A5C2C;margin:0 0 8px}
+.dec .opts{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px}
+.dec .opts span{background:#fff;border:1px solid var(--gold-400);border-radius:99px;padding:3px 12px;color:var(--gold-600);font-weight:500}
+.dec .opts span.rec{background:var(--gold-500);color:#fff;border-color:var(--gold-500)}
+
+/* 路线图 */
+.road{position:relative;padding-left:26px}
+.road::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--ink-200)}
+.ph2{position:relative;margin-bottom:22px}
+.ph2::before{content:"";position:absolute;left:-24px;top:7px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--brand-500)}
+.ph2.done::before{background:var(--brand-500)}
+.ph2 h4{margin:0 0 4px;font-size:14.5px;display:flex;align-items:center;gap:9px}
+.ph2 .dur{font-size:11.5px;font-weight:500;color:var(--ink-400);background:var(--ink-100);border-radius:99px;padding:2px 9px}
+.ph2 p{margin:0 0 6px;font-size:13px;color:var(--ink-600)}
+.ph2 ul{margin:0;font-size:13px}
+
+.callout{border-left:3px solid var(--brand-500);background:var(--brand-50);border-radius:0 var(--r3) var(--r3) 0;
+padding:13px 17px;font-size:13px;color:var(--brand-800);line-height:1.8;margin:0 0 16px}
+.callout.warn{border-left-color:var(--pending-500);background:var(--pending-50);color:#7A5C2C}
+.callout.danger{border-left-color:var(--danger-500);background:var(--danger-50);color:#9C4034}
+.callout b{font-weight:600}
+@media (max-width:1100px){.layout{grid-template-columns:1fr}.toc{position:static;height:auto}.g4,.g3,.g2,.cmp{grid-template-columns:1fr}main{padding:0 24px 80px}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ================= 侧目录 ================= -->
+<nav class="toc">
+  <div class="mark">
+    <i><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7h6L5 7Zm14 0-3 7h6l-3-7Z"/></svg></i>
+    <div><b>律小智 · 视觉设计规范</b><span>Design System v2</span></div>
+  </div>
+  <div class="ver">定稿版 v2.1 · 2026-09-16</div>
+
+  <a href="#s0">00 · 现状诊断</a>
+  <a href="#s1">01 · 设计定位与原则</a>
+  <a href="#s2">02 · 色彩系统</a>
+  <a href="#s3">03 · 字体排印</a>
+  <a href="#s4">04 · 布局 · 间距 · 圆角 · 阴影</a>
+  <a href="#s5">05 · 责任边界三态系统</a>
+  <a href="#s6">06 · 组件规范</a>
+  <a href="#s7">07 · 页面概念图</a>
+  <a class="sub" href="#w1">7.1 登录页</a>
+  <a class="sub" href="#w2">7.2 工作台首页</a>
+  <a class="sub" href="#w3">7.3 智能问答</a>
+  <a class="sub" href="#w4">7.4 运营驾驶舱</a>
+  <a class="sub" href="#w5">7.5 律师案件详情</a>
+  <a class="sub" href="#w6">7.6 IM 智能咨询</a>
+  <a class="sub" href="#w7">7.7 文书工作台</a>
+  <a href="#s8">08 · 移动端设计规范</a>
+  <a class="sub" href="#m1">8.1 移动端优先策略</a>
+  <a class="sub" href="#m2">8.2 断点与布局切换</a>
+  <a class="sub" href="#m3">8.3 触控与拇指热区</a>
+  <a class="sub" href="#m4">8.4 导航模式</a>
+  <a class="sub" href="#m5">8.5 表格转卡片规则</a>
+  <a class="sub" href="#m6">8.6 弱网与离线</a>
+  <a class="sub" href="#m7">8.7 移动端概念图</a>
+  <a href="#s9">09 · 落地路线图</a>
+  <a href="#s10">10 · 决策记录</a>
+</nav>
+
+<main>
+
+<!-- ================= 封面 ================= -->
+<div class="hero">
+  <div class="eyebrow">Visual Design Specification · Final Draft v2.1</div>
+  <h1>视觉设计规范 v2<br /><em>「墨与纸」</em> — 从 AI 工具到法律专业系统</h1>
+  <p>本规范针对律小智现有 4 个前端应用（web / lawyer / admin / im）的界面问题，重建一套完整的设计语言：
+  色彩、字体、间距、组件与页面结构。<strong>本版为定稿版</strong>——16 项设计决策已全部确认，
+  并将「移动端」从附加项提升为全产品的第一等约束。</p>
+  <div class="stats">
+    <div><b>9</b><span>高保真页面概念图</span></div>
+    <div><b>4</b><span>端统一设计语言</span></div>
+    <div><b>2</b><span>移动端专稿（客户端/律师端）</span></div>
+    <div><b>16</b><span>决策已确认</span></div>
+  </div>
+</div>
+
+<!-- ================= 00 诊断 ================= -->
+<section id="s0">
+  <h2><span class="num">00</span>现状诊断</h2>
+  <div class="rule"></div>
+  <p class="lead">在动工之前，先把「现在差在哪」说清楚。以下结论来自对 <code>frontend/</code> 全部 38 个 TSX 页面与 <code>packages/ui</code> 14 个组件的通读。</p>
+
+  <h3>0.1 八个结构性问题</h3>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:52px">#</th><th style="width:180px">问题</th><th>证据与影响</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">01</td><td><b>导航体系缺失</b></td>
+          <td><code>Sidebar</code> 组件已实现但几乎未被使用；4 个 app 各自用自造 header，页面之间靠 URL 手写跳转，用户无法感知「我在哪、还能去哪」。首页是「大卡片门户」而非工作台，进入任一功能需先返回首页。</td></tr>
+        <tr><td class="mono">02</td><td><b>视觉语言自相矛盾</b></td>
+          <td>首页用深色渐变底（<code>indigo-950 → indigo-800</code>）+ 白卡片，内页却是浅色 <code>slate-50</code> + 白 header。同一个产品在两种视觉体系间反复横跳。</td></tr>
+        <tr><td class="mono">03</td><td><b>品牌色失去层级</b></td>
+          <td><code>from-indigo-600 to-cyan-500</code> 渐变被同时用于主按钮、用户气泡、进度条、图标块、登录左栏。渐变一旦无处不在，就等于没有重点。</td></tr>
+        <tr><td class="mono">04</td><td><b>语义色名实不符（危险）</b></td>
+          <td><code>theme/colors.ts</code> 中键名 <code>emerald</code> 实际值是靛蓝、<code>teal</code> 是青色、<code>cyan</code> 是紫色。<code>KpiCard color="emerald"</code> 渲染出的是蓝色。任何按语义取色的新代码都会踩坑。</td></tr>
+        <tr><td class="mono">05</td><td><b>深色模式是补丁</b></td>
+          <td><code>globals.css</code> 用 20 余条 <code>!important</code> 硬覆盖 Tailwind 工具类。新增任何颜色类都会漏网，维护成本随页面增长线性上升。</td></tr>
+        <tr><td class="mono">06</td><td><b>责任边界表达太弱</b></td>
+          <td>PRD 强调「AI 生成 / 律师确认」边界，但实现只有一条 3px 左边框 <code>.ai-content</code>，且仅出现在流式输出中。用户无法一眼分辨哪段结论可依赖。</td></tr>
+        <tr><td class="mono">07</td><td><b>引用溯源交互倒退</b></td>
+          <td>法条引用以弹窗抽屉（<code>CitationDrawer</code>）呈现，遮住正文。法律问答的核心场景是「边读结论边核对法条」，弹窗恰恰破坏了这个场景。</td></tr>
+        <tr><td class="mono">08</td><td><b>缺少专业组件</b></td>
+          <td>没有 Tabs、Drawer、Timeline、Stepper、DataTable（排序/筛选/列设置/密度）、Pagination、SegmentedControl、CitationChip、ProvenanceBadge。法律产品最核心的「证据时间线」「复核流转」「案号等宽对齐」全部缺失。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>0.2 改造前后对照</h3>
+  <div class="cmp">
+    <div class="before">
+      <h4>改造前 · 现状</h4>
+      <ul>
+        <li>首页是「5 张大卡片」导航门户，进功能要来回跳</li>
+        <li>靛蓝→青色渐变铺满按钮、气泡、进度条</li>
+        <li>圆角 rounded-xl / 2xl / 3xl 偏软，缺少专业硬度</li>
+        <li>深色侧栏 <code>indigo-950</code> 与内容区 <code>slate-50</code> 冷暖不一致</li>
+        <li>法条引用弹窗遮挡正文</li>
+        <li>AI / 律师确认边界仅一条紫边线</li>
+        <li>深色模式靠 <code>!important</code> 覆盖</li>
+        <li>表格无排序、无筛选、无密度控制</li>
+      </ul>
+    </div>
+    <div class="after">
+      <h4>改造后 · 本规范</h4>
+      <ul>
+        <li>统一 AppShell：240px 墨色侧栏 + 56px 顶栏 + 内容区，四端一致</li>
+        <li>品牌色收敛为单一墨蓝，渐变仅用于登录页品牌区</li>
+        <li>圆角收敛到 4 / 6 / 8 / 12，回归方正克制</li>
+        <li>墨蓝 <code>#0A1830</code> 侧栏 + 中性灰内容区，同一色温</li>
+        <li>引用溯源改为常驻右侧面板，正文不被遮挡</li>
+        <li>三态责任边界系统 + 全局图例</li>
+        <li>CSS 变量 + 语义 token，深色模式零覆盖</li>
+        <li>DataTable 含排序、筛选、列设置、三档密度</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <b>关于工作量：</b>这不是一次「换皮」。00-04 节属于基础设施改造（约 60% 工作量），05-07 节是页面重构。
+    建议按第 08 节的四阶段推进，每个阶段结束都有可交付、可回滚的完整状态。
+  </div>
+</section>
+
+<!-- ================= 01 原则 ================= -->
+<section id="s1">
+  <h2><span class="num">01</span>设计定位与原则</h2>
+  <div class="rule"></div>
+  <p class="lead">关键词：<strong>可信（Trustworthy）、克制（Restrained）、密实（Dense）、可追溯（Traceable）</strong>。</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4>原则一 · 信任优先于惊艳</h4>
+      <p style="font-size:13px;margin:0">法律产品的用户把重大权益托付给系统，界面需要传递「稳」。因此：不用大面积渐变、不用发光阴影、不用卡通插画；用留白、对齐、克制的色彩和清晰的信息层级建立信任。</p>
+    </div>
+    <div class="card">
+      <h4>原则二 · 边界必须可见</h4>
+      <p style="font-size:13px;margin:0">AI 生成什么、律师确认了什么、哪些还没复核——这必须成为视觉系统的一等公民，而不是一条边线。任何一段法律内容都必须携带可识别的责任状态。</p>
+    </div>
+    <div class="card">
+      <h4>原则三 · 信息密度是美德</h4>
+      <p style="font-size:13px;margin:0">律师每天处理几十份材料，界面应承载信息而非消耗屏幕。放弃大卡片门户，改用侧栏 + 密集列表 + 表格；一屏内尽量呈现完整的决策依据。</p>
+    </div>
+    <div class="card">
+      <h4>原则四 · 数字与案号必须对齐</h4>
+      <p style="font-size:13px;margin:0">金额、案号、日期、条款编号全部启用等宽数字（<code>tabular-nums</code>）与等宽字体。这是法律文书校对的基本要求，也是专业感的直接来源。</p>
+    </div>
+  </div>
+
+  <h3>1.1 与现有品牌的关系</h3>
+  <p>本规范<strong>保留靛蓝作为品牌识别锚点，但把它沉到墨蓝区间</strong>（<code>#4F46E5 → #274C93</code>）。理由：</p>
+  <ul>
+    <li><code>#4F46E5</code> 是典型的「AI 初创」色，明度高、饱和度高，大面积使用显得轻；</li>
+    <li><code>#274C93</code> 与之同色相，视觉识别连续，但明度降低 34%、饱和度降低 21%，更接近律所、法院、金融的信任色域；</li>
+    <li>点缀色引入<strong>香槟金 <code>#B08A4F</code></strong>（S 级案件、引用序号、付费标识），替代原先的亮金 <code>#F5B942</code>——后者过于跳脱，像促销标签。</li>
+  </ul>
+  <div class="callout">
+    <b>若你希望保留原靛蓝：</b>可执行「最小改动方案」——只做第 01、04、05、06 节（导航体系、间距圆角、责任边界、组件），
+    色彩仅把 <code>cyan</code> 渐变从按钮上撤下。这会省下约 25% 工作量，但视觉提升幅度也相应减半。
+  </div>
+</section>
+
+<!-- ================= 02 色彩 ================= -->
+<section id="s2">
+  <h2><span class="num">02</span>色彩系统</h2>
+  <div class="rule"></div>
+  <p class="lead">色彩分四层：<strong>中性层</strong>（承载 90% 界面）、<strong>品牌层</strong>（识别与主操作）、<strong>语义层</strong>（状态与责任边界）、<strong>点缀层</strong>（极克制的强调）。</p>
+
+  <h3>2.1 中性层 · 墨（Ink）</h3>
+  <p style="font-size:13.5px">替代现有 <code>slate</code>。slate 偏冷蓝，与墨蓝品牌色叠加后整体发灰蓝、缺乏层次；新中性色降低蓝味，让品牌色成为唯一冷色焦点。</p>
+  <div class="scale-row">
+    <span class="nm">Ink 灰阶</span>
+    <div class="scale">
+      <div style="background:#F7F8F9;color:#9AA3AE">50</div>
+      <div style="background:#EFF1F3;color:#9AA3AE">100</div>
+      <div style="background:#E2E5E9;color:#6B7480">200</div>
+      <div style="background:#CBD1D8;color:#4A525C">300</div>
+      <div style="background:#9AA3AE;color:#fff">400</div>
+      <div style="background:#6B7480;color:#fff">500</div>
+      <div style="background:#4A525C;color:#fff">600</div>
+      <div style="background:#343B44;color:#fff">700</div>
+      <div style="background:#21262D;color:#fff">800</div>
+      <div style="background:#14181D;color:#fff">900</div>
+      <div style="background:#0B0E12;color:#fff">950</div>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:130px">Token</th><th style="width:96px">色值</th><th style="width:110px">对比度(白底)</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">--ink-50</td><td class="mono">#F7F8F9</td><td>—</td><td>页面底色、表头、输入框静置底</td></tr>
+        <tr><td class="mono">--ink-100</td><td class="mono">#EFF1F3</td><td>—</td><td>分隔线、次级填充、Skeleton</td></tr>
+        <tr><td class="mono">--ink-200</td><td class="mono">#E2E5E9</td><td>—</td><td>卡片边框、表格边框（首选分隔手段）</td></tr>
+        <tr><td class="mono">--ink-300</td><td class="mono">#CBD1D8</td><td>—</td><td>禁用态描边、时间线未完成节点</td></tr>
+        <tr><td class="mono">--ink-400</td><td class="mono">#9AA3AE</td><td>2.5:1</td><td><b style="color:var(--danger-500)">仅限占位符、图标、装饰</b>，不得用于正文</td></tr>
+        <tr><td class="mono">--ink-500</td><td class="mono">#6B7480</td><td>4.7:1 ✓</td><td>次要文本、说明文字、标签</td></tr>
+        <tr><td class="mono">--ink-600</td><td class="mono">#4A525C</td><td>7.5:1 ✓</td><td>正文辅助、表单标签</td></tr>
+        <tr><td class="mono">--ink-700</td><td class="mono">#343B44</td><td>10.4:1 ✓</td><td>正文主色</td></tr>
+        <tr><td class="mono">--ink-800</td><td class="mono">#21262D</td><td>13.9:1 ✓</td><td>标题、强调文本</td></tr>
+        <tr><td class="mono">--ink-900</td><td class="mono">#14181D</td><td>16.8:1 ✓</td><td>页面主标题</td></tr>
+        <tr><td class="mono">--ink-950</td><td class="mono">#0B0E12</td><td>—</td><td>深色模式页面底（不用纯黑）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2.2 品牌层 · 墨蓝（Trust Blue）</h3>
+  <div class="scale-row">
+    <span class="nm">Brand 墨蓝</span>
+    <div class="scale">
+      <div style="background:#EEF3FB;color:#9AA3AE">50</div>
+      <div style="background:#D9E4F7;color:#6B7480">100</div>
+      <div style="background:#B6C9EE;color:#4A525C">200</div>
+      <div style="background:#8AA8E0;color:#fff">300</div>
+      <div style="background:#5A80CB;color:#fff">400</div>
+      <div style="background:#3660B0;color:#fff">500</div>
+      <div style="background:#274C93;color:#fff">600</div>
+      <div style="background:#1E3C77;color:#fff">700</div>
+      <div style="background:#16305F;color:#fff">800</div>
+      <div style="background:#102547;color:#fff">900</div>
+      <div style="background:#0A1830;color:#fff">950</div>
+    </div>
+  </div>
+  <div class="grid g4">
+    <div class="sw"><div class="chip" style="background:#274C93;color:#fff">#274C93 · 8.3:1</div><div class="info"><b>brand-600 · 主色</b>主按钮、激活导航、链接、主数据系列</div></div>
+    <div class="sw"><div class="chip" style="background:#3660B0;color:#fff">#3660B0 · 6.1:1</div><div class="info"><b>brand-500 · 交互</b>焦点环、进度条、图表主序列、hover 目标</div></div>
+    <div class="sw"><div class="chip" style="background:#0A1830;color:#fff">#0A1830</div><div class="info"><b>brand-950 · 侧栏</b>全局侧边导航底色（替代 indigo-950）</div></div>
+    <div class="sw"><div class="chip" style="background:#EEF3FB;color:#274C93">#EEF3FB</div><div class="info"><b>brand-50 · 浅底</b>选中行、信息提示底、标签底</div></div>
+  </div>
+
+  <h3>2.3 语义层 · 责任边界与状态</h3>
+  <p style="font-size:13.5px">这一层是本产品最关键的色彩系统，直接对应 PRD 的「AI / 律师」责任边界。三态 + 两辅助，全局不得混用。</p>
+  <div class="grid g3">
+    <div class="sw"><div class="chip" style="background:#6E56CF;color:#fff">#6E56CF · 5.4:1</div><div class="info"><b>AI 生成 · ai-500</b>底色 #F4F2FD，边框虚线 #D2CAF4。仅用于 AI 产出内容标识，禁止作装饰色。</div></div>
+    <div class="sw"><div class="chip" style="background:#1E8E6E;color:#fff">#1E8E6E</div><div class="info"><b>律师已确认 · verified-500</b>底色 #EDF8F4，左侧实线 3px。<b>文本请用 verified-600 #167055</b>（6.0:1）。</div></div>
+    <div class="sw"><div class="chip" style="background:#B4791F;color:#fff">#B4791F</div><div class="info"><b>待复核 / 风险提示 · pending-500</b>底色 #FDF6E9。<b>文本请用 pending-600 #8F5F14</b>（5.5:1）。</div></div>
+    <div class="sw"><div class="chip" style="background:#C0392B;color:#fff">#C0392B · 5.4:1</div><div class="info"><b>高风险 / 违约 · danger-500</b>朱砂红，替代原 #EF4444。底色 #FDF0EE。</div></div>
+    <div class="sw"><div class="chip" style="background:#B08A4F;color:#fff">#B08A4F</div><div class="info"><b>点缀金 · gold-500</b>S 级案件、引用序号、付费标识、变量高亮。<b>全局面积不超过 3%。</b></div></div>
+    <div class="sw"><div class="chip" style="background:#2A6FB0;color:#fff">#2A6FB0</div><div class="info"><b>信息提示 · info-500</b>中性提示、帮助说明，与品牌蓝区分（偏青）。</div></div>
+  </div>
+
+  <div class="callout danger">
+    <b>必须修复的缺陷：</b><code>packages/ui/src/theme/colors.ts</code> 中 <code>emerald / teal / cyan</code> 三个键名与实际色值完全错位
+    （emerald 是靛蓝、cyan 是紫色）。所有依赖 <code>semanticColors</code> 的组件（<code>KpiCard color="emerald"</code> 等）渲染结果与命名不符。
+    本规范建议：<strong>废弃这套映射，改为直接导出语义 token</strong>（见 2.5）。
+  </div>
+
+  <h3>2.4 案件等级配色</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:90px">等级</th><th style="width:110px">色值</th><th style="width:120px">形状编码</th><th>语义</th></tr></thead>
+      <tbody>
+        <tr><td><b>S 级</b></td><td class="mono">#B08A4F 金</td><td>实心方块 + 金色描边</td><td>重大疑难、高标的额，合伙人亲自办</td></tr>
+        <tr><td><b>A 级</b></td><td class="mono">#C0392B 朱砂</td><td>实心方块</td><td>复杂案件，需二级复核</td></tr>
+        <tr><td><b>B 级</b></td><td class="mono">#274C93 墨蓝</td><td>实心方块</td><td>常规案件，一级复核</td></tr>
+        <tr><td><b>C 级</b></td><td class="mono">#9AA3AE 中性</td><td>实心方块</td><td>简单咨询，可 AI 直接交付</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13px;color:var(--ink-500)">等级徽章同时用<strong>字母 + 颜色</strong>双通道编码，色盲用户与黑白打印场景下仍可辨识。</p>
+
+  <h3>2.5 从旧 Token 迁移</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:220px">旧写法</th><th style="width:240px">新写法</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">bg-slate-50</td><td class="mono">bg-[var(--ink-50)]</td><td>页面底色，全站批量替换</td></tr>
+        <tr><td class="mono">border-slate-200</td><td class="mono">border-[var(--ink-200)]</td><td>卡片与表格边框</td></tr>
+        <tr><td class="mono">text-slate-900 / 800</td><td class="mono">text-[var(--ink-900)] / 800</td><td>标题</td></tr>
+        <tr><td class="mono">text-slate-500</td><td class="mono">text-[var(--ink-500)]</td><td>次要文本</td></tr>
+        <tr><td class="mono">bg-indigo-600</td><td class="mono">bg-[var(--brand-600)]</td><td>主按钮、激活态</td></tr>
+        <tr><td class="mono">bg-indigo-950</td><td class="mono">bg-[var(--brand-950)]</td><td>侧边导航</td></tr>
+        <tr><td class="mono">from-indigo-600 to-cyan-500</td><td class="mono">bg-[var(--brand-600)]</td><td><b>撤下渐变</b>，仅登录页品牌区保留</td></tr>
+        <tr><td class="mono">text-amber-600 / bg-amber-50</td><td class="mono">text-[var(--pending-600)] / bg-[var(--pending-50)]</td><td>待复核语义</td></tr>
+        <tr><td class="mono">text-emerald-600 / bg-emerald-50</td><td class="mono">text-[var(--verified-600)] / bg-[var(--verified-50)]</td><td>律师确认语义</td></tr>
+        <tr><td class="mono">text-red-600</td><td class="mono">text-[var(--danger-600)]</td><td>高风险</td></tr>
+        <tr><td class="mono">rounded-xl / 2xl / 3xl</td><td class="mono">rounded-[var(--r3)] / var(--r4)</td><td>圆角收敛，卡片一律 8px，模态 12px</td></tr>
+        <tr><td class="mono">bg-brand-gradient</td><td class="mono">（删除）</td><td>Tailwind preset 中移除该 backgroundImage</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <b>实现建议：</b>在 <code>tailwind.preset.ts</code> 的 <code>colors</code> 中直接注册语义名
+    （<code>surface</code> / <code>surface-raised</code> / <code>border-subtle</code> / <code>text-primary</code> / <code>text-muted</code> / <code>brand</code> / <code>ai</code> / <code>verified</code> / <code>pending</code> / <code>danger</code>），
+    并让 <code>darkMode</code> 通过 CSS 变量切换。这样深色模式<strong>不再需要任何 <code>!important</code> 覆盖</strong>。
+  </div>
+</section>
+
+<!-- ================= 03 字体 ================= -->
+<section id="s3">
+  <h2><span class="num">03</span>字体排印</h2>
+  <div class="rule"></div>
+
+  <h3>3.1 三套字体栈</h3>
+  <div class="grid g3">
+    <div class="card">
+      <h4>UI 无衬线</h4>
+      <p style="font-size:12.5px;margin:0 0 8px" class="mono">Inter, "PingFang SC",<br />"Microsoft YaHei", system-ui</p>
+      <p style="font-size:12.5px;margin:0;color:var(--ink-500)">界面正文、按钮、标签、导航。<strong>Inter 负责西文与数字</strong>，中文回退系统字，避免加载中文字体包（3–8 MB）。</p>
+    </div>
+    <div class="card">
+      <h4>衬线 · 法条与文书</h4>
+      <p style="font-size:12.5px;margin:0 0 8px" class="mono">"Noto Serif SC",<br />"Source Han Serif SC", Georgia</p>
+      <p style="font-size:12.5px;margin:0;color:var(--ink-500)">仅用于<strong>法条原文、引用摘录、文书正文</strong>。这是本规范最重要的差异化手段——衬线体让法条与界面文本在视觉上分层，强化「这是原文」的认知。</p>
+    </div>
+    <div class="card">
+      <h4>等宽 · 数字与编号</h4>
+      <p style="font-size:12.5px;margin:0 0 8px" class="mono">ui-monospace, SFMono-Regular,<br />Menlo, Consolas</p>
+      <p style="font-size:12.5px;margin:0;color:var(--ink-500)">案号、合同编号、金额、日期、条款号。同时全局启用 <code>font-variant-numeric: tabular-nums</code>。</p>
+    </div>
+  </div>
+
+  <h3>3.2 字号阶梯</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:110px">Token</th><th style="width:88px">字号/行高</th><th style="width:90px">字重</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">caption</td><td>11px / 1.5</td><td>500</td><td>免责声明、图表轴标签、时间戳</td></tr>
+        <tr><td class="mono">label</td><td>12px / 1.5</td><td>500</td><td>表单标签、表头、徽章、元信息</td></tr>
+        <tr><td class="mono">body-sm</td><td>13px / 1.65</td><td>400</td><td>表格单元格、列表次要行</td></tr>
+        <tr><td class="mono"><b>body</b></td><td><b>14px / 1.7</b></td><td>400</td><td><b>基准字号</b>：正文、对话气泡、描述</td></tr>
+        <tr><td class="mono">body-lg</td><td>15px / 1.85</td><td>400</td><td>法条原文、长文阅读（配衬线）</td></tr>
+        <tr><td class="mono">h4</td><td>16px / 1.5</td><td>600</td><td>卡片标题、面板标题</td></tr>
+        <tr><td class="mono">h3</td><td>18px / 1.45</td><td>600</td><td>区块标题</td></tr>
+        <tr><td class="mono">h2</td><td>22px / 1.4</td><td>600</td><td>页面标题（字距 -0.01em）</td></tr>
+        <tr><td class="mono">h1</td><td>30px / 1.3</td><td>600</td><td>登录页、仪表盘主标题</td></tr>
+        <tr><td class="mono">display</td><td>38px / 1.25</td><td>600</td><td>仅品牌区使用</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <b>中文排印三条硬规则：</b><br />
+    ① <strong>字重只用 400 / 500 / 600</strong>——中文 700 在 Windows 上会渲染成合成粗体，边缘发糊；<br />
+    ② <strong>正文行高不低于 1.65</strong>——中文方块字密度高，1.5 会显著降低可读性；法条原文用 1.85–2.0；<br />
+    ③ <strong>中英混排加 0.25em 间隙</strong>——用 <code>text-spacing-trim</code> 或手动 <code>&amp;nbsp;</code>，避免「3件」这类粘连。
+  </div>
+</section>
+
+<!-- ================= 04 布局 ================= -->
+<section id="s4">
+  <h2><span class="num">04</span>布局 · 间距 · 圆角 · 阴影</h2>
+  <div class="rule"></div>
+
+  <h3>4.1 全局框架（AppShell）</h3>
+  <p>四个应用共用同一套骨架。这是解决「导航体系缺失」的核心手段。</p>
+  <div class="wf">
+    <svg viewBox="0 0 900 300" role="img" aria-label="AppShell 布局线框">
+      <rect x="0" y="0" width="900" height="300" fill="#F7F8F9"/>
+      <!-- 侧栏 -->
+      <rect x="0" y="0" width="216" height="300" fill="#0A1830"/>
+      <rect x="16" y="16" width="30" height="30" rx="7" fill="#274C93" stroke="#C6A469" stroke-width="1"/>
+      <rect x="54" y="20" width="66" height="9" rx="3" fill="#FFFFFF" opacity=".85"/>
+      <rect x="54" y="33" width="88" height="7" rx="3" fill="#7E97BC"/>
+      <rect x="12" y="60" width="192" height="30" rx="6" fill="#FFFFFF" opacity=".06"/>
+      <rect x="24" y="71" width="80" height="8" rx="3" fill="#AFC0D8"/>
+      <rect x="12" y="106" width="40" height="7" rx="3" fill="#5E769B"/>
+      <rect x="12" y="122" width="192" height="28" rx="6" fill="#3660B0" opacity=".35"/>
+      <rect x="0" y="126" width="3" height="20" rx="1.5" fill="#C6A469"/>
+      <rect x="24" y="132" width="16" height="10" rx="2" fill="#FFFFFF" opacity=".8"/>
+      <rect x="48" y="133" width="70" height="8" rx="3" fill="#FFFFFF" opacity=".9"/>
+      <rect x="24" y="170" width="16" height="10" rx="2" fill="#AFC0D8"/>
+      <rect x="48" y="171" width="56" height="8" rx="3" fill="#AFC0D8"/>
+      <rect x="24" y="200" width="16" height="10" rx="2" fill="#AFC0D8"/>
+      <rect x="48" y="201" width="64" height="8" rx="3" fill="#AFC0D8"/>
+      <rect x="12" y="252" width="192" height="1" fill="#FFFFFF" opacity=".1"/>
+      <circle cx="30" cy="274" r="14" fill="#3660B0"/>
+      <rect x="52" y="266" width="52" height="8" rx="3" fill="#FFFFFF" opacity=".8"/>
+      <rect x="52" y="278" width="76" height="7" rx="3" fill="#7E97BC"/>
+      <!-- 顶栏 -->
+      <rect x="216" y="0" width="684" height="52" fill="#FFFFFF" stroke="#E2E5E9"/>
+      <rect x="236" y="22" width="96" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="560" y="14" width="200" height="24" rx="6" fill="#F7F8F9" stroke="#E2E5E9"/>
+      <rect x="572" y="23" width="90" height="6" rx="3" fill="#CBD1D8"/>
+      <rect x="812" y="14" width="24" height="24" rx="6" fill="#FFFFFF" stroke="#E2E5E9"/>
+      <rect x="844" y="14" width="24" height="24" rx="6" fill="#FFFFFF" stroke="#E2E5E9"/>
+      <!-- 内容区 -->
+      <rect x="240" y="76" width="240" height="14" rx="4" fill="#21262D" opacity=".8"/>
+      <rect x="240" y="98" width="360" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="700" y="76" width="120" height="30" rx="6" fill="#274C93"/>
+      <rect x="240" y="126" width="188" height="66" rx="8" fill="#FFFFFF" stroke="#E2E5E9"/>
+      <rect x="440" y="126" width="188" height="66" rx="8" fill="#FFFFFF" stroke="#E2E5E9"/>
+      <rect x="640" y="126" width="180" height="66" rx="8" fill="#FFFFFF" stroke="#E2E5E9"/>
+      <rect x="256" y="144" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="256" y="160" width="70" height="18" rx="4" fill="#21262D" opacity=".75"/>
+      <rect x="456" y="144" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="456" y="160" width="54" height="18" rx="4" fill="#21262D" opacity=".75"/>
+      <rect x="656" y="144" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="656" y="160" width="62" height="18" rx="4" fill="#C0392B" opacity=".8"/>
+      <rect x="240" y="208" width="580" height="72" rx="8" fill="#FFFFFF" stroke="#E2E5E9"/>
+      <rect x="256" y="222" width="100" height="8" rx="3" fill="#4A525C"/>
+      <line x1="256" y1="242" x2="804" y2="242" stroke="#EFF1F3"/>
+      <line x1="256" y1="262" x2="804" y2="262" stroke="#EFF1F3"/>
+      <!-- 标注 -->
+      <text x="8" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">240px 侧栏</text>
+      <text x="222" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">56px 顶栏 + 内容区（max-width 1280 / 1600）</text>
+    </svg>
+    <h4 style="margin-top:14px">AppShell 结构</h4>
+    <p class="desc">左侧 240px 墨色导航（可折叠至 64px）· 顶部 56px 栏（面包屑 + 全局搜索 ⌘K + 通知 + 用户）· 内容区最大宽 1280（工作台）/ 1600（驾驶舱）。侧栏顶部含<strong>应用切换器</strong>，打通 web / lawyer / admin 三端，替代当前靠手输 URL 的跳转方式。</p>
+  </div>
+
+  <h3>4.2 间距</h3>
+  <p>4pt 网格。所有间距从以下刻度取值，禁止出现 5px、13px、18px 这类游离值。</p>
+  <div class="scale">
+    <div style="background:#EFF1F3;color:#6B7480">4</div>
+    <div style="background:#E2E5E9;color:#4A525C">8</div>
+    <div style="background:#D9E4F7;color:#274C93">12</div>
+    <div style="background:#C7D6EF;color:#274C93">16</div>
+    <div style="background:#B6C9EE;color:#274C93">20</div>
+    <div style="background:#A0B8E4;color:#1E3C77">24</div>
+    <div style="background:#8AA8E0;color:#fff">32</div>
+    <div style="background:#5A80CB;color:#fff">40</div>
+    <div style="background:#3660B0;color:#fff">48</div>
+    <div style="background:#274C93;color:#fff">64</div>
+    <div style="background:#1E3C77;color:#fff">80</div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h4>应用规则</h4>
+      <ul style="font-size:13px;margin:0">
+        <li>页面内边距：24px（窄屏 16px）</li>
+        <li>卡片内边距：16px（紧凑） / 20px（常规） / 24px（宽松）</li>
+        <li>卡片之间：16px；同一面板内元素：12px</li>
+        <li>区块之间：32–40px</li>
+        <li>表单字段之间：16px</li>
+        <li>图标与文本间距：6–8px</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>栅格</h4>
+      <ul style="font-size:13px;margin:0">
+        <li>12 列，gutter 24px</li>
+        <li>断点：640 / 1024 / 1280 / 1600</li>
+        <li>阅读型页面（法条、文书）内容宽度限制 720px</li>
+        <li>驾驶舱允许全宽，不使用 max-width 限制</li>
+        <li>侧栏在 &lt;1024px 收起为抽屉</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>4.3 圆角 · 阴影 · 边框</h3>
+  <div class="grid g3">
+    <div class="card">
+      <h4>圆角（收敛）</h4>
+      <ul style="font-size:13px;margin:0">
+        <li><code>--r1: 4px</code> 徽章、标签、小按钮</li>
+        <li><code>--r2: 6px</code> 按钮、输入框、列表项</li>
+        <li><code>--r3: 8px</code> 卡片、面板、表格容器</li>
+        <li><code>--r4: 12px</code> 模态、抽屉、输入区大框</li>
+        <li style="color:var(--danger-500)">废弃 16px 及以上圆角</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>阴影（三级）</h4>
+      <ul style="font-size:13px;margin:0">
+        <li><code>--s1</code> 0 1px 2px rgba(16,24,40,.06) — 卡片静置</li>
+        <li><code>--s2</code> 0 4px 12px -2px rgba(16,24,40,.10) — hover、下拉</li>
+        <li><code>--s3</code> 0 16px 40px -8px rgba(16,24,40,.18) — 模态、抽屉</li>
+      </ul>
+      <p style="font-size:12.5px;color:var(--ink-500);margin:10px 0 0">法律产品<strong>优先用 1px 边框而非阴影</strong>划分区域——阴影营造「浮起」的轻飘感，边框营造「纸张」的稳定感。</p>
+    </div>
+    <div class="card">
+      <h4>边框与焦点</h4>
+      <ul style="font-size:13px;margin:0">
+        <li>默认边框：<code>1px var(--ink-200)</code></li>
+        <li>强调边框：<code>1px var(--brand-400)</code></li>
+        <li>虚线边框：AI 内容容器（<code>1px dashed var(--ai-200)</code>）</li>
+        <li>左侧色条：责任边界标识（3px 实线）</li>
+        <li>焦点环：<code>0 0 0 3px rgba(54,96,176,.22)</code>，全局统一</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>4.4 动效</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:150px">场景</th><th style="width:110px">时长</th><th style="width:200px">缓动</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>hover / 颜色变化</td><td class="mono">120ms</td><td class="mono">ease-out</td><td>按钮、列表项、链接</td></tr>
+        <tr><td>展开 / 折叠</td><td class="mono">180ms</td><td class="mono">cubic-bezier(.2,.8,.2,1)</td><td>折叠面板、下拉菜单</td></tr>
+        <tr><td>抽屉 / 模态</td><td class="mono">240ms</td><td class="mono">cubic-bezier(.2,.8,.2,1)</td><td>右侧溯源面板、引用抽屉</td></tr>
+        <tr><td>流式打字光标</td><td class="mono">1.2s 循环</td><td class="mono">ease-in-out</td><td>AI 输出中</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13px;color:var(--ink-500)">全局必须响应 <code>prefers-reduced-motion: reduce</code>，将时长归零。当前 <code>animate-fade-in</code> / <code>slide-in-right</code> 未做此适配。</p>
+</section>
+
+<!-- ================= 05 责任边界 ================= -->
+<section id="s5">
+  <h2><span class="num">05</span>责任边界三态系统</h2>
+  <div class="rule"></div>
+  <p class="lead">这是本规范相对现状<strong>提升最大、也最能体现产品价值</strong>的部分。PRD 反复强调 AI 与律师的责任划分，但界面上几乎不可见。我们把它提升为一等视觉语言。</p>
+
+  <h3>5.1 三种状态</h3>
+  <div class="grid g3">
+    <div>
+      <div class="prov ai"><b>AI 生成</b>内容由模型产出，尚未经人工核验。使用：紫色虚线上边框 + 浅紫底 + 左上角 <span class="tag ai">✦ AI 生成</span> 徽章。</div>
+    </div>
+    <div>
+      <div class="prov ok"><b>律师已确认</b>执业律师已复核并签署。使用：绿色实线左边条 3px + 浅绿底 + <span class="tag ok">✓ 律师已确认</span> 徽章，并附带确认人与时间。</div>
+    </div>
+    <div>
+      <div class="prov wait"><b>待复核 / 风险</b>已生成但存在风险或等待人工介入。使用：琥珀色左边条 + 浅琥珀底 + <span class="tag wait">⏱ 待复核</span> 徽章。</div>
+    </div>
+  </div>
+
+  <h3>5.2 使用规则</h3>
+  <ul>
+    <li><strong>穷尽性</strong>：任何一段法律内容（结论、条款、分析、建议）必须且只能属于三态之一，不允许「无状态」内容。</li>
+    <li><strong>全局图例</strong>：在问答页、文书页、案件详情页顶栏常驻三态图例（见 7.3 概念图），让用户无需学习即可理解。</li>
+    <li><strong>状态可迁移</strong>：AI 生成 → 律师确认 是单向、留痕的。状态徽章需可点击查看流转记录（谁、何时、改了什么）。</li>
+    <li><strong>导出保留</strong>：导出 PDF / Word 时，三态标记必须保留（页脚水印或段落标记），这是法律文件的合规要求。</li>
+    <li><strong>颜色不可独立承载语义</strong>：必须「颜色 + 文字 + 图标」三重编码，保证色盲与黑白打印可用。</li>
+  </ul>
+
+  <div class="callout">
+    <b>与现状的差距：</b>当前仅有 <code>.ai-content { border-left: 3px solid #8b5cf6; background: #f5f3ff }</code> 一条规则，
+    且只在流式输出阶段出现，回答完成后即消失。<code>.lawyer-confirmed</code> 定义了但<strong>全站零处引用</strong>。
+  </div>
+</section>
+
+<!-- ================= 06 组件 ================= -->
+<section id="s6">
+  <h2><span class="num">06</span>组件规范</h2>
+  <div class="rule"></div>
+
+  <h3>6.1 按钮</h3>
+  <div class="wf">
+    <div class="btns">
+      <button class="b pri">主要操作</button>
+      <button class="b vfy">确认定稿</button>
+      <button class="b sec">次要操作</button>
+      <button class="b gho">幽灵按钮</button>
+      <button class="b dgr">删除</button>
+      <button class="b sec" disabled>禁用</button>
+    </div>
+    <div class="btns">
+      <button class="b pri sm">小尺寸</button>
+      <button class="b pri">默认 34px</button>
+      <button class="b pri lg">大尺寸</button>
+    </div>
+    <p class="desc" style="margin:0">5 种变体 × 3 种尺寸。主色按钮<strong>全局唯一</strong>（每屏最多一个 <code>pri</code>，用于该屏最关键动作）。
+    现有实现把渐变用在按钮上，且缺少 loading 态、图标位置规范与禁用态对比度控制。</p>
+  </div>
+
+  <h3>6.2 状态标签</h3>
+  <div class="wf">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="tag ai">✦ AI 生成</span>
+      <span class="tag ok">✓ 律师已确认</span>
+      <span class="tag wait">⏱ 待复核</span>
+      <span class="tag risk">⚠ 高风险</span>
+      <span class="tag n">草稿</span>
+    </div>
+    <p class="desc" style="margin:0">统一 4px 圆角、11.5px 字号、1px 描边 + 浅底。<strong>标签文字必须包含图标</strong>，颜色仅作辅助。</p>
+  </div>
+
+  <h3>6.3 新增组件清单</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:170px">组件</th><th style="width:80px">优先级</th><th>用途与关键能力</th></tr></thead>
+      <tbody>
+        <tr><td><b>AppShell</b></td><td>P0</td><td>四端统一骨架：侧栏 + 顶栏 + 内容区 + 应用切换器</td></tr>
+        <tr><td><b>DataTable</b></td><td>P0</td><td>排序、筛选、列设置、三档密度、行选择、批量操作、空状态</td></tr>
+        <tr><td><b>CitationPanel</b></td><td>P0</td><td>常驻引用溯源面板：法条原文（衬线）、生效日期、时效状态、原文高亮</td></tr>
+        <tr><td><b>ProvenanceBadge</b></td><td>P0</td><td>责任边界三态徽章，可点击查看流转记录</td></tr>
+        <tr><td><b>Timeline</b></td><td>P0</td><td>复核流转、证据时间线，含状态节点与备注</td></tr>
+        <tr><td><b>SegmentedControl</b></td><td>P1</td><td>角色切换、模式切换、时间范围切换</td></tr>
+        <tr><td><b>Drawer</b></td><td>P1</td><td>右侧滑出面板（240ms），替代当前简陋的 CitationDrawer</td></tr>
+        <tr><td><b>FilterBar</b></td><td>P1</td><td>筛选条件条 + 已选条件回显 + 一键清空</td></tr>
+        <tr><td><b>Pagination</b></td><td>P1</td><td>页码 + 每页条数 + 总数，配合后端已有分页接口</td></tr>
+        <tr><td><b>CommandPalette</b></td><td>P2</td><td>⌘K 全局搜索：案件、文书、法条、功能跳转</td></tr>
+        <tr><td><b>Stepper</b></td><td>P2</td><td>案件阶段进度条（接单 → 归档）</td></tr>
+        <tr><td><b>EmptyState 增强</b></td><td>P2</td><td>插图 + 主行动按钮 + 引导说明（当前仅有文字）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>6.4 现有组件改造要点</h3>
+  <div class="grid g2">
+    <div class="card"><h4>Sidebar</h4><ul style="font-size:13px;margin:0"><li>宽度 256 → 240px，底色改 <code>brand-950</code></li><li>Logo 区去掉大渐变块，改为描边金线标识</li><li>新增分组标题、折叠态、底部用户区</li><li>激活项左侧 3px 金色指示条</li></ul></div>
+    <div class="card"><h4>Header</h4><ul style="font-size:13px;margin:0"><li>高度统一 56px（当前 56px 但各页自造）</li><li>补齐面包屑、全局搜索、通知、用户菜单</li><li>去掉 <code>dark:</code> 前缀硬编码，改走变量</li></ul></div>
+    <div class="card"><h4>Card</h4><ul style="font-size:13px;margin:0"><li>圆角统一 8px（当前 12px）</li><li>移除 <code>hover</code> 时的位移与放大</li><li>默认 1px 边框 + <code>--s1</code>，去掉渐变背景</li></ul></div>
+    <div class="card"><h4>KpiCard</h4><ul style="font-size:13px;margin:0"><li>数值 28px 等宽 + 单位小字</li><li>新增环比与迷你趋势线</li><li><code>color</code> 属性改为语义 token，修复 emerald 错位问题</li></ul></div>
+    <div class="card"><h4>Button</h4><ul style="font-size:13px;margin:0"><li>5 变体 × 3 尺寸</li><li>补 loading 态（spinner + 禁用）</li><li>去掉渐变，统一 <code>--r2</code> 圆角</li></ul></div>
+    <div class="card"><h4>LoginShell</h4><ul style="font-size:13px;margin:0"><li>左栏渐变改为墨蓝径向渐变 + 网格纹理</li><li>演示账号 6 张卡片改为 2×2 紧凑列表</li><li>新增角色分段切换、错误态、记住登录</li></ul></div>
+  </div>
+</section>
+
+<!-- ================= 07 概念图 ================= -->
+<section id="s7">
+  <h2><span class="num">07</span>页面概念图</h2>
+  <div class="rule"></div>
+  <p class="lead">以下 7 张为<strong>线框概念图</strong>，标注布局结构与信息层级；对应的<strong>高保真视觉稿</strong>在
+  <code>deliverables/ui-design/mockups/</code> 目录，可直接用浏览器打开评审。</p>
+
+  <!-- 7.1 登录 -->
+  <div class="wf" id="w1">
+    <h4>7.1 登录页 · 品牌叙事 + 表单双栏</h4>
+    <p class="desc">左栏深墨蓝品牌区承载价值主张与三条信任点，右栏浅色表单区。把原先散落的「6 个演示账号卡片」收敛为 2×2 紧凑列表，并新增角色分段切换。</p>
+    <svg viewBox="0 0 900 260" role="img" aria-label="登录页线框">
+      <rect x="0" y="0" width="900" height="260" fill="#F7F8F9"/>
+      <rect x="0" y="0" width="486" height="260" fill="#0A1830"/>
+      <rect x="36" y="30" width="30" height="30" rx="7" fill="#102547" stroke="#C6A469"/>
+      <rect x="74" y="34" width="70" height="9" rx="3" fill="#fff" opacity=".85"/>
+      <rect x="74" y="47" width="100" height="6" rx="3" fill="#7E97BC"/>
+      <rect x="36" y="96" width="300" height="16" rx="4" fill="#fff" opacity=".9"/>
+      <rect x="36" y="120" width="240" height="16" rx="4" fill="#C6A469" opacity=".85"/>
+      <rect x="36" y="150" width="330" height="7" rx="3" fill="#A9BEDD"/>
+      <rect x="36" y="164" width="290" height="7" rx="3" fill="#A9BEDD" opacity=".7"/>
+      <rect x="36" y="192" width="18" height="18" rx="5" fill="#C6A469" opacity=".25" stroke="#C6A469" stroke-width=".7"/>
+      <rect x="62" y="194" width="90" height="7" rx="3" fill="#fff" opacity=".75"/>
+      <rect x="62" y="205" width="180" height="6" rx="3" fill="#8FA6C7"/>
+      <rect x="36" y="222" width="18" height="18" rx="5" fill="#C6A469" opacity=".25" stroke="#C6A469" stroke-width=".7"/>
+      <rect x="62" y="224" width="90" height="7" rx="3" fill="#fff" opacity=".75"/>
+      <rect x="62" y="235" width="180" height="6" rx="3" fill="#8FA6C7"/>
+      <!-- 右栏表单 -->
+      <rect x="486" y="0" width="414" height="260" fill="#F7F8F9"/>
+      <rect x="546" y="34" width="200" height="14" rx="4" fill="#21262D" opacity=".8"/>
+      <rect x="546" y="54" width="140" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="546" y="74" width="294" height="28" rx="6" fill="#EFF1F3"/>
+      <rect x="550" y="78" width="94" height="20" rx="4" fill="#fff"/>
+      <rect x="546" y="118" width="60" height="7" rx="3" fill="#6B7480"/>
+      <rect x="546" y="132" width="294" height="36" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="546" y="182" width="60" height="7" rx="3" fill="#6B7480"/>
+      <rect x="546" y="196" width="294" height="36" rx="6" fill="#fff" stroke="#3660B0" stroke-width="1.6"/>
+      <rect x="556" y="210" width="90" height="8" rx="3" fill="#CBD1D8"/>
+      <rect x="546" y="240" width="294" height="14" rx="4" fill="#274C93" opacity=".9"/>
+      <text x="36" y="252" font-family="Inter,sans-serif" font-size="9" fill="#8FA6C7">品牌叙事区 · 深墨蓝 + 金色点缀</text>
+      <text x="546" y="252" font-family="Inter,sans-serif" font-size="9" fill="#9AA3AE" opacity="0"> </text>
+    </svg>
+    <a class="link" href="mockups/01-login.html">打开高保真稿 →</a>
+  </div>
+
+  <!-- 7.2 工作台首页 -->
+  <div class="wf" id="w2">
+    <h4>7.2 工作台首页 · 从「大卡片门户」到「待办工作台」</h4>
+    <p class="desc">去掉 5 张大卡片导航，改为「KPI 行 + 待办列表（主体）+ 快捷入口（紧凑列表）+ 用量环」。用户进入即看到今天要做什么，而不是先看一遍菜单。</p>
+    <svg viewBox="0 0 900 300" role="img" aria-label="工作台首页线框">
+      <rect x="0" y="0" width="900" height="300" fill="#F7F8F9"/>
+      <rect x="0" y="0" width="196" height="300" fill="#0A1830"/>
+      <rect x="14" y="16" width="28" height="28" rx="6" fill="#274C93" stroke="#C6A469" stroke-width=".8"/>
+      <rect x="50" y="20" width="60" height="8" rx="3" fill="#fff" opacity=".85"/>
+      <rect x="50" y="32" width="80" height="6" rx="3" fill="#7E97BC"/>
+      <rect x="12" y="56" width="172" height="26" rx="6" fill="#fff" opacity=".05" stroke="#fff" stroke-opacity=".1"/>
+      <rect x="12" y="98" width="172" height="24" rx="5" fill="#3660B0" opacity=".35"/>
+      <rect x="0" y="101" width="3" height="18" rx="1.5" fill="#C6A469"/>
+      <rect x="22" y="106" width="14" height="9" rx="2" fill="#fff" opacity=".85"/>
+      <rect x="42" y="107" width="56" height="7" rx="3" fill="#fff" opacity=".9"/>
+      <rect x="22" y="136" width="14" height="9" rx="2" fill="#AFC0D8"/>
+      <rect x="42" y="137" width="48" height="7" rx="3" fill="#AFC0D8"/>
+      <rect x="22" y="164" width="14" height="9" rx="2" fill="#AFC0D8"/>
+      <rect x="42" y="165" width="60" height="7" rx="3" fill="#AFC0D8"/>
+      <rect x="22" y="192" width="14" height="9" rx="2" fill="#AFC0D8"/>
+      <rect x="42" y="193" width="52" height="7" rx="3" fill="#AFC0D8"/>
+      <circle cx="28" cy="272" r="13" fill="#3660B0"/>
+      <!-- 顶栏 -->
+      <rect x="196" y="0" width="704" height="48" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="214" y="20" width="80" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="560" y="13" width="180" height="22" rx="6" fill="#F7F8F9" stroke="#E2E5E9"/>
+      <rect x="822" y="13" width="22" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="852" y="13" width="22" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <!-- 标题行 -->
+      <rect x="218" y="66" width="150" height="13" rx="4" fill="#21262D" opacity=".8"/>
+      <rect x="218" y="86" width="280" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="700" y="64" width="86" height="28" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="794" y="64" width="86" height="28" rx="6" fill="#274C93"/>
+      <!-- KPI 行 -->
+      <rect x="218" y="112" width="156" height="62" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="382" y="112" width="156" height="62" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="546" y="112" width="156" height="62" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="710" y="112" width="170" height="62" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="232" y="126" width="52" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="232" y="140" width="40" height="16" rx="4" fill="#21262D" opacity=".75"/>
+      <rect x="232" y="162" width="100" height="4" rx="2" fill="#EFF1F3"/>
+      <rect x="232" y="162" width="62" height="4" rx="2" fill="#3660B0"/>
+      <rect x="396" y="126" width="52" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="396" y="140" width="46" height="16" rx="4" fill="#21262D" opacity=".75"/>
+      <rect x="396" y="162" width="100" height="4" rx="2" fill="#EFF1F3"/>
+      <rect x="396" y="162" width="68" height="4" rx="2" fill="#3660B0"/>
+      <rect x="560" y="126" width="60" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="560" y="140" width="30" height="16" rx="4" fill="#C0392B" opacity=".85"/>
+      <rect x="560" y="162" width="100" height="4" rx="2" fill="#EFF1F3"/>
+      <rect x="560" y="162" width="20" height="4" rx="2" fill="#C0392B"/>
+      <rect x="724" y="126" width="60" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="724" y="140" width="38" height="16" rx="4" fill="#21262D" opacity=".75"/>
+      <rect x="724" y="162" width="120" height="4" rx="2" fill="#EFF1F3"/>
+      <rect x="724" y="162" width="80" height="4" rx="2" fill="#B08A4F"/>
+      <!-- 主体两栏 -->
+      <rect x="218" y="188" width="490" height="94" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="232" y="200" width="40" height="8" rx="3" fill="#274C93"/>
+      <rect x="280" y="200" width="40" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="328" y="200" width="40" height="8" rx="3" fill="#9AA3AE"/>
+      <line x1="232" y1="216" x2="694" y2="216" stroke="#EFF1F3"/>
+      <rect x="232" y="226" width="3" height="18" rx="1.5" fill="#C0392B"/>
+      <rect x="244" y="227" width="240" height="8" rx="3" fill="#4A525C"/>
+      <rect x="244" y="239" width="150" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="610" y="229" width="46" height="14" rx="4" fill="#FDF0EE" stroke="#F1C8C1"/>
+      <rect x="232" y="252" width="3" height="18" rx="1.5" fill="#B4791F"/>
+      <rect x="244" y="253" width="270" height="8" rx="3" fill="#4A525C"/>
+      <rect x="244" y="265" width="130" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="610" y="255" width="46" height="14" rx="4" fill="#FDF6E9" stroke="#EED9B4"/>
+      <rect x="718" y="188" width="162" height="94" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="730" y="200" width="60" height="8" rx="3" fill="#4A525C"/>
+      <circle cx="760" cy="246" r="22" fill="none" stroke="#EFF1F3" stroke-width="6"/>
+      <path d="M760 224 a22 22 0 0 1 15 38" fill="none" stroke="#3660B0" stroke-width="6"/>
+      <text x="218" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">KPI 行 · 待办列表（主体）· 快捷入口与用量</text>
+    </svg>
+    <a class="link" href="mockups/02-workspace-home.html">打开高保真稿 →</a>
+  </div>
+
+  <!-- 7.3 问答 -->
+  <div class="wf" id="w3">
+    <h4>7.3 智能问答 · 三栏 + 常驻引用溯源</h4>
+    <p class="desc">核心改动：把引用从<strong>弹窗抽屉</strong>改为<strong>右侧常驻面板</strong>。左栏补上会话历史（当前完全缺失），中栏为四段式回答卡，顶栏常驻责任边界图例。</p>
+    <svg viewBox="0 0 900 300" role="img" aria-label="智能问答页线框">
+      <rect x="0" y="0" width="900" height="300" fill="#F7F8F9"/>
+      <!-- 左会话列表 -->
+      <rect x="0" y="0" width="196" height="300" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="14" y="14" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="32" width="168" height="28" rx="6" fill="#EEF3FB" stroke="#B6C9EE"/>
+      <rect x="14" y="72" width="168" height="40" rx="6" fill="#EEF3FB"/>
+      <rect x="0" y="84" width="2.5" height="16" rx="1" fill="#274C93"/>
+      <rect x="26" y="80" width="110" height="7" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="26" y="93" width="140" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="120" width="168" height="40" rx="6" fill="#fff"/>
+      <rect x="26" y="128" width="120" height="7" rx="3" fill="#21262D" opacity=".6"/>
+      <rect x="26" y="141" width="130" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="168" width="168" height="40" rx="6" fill="#fff"/>
+      <rect x="26" y="176" width="100" height="7" rx="3" fill="#21262D" opacity=".6"/>
+      <rect x="26" y="189" width="120" height="6" rx="3" fill="#9AA3AE"/>
+      <!-- 中对话 -->
+      <rect x="196" y="0" width="404" height="46" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="212" y="19" width="120" height="9" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="470" y="21" width="50" height="7" rx="3" fill="#6E56CF" opacity=".7"/>
+      <rect x="530" y="21" width="50" height="7" rx="3" fill="#1E8E6E" opacity=".7"/>
+      <rect x="196" y="46" width="404" height="196" fill="#F7F8F9"/>
+      <rect x="380" y="60" width="200" height="30" rx="6" fill="#274C93" opacity=".9"/>
+      <rect x="212" y="102" width="360" height="126" rx="8" fill="#fff" stroke="#D2CAF4"/>
+      <rect x="212" y="102" width="360" height="24" rx="8" fill="#F4F2FD"/>
+      <rect x="224" y="111" width="90" height="7" rx="3" fill="#6E56CF" opacity=".8"/>
+      <line x1="212" y1="140" x2="572" y2="140" stroke="#EFF1F3"/>
+      <rect x="224" y="150" width="30" height="12" rx="3" fill="#274C93"/>
+      <rect x="262" y="152" width="200" height="7" rx="3" fill="#4A525C"/>
+      <rect x="224" y="170" width="30" height="12" rx="3" fill="#EFF1F3"/>
+      <rect x="262" y="172" width="270" height="7" rx="3" fill="#4A525C"/>
+      <rect x="262" y="184" width="230" height="7" rx="3" fill="#4A525C"/>
+      <rect x="224" y="202" width="30" height="12" rx="3" fill="#1E8E6E"/>
+      <rect x="262" y="204" width="250" height="7" rx="3" fill="#4A525C"/>
+      <rect x="224" y="218" width="30" height="12" rx="3" fill="#B4791F"/>
+      <rect x="262" y="220" width="220" height="7" rx="3" fill="#8A5A12"/>
+      <!-- 输入区 -->
+      <rect x="212" y="252" width="372" height="34" rx="10" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="224" y="264" width="140" height="7" rx="3" fill="#CBD1D8"/>
+      <rect x="500" y="260" width="70" height="20" rx="6" fill="#274C93"/>
+      <!-- 右溯源面板 -->
+      <rect x="600" y="0" width="300" height="300" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="616" y="19" width="70" height="9" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="850" y="18" width="34" height="14" rx="7" fill="#EFF1F3"/>
+      <rect x="616" y="48" width="268" height="76" rx="8" fill="#fff" stroke="#5A80CB" stroke-width="1.5"/>
+      <rect x="616" y="48" width="268" height="24" rx="8" fill="#F7F8F9"/>
+      <rect x="626" y="56" width="14" height="12" rx="3" fill="#274C93"/>
+      <rect x="648" y="58" width="150" height="7" rx="3" fill="#343B44"/>
+      <rect x="626" y="80" width="248" height="7" rx="3" fill="#4A525C"/>
+      <rect x="626" y="93" width="230" height="7" rx="3" fill="#4A525C"/>
+      <rect x="616" y="110" width="3" height="14" fill="#C6A469"/>
+      <rect x="626" y="134" width="268" height="62" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="626" y="146" width="14" height="12" rx="3" fill="#274C93" opacity=".6"/>
+      <rect x="648" y="148" width="160" height="7" rx="3" fill="#343B44"/>
+      <rect x="636" y="166" width="238" height="6" rx="3" fill="#6B7480"/>
+      <rect x="636" y="178" width="200" height="6" rx="3" fill="#6B7480"/>
+      <rect x="626" y="206" width="268" height="62" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="636" y="218" width="14" height="12" rx="3" fill="#274C93" opacity=".6"/>
+      <rect x="658" y="220" width="140" height="7" rx="3" fill="#343B44"/>
+      <rect x="636" y="238" width="238" height="6" rx="3" fill="#6B7480"/>
+      <rect x="636" y="250" width="180" height="6" rx="3" fill="#6B7480"/>
+      <text x="212" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">会话列表 196px</text>
+      <text x="620" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">引用溯源常驻面板 300–380px</text>
+    </svg>
+    <a class="link" href="mockups/03-qa.html">打开高保真稿 →</a>
+  </div>
+
+  <!-- 7.4 驾驶舱 -->
+  <div class="wf" id="w4">
+    <h4>7.4 运营驾驶舱 · 真实数据可视化</h4>
+    <p class="desc">现状漏斗是「100% − 9%×i」的假进度条。改为<strong>真实数值 + 环比 + 流失标注</strong>，并补充质量监控折线图、超 SLA 告警条与可操作的数据表格。</p>
+    <svg viewBox="0 0 900 300" role="img" aria-label="运营驾驶舱线框">
+      <rect x="0" y="0" width="900" height="300" fill="#F7F8F9"/>
+      <rect x="0" y="0" width="180" height="300" fill="#0A1830"/>
+      <rect x="14" y="16" width="26" height="26" rx="6" fill="#274C93" stroke="#C6A469" stroke-width=".8"/>
+      <rect x="46" y="20" width="56" height="8" rx="3" fill="#fff" opacity=".85"/>
+      <rect x="12" y="60" width="156" height="24" rx="5" fill="#3660B0" opacity=".35"/>
+      <rect x="0" y="63" width="3" height="18" rx="1.5" fill="#C6A469"/>
+      <rect x="22" y="68" width="12" height="8" rx="2" fill="#fff" opacity=".85"/>
+      <rect x="40" y="69" width="50" height="7" rx="3" fill="#fff" opacity=".9"/>
+      <rect x="22" y="96" width="12" height="8" rx="2" fill="#AFC0D8"/>
+      <rect x="40" y="97" width="44" height="7" rx="3" fill="#AFC0D8"/>
+      <rect x="22" y="124" width="12" height="8" rx="2" fill="#AFC0D8"/>
+      <rect x="40" y="125" width="56" height="7" rx="3" fill="#AFC0D8"/>
+      <rect x="12" y="158" width="40" height="6" rx="3" fill="#5E769B"/>
+      <rect x="22" y="174" width="12" height="8" rx="2" fill="#AFC0D8"/>
+      <rect x="40" y="175" width="48" height="7" rx="3" fill="#AFC0D8"/>
+      <!-- 顶栏 -->
+      <rect x="180" y="0" width="720" height="46" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="198" y="19" width="80" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="560" y="12" width="150" height="22" rx="6" fill="#EFF1F3"/>
+      <rect x="564" y="16" width="46" height="14" rx="4" fill="#fff"/>
+      <rect x="796" y="12" width="88" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <!-- 告警 -->
+      <rect x="198" y="60" width="684" height="32" rx="8" fill="#FDF0EE" stroke="#F1C8C1"/>
+      <circle cx="216" cy="76" r="9" fill="#C0392B"/>
+      <rect x="234" y="68" width="280" height="7" rx="3" fill="#9C2C20" opacity=".85"/>
+      <rect x="234" y="80" width="200" height="6" rx="3" fill="#9C2C20" opacity=".5"/>
+      <rect x="800" y="70" width="66" height="12" rx="3" fill="#C0392B" opacity=".8"/>
+      <!-- KPI 5 张 -->
+      <rect x="198" y="104" width="130" height="56" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="336" y="104" width="130" height="56" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="474" y="104" width="130" height="56" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="612" y="104" width="130" height="56" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="750" y="104" width="132" height="56" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <g fill="#9AA3AE">
+        <rect x="210" y="114" width="40" height="5" rx="2.5"/><rect x="348" y="114" width="40" height="5" rx="2.5"/>
+        <rect x="486" y="114" width="40" height="5" rx="2.5"/><rect x="624" y="114" width="40" height="5" rx="2.5"/>
+        <rect x="762" y="114" width="40" height="5" rx="2.5"/>
+      </g>
+      <g fill="#21262D" opacity=".75">
+        <rect x="210" y="125" width="34" height="13" rx="3"/><rect x="348" y="125" width="30" height="13" rx="3"/>
+        <rect x="486" y="125" width="36" height="13" rx="3"/><rect x="624" y="125" width="52" height="13" rx="3"/>
+        <rect x="762" y="125" width="30" height="13" rx="3"/>
+      </g>
+      <g stroke-width="1.4" fill="none">
+        <polyline points="210,150 240,147 270,148 300,143 316,141" stroke="#3660B0"/>
+        <polyline points="348,152 378,150 408,146 438,148 454,144" stroke="#B4791F"/>
+        <polyline points="486,150 516,147 546,148 576,143 592,141" stroke="#3660B0"/>
+        <polyline points="624,152 654,148 684,144 714,143 730,139" stroke="#1E8E6E"/>
+        <polyline points="762,148 792,149 822,146 852,146 882,143" stroke="#C0392B"/>
+      </g>
+      <!-- 漏斗 + 折线 -->
+      <rect x="198" y="172" width="380" height="118" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="210" y="184" width="70" height="7" rx="3" fill="#4A525C"/>
+      <g>
+        <rect x="286" y="204" width="270" height="12" rx="3" fill="#1E3C77"/>
+        <rect x="286" y="221" width="240" height="12" rx="3" fill="#274C93"/>
+        <rect x="286" y="238" width="176" height="12" rx="3" fill="#3660B0"/>
+        <rect x="286" y="255" width="158" height="12" rx="3" fill="#5A80CB"/>
+        <rect x="286" y="272" width="128" height="12" rx="3" fill="#6E56CF"/>
+      </g>
+      <g fill="#9AA3AE">
+        <rect x="212" y="207" width="56" height="6" rx="3"/><rect x="212" y="224" width="56" height="6" rx="3"/>
+        <rect x="212" y="241" width="56" height="6" rx="3"/><rect x="212" y="258" width="56" height="6" rx="3"/>
+        <rect x="212" y="275" width="56" height="6" rx="3"/>
+      </g>
+      <rect x="590" y="172" width="292" height="118" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="602" y="184" width="70" height="7" rx="3" fill="#4A525C"/>
+      <g stroke="#EFF1F3" stroke-width="1">
+        <line x1="602" y1="204" x2="870" y2="204"/><line x1="602" y1="226" x2="870" y2="226"/>
+        <line x1="602" y1="248" x2="870" y2="248"/><line x1="602" y1="270" x2="870" y2="270"/>
+      </g>
+      <polyline points="602,240 646,232 690,228 734,222 778,214 822,208 870,202" fill="none" stroke="#1E8E6E" stroke-width="2"/>
+      <polyline points="602,256 646,250 690,246 734,242 778,236 822,232 870,226" fill="none" stroke="#3660B0" stroke-width="2"/>
+      <polyline points="602,270 646,266 690,262 734,258 778,252 822,248 870,242" fill="none" stroke="#B08A4F" stroke-width="2"/>
+      <text x="198" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">真实数值漏斗 + 流失标注 · 质量趋势折线</text>
+    </svg>
+    <a class="link" href="mockups/04-admin-cockpit.html">打开高保真稿 →</a>
+  </div>
+
+  <!-- 7.5 案件详情 -->
+  <div class="wf" id="w5">
+    <h4>7.5 律师案件详情 · 六段式分析 + 复核流转</h4>
+    <p class="desc">当前 <code>apps/lawyer</code> 只有案件列表，<strong>没有案件详情页</strong>。本页是律师日常使用频率最高的页面：左栏六段式分析（逐段可确认），右栏复核流转时间线与证据清单。</p>
+    <svg viewBox="0 0 900 300" role="img" aria-label="律师案件详情线框">
+      <rect x="0" y="0" width="900" height="300" fill="#F7F8F9"/>
+      <rect x="0" y="0" width="176" height="300" fill="#0A1830"/>
+      <rect x="14" y="16" width="26" height="26" rx="6" fill="#274C93" stroke="#C6A469" stroke-width=".8"/>
+      <rect x="46" y="20" width="56" height="8" rx="3" fill="#fff" opacity=".85"/>
+      <rect x="12" y="60" width="152" height="22" rx="5" fill="#fff" opacity=".05"/>
+      <rect x="12" y="88" width="152" height="22" rx="5" fill="#3660B0" opacity=".35"/>
+      <rect x="0" y="91" width="3" height="16" rx="1.5" fill="#C6A469"/>
+      <rect x="22" y="95" width="48" height="7" rx="3" fill="#fff" opacity=".9"/>
+      <rect x="12" y="116" width="152" height="22" rx="5" fill="#fff" opacity=".05"/>
+      <rect x="22" y="123" width="40" height="7" rx="3" fill="#AFC0D8"/>
+      <!-- 顶栏 -->
+      <rect x="176" y="0" width="724" height="42" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="194" y="17" width="140" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="700" y="10" width="70" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="778" y="10" width="70" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="856" y="10" width="38" height="22" rx="6" fill="#1E8E6E"/>
+      <!-- 案件头 -->
+      <rect x="176" y="42" width="724" height="78" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="196" y="58" width="38" height="38" rx="8" fill="#C0392B"/>
+      <rect x="248" y="60" width="330" height="12" rx="4" fill="#21262D" opacity=".8"/>
+      <rect x="248" y="80" width="60" height="7" rx="3" fill="#274C93"/>
+      <rect x="316" y="80" width="70" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="394" y="80" width="80" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="482" y="78" width="54" height="12" rx="3" fill="#FDF6E9" stroke="#EED9B4"/>
+      <rect x="544" y="78" width="70" height="12" rx="3" fill="#F4F2FD" stroke="#D2CAF4"/>
+      <!-- 阶段条 -->
+      <g>
+        <line x1="248" y1="104" x2="860" y2="104" stroke="#E2E5E9" stroke-width="2"/>
+        <line x1="248" y1="104" x2="600" y2="104" stroke="#1E8E6E" stroke-width="2"/>
+      </g>
+      <g fill="#1E8E6E">
+        <circle cx="248" cy="104" r="6"/><circle cx="336" cy="104" r="6"/><circle cx="424" cy="104" r="6"/><circle cx="512" cy="104" r="6"/>
+      </g>
+      <circle cx="600" cy="104" r="6" fill="#fff" stroke="#B4791F" stroke-width="2.5"/>
+      <g fill="#9AA3AE">
+        <circle cx="688" cy="104" r="5"/><circle cx="776" cy="104" r="5"/><circle cx="860" cy="104" r="5"/>
+      </g>
+      <!-- Tab -->
+      <rect x="196" y="136" width="70" height="8" rx="3" fill="#274C93"/>
+      <rect x="278" y="136" width="60" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="350" y="136" width="60" height="8" rx="3" fill="#9AA3AE"/>
+      <rect x="422" y="136" width="60" height="8" rx="3" fill="#9AA3AE"/>
+      <line x1="196" y1="152" x2="640" y2="152" stroke="#E2E5E9"/>
+      <!-- 六段 -->
+      <rect x="196" y="162" width="444" height="126" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <g>
+        <rect x="210" y="174" width="20" height="18" rx="4" fill="#EEF3FB" stroke="#D9E4F7"/>
+        <rect x="240" y="179" width="90" height="8" rx="3" fill="#343B44"/>
+        <rect x="560" y="176" width="66" height="14" rx="4" fill="#EDF8F4" stroke="#BFE4D7"/>
+        <line x1="210" y1="200" x2="626" y2="200" stroke="#EFF1F3"/>
+        <rect x="210" y="210" width="20" height="18" rx="4" fill="#EEF3FB" stroke="#D9E4F7"/>
+        <rect x="240" y="215" width="70" height="8" rx="3" fill="#343B44"/>
+        <rect x="560" y="212" width="66" height="14" rx="4" fill="#F4F2FD" stroke="#D2CAF4"/>
+        <line x1="210" y1="236" x2="626" y2="236" stroke="#EFF1F3"/>
+        <rect x="210" y="246" width="20" height="18" rx="4" fill="#EEF3FB" stroke="#D9E4F7"/>
+        <rect x="240" y="251" width="86" height="8" rx="3" fill="#343B44"/>
+        <rect x="560" y="248" width="66" height="14" rx="4" fill="#F4F2FD" stroke="#D2CAF4"/>
+      </g>
+      <line x1="210" y1="274" x2="626" y2="274" stroke="#EFF1F3"/>
+      <!-- 右栏 -->
+      <rect x="652" y="162" width="248" height="60" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="664" y="174" width="70" height="8" rx="3" fill="#343B44"/>
+      <g>
+        <circle cx="672" cy="196" r="6" fill="#1E8E6E"/>
+        <line x1="672" y1="202" x2="672" y2="212" stroke="#1E8E6E" stroke-width="1.5"/>
+        <rect x="686" y="192" width="110" height="7" rx="3" fill="#4A525C"/>
+        <rect x="686" y="203" width="140" height="6" rx="3" fill="#9AA3AE"/>
+        <circle cx="672" cy="216" r="6" fill="#fff" stroke="#B4791F" stroke-width="2.5"/>
+      </g>
+      <rect x="652" y="230" width="248" height="58" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="664" y="242" width="60" height="8" rx="3" fill="#343B44"/>
+      <g>
+        <rect x="664" y="258" width="12" height="12" rx="3" fill="#EFF1F3"/><rect x="684" y="260" width="120" height="6" rx="3" fill="#6B7480"/>
+        <circle cx="900" cy="264" r="3.5" fill="#1E8E6E" transform="translate(-14,0)"/>
+        <rect x="664" y="276" width="12" height="12" rx="3" fill="#EFF1F3"/><rect x="684" y="278" width="100" height="6" rx="3" fill="#6B7480"/>
+        <circle cx="886" cy="282" r="3.5" fill="#C0392B"/>
+      </g>
+      <text x="196" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">六段式分析（逐段可确认）· 复核流转 + 证据清单</text>
+    </svg>
+    <a class="link" href="mockups/05-lawyer-case.html">打开高保真稿 →</a>
+  </div>
+
+  <!-- 7.6 IM -->
+  <div class="wf" id="w6">
+    <h4>7.6 IM 智能咨询 · 完整 IM 布局 + 案件侧栏</h4>
+    <p class="desc">现状是「640px 固定卡片居中」，不像 IM 应用。改为三栏：会话列表 / 对话流 / 案件与委托侧栏。新增快捷问题、卡片消息（案件评估结果）、委托进度与费用预估。</p>
+    <svg viewBox="0 0 900 300" role="img" aria-label="IM 智能咨询线框">
+      <rect x="0" y="0" width="900" height="300" fill="#F7F8F9"/>
+      <rect x="0" y="0" width="216" height="300" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="14" y="16" width="26" height="26" rx="6" fill="#274C93" stroke="#C6A469" stroke-width=".8"/>
+      <rect x="48" y="20" width="60" height="8" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="48" y="32" width="80" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="54" width="188" height="26" rx="6" fill="#F7F8F9" stroke="#E2E5E9"/>
+      <rect x="14" y="92" width="188" height="52" rx="6" fill="#EEF3FB"/>
+      <rect x="0" y="108" width="2.5" height="18" rx="1" fill="#274C93"/>
+      <circle cx="38" cy="112" r="13" fill="#6E56CF"/>
+      <rect x="58" y="102" width="80" height="7" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="58" y="114" width="120" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="58" y="126" width="60" height="11" rx="3" fill="#FDF6E9" stroke="#EED9B4"/>
+      <rect x="14" y="152" width="188" height="52" rx="6" fill="#fff"/>
+      <circle cx="38" cy="172" r="13" fill="#3660B0"/>
+      <rect x="58" y="162" width="90" height="7" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="58" y="174" width="130" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="58" y="186" width="56" height="11" rx="3" fill="#EDF8F4" stroke="#BFE4D7"/>
+      <rect x="14" y="212" width="188" height="52" rx="6" fill="#fff"/>
+      <circle cx="38" cy="232" r="13" fill="#6E56CF"/>
+      <rect x="58" y="222" width="70" height="7" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="58" y="234" width="120" height="6" rx="3" fill="#9AA3AE"/>
+      <!-- 中对话 -->
+      <rect x="216" y="0" width="400" height="52" fill="#fff" stroke="#E2E5E9"/>
+      <circle cx="240" cy="26" r="14" fill="#6E56CF"/>
+      <rect x="262" y="18" width="90" height="8" rx="3" fill="#21262D" opacity=".75"/>
+      <rect x="262" y="32" width="70" height="6" rx="3" fill="#1E8E6E"/>
+      <rect x="552" y="14" width="22" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="582" y="14" width="22" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="216" y="52" width="400" height="190" fill="#F7F8F9"/>
+      <rect x="234" y="66" width="220" height="26" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="372" y="104" width="228" height="30" rx="6" fill="#274C93" opacity=".9"/>
+      <rect x="234" y="146" width="250" height="26" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <!-- 卡片消息 -->
+      <rect x="234" y="180" width="300" height="56" rx="8" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="234" y="180" width="300" height="20" rx="8" fill="#F7F8F9"/>
+      <rect x="246" y="186" width="80" height="7" rx="3" fill="#343B44"/>
+      <rect x="450" y="185" width="66" height="12" rx="3" fill="#FDF6E9" stroke="#EED9B4"/>
+      <rect x="246" y="210" width="30" height="18" rx="4" fill="#C0392B"/>
+      <rect x="286" y="210" width="120" height="7" rx="3" fill="#4A525C"/>
+      <rect x="286" y="222" width="90" height="6" rx="3" fill="#9AA3AE"/>
+      <!-- 输入 -->
+      <rect x="234" y="252" width="366" height="34" rx="10" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="248" y="264" width="140" height="7" rx="3" fill="#CBD1D8"/>
+      <rect x="518" y="260" width="68" height="20" rx="6" fill="#274C93"/>
+      <!-- 右栏 -->
+      <rect x="616" y="0" width="284" height="300" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="632" y="18" width="80" height="9" rx="3" fill="#21262D" opacity=".75"/>
+      <g>
+        <circle cx="640" cy="52" r="6" fill="#1E8E6E"/><line x1="640" y1="58" x2="640" y2="86" stroke="#1E8E6E" stroke-width="1.5"/>
+        <rect x="656" y="48" width="110" height="7" rx="3" fill="#4A525C"/><rect x="656" y="60" width="150" height="6" rx="3" fill="#9AA3AE"/>
+        <circle cx="640" cy="92" r="6" fill="#1E8E6E"/><line x1="640" y1="98" x2="640" y2="126" stroke="#1E8E6E" stroke-width="1.5"/>
+        <rect x="656" y="88" width="100" height="7" rx="3" fill="#4A525C"/><rect x="656" y="100" width="140" height="6" rx="3" fill="#9AA3AE"/>
+        <circle cx="640" cy="132" r="6" fill="#fff" stroke="#B4791F" stroke-width="2.5"/>
+        <rect x="656" y="128" width="120" height="7" rx="3" fill="#4A525C"/><rect x="656" y="140" width="130" height="6" rx="3" fill="#9AA3AE"/>
+        <circle cx="640" cy="172" r="5" fill="#CBD1D8"/>
+        <rect x="656" y="168" width="90" height="7" rx="3" fill="#9AA3AE"/>
+      </g>
+      <line x1="632" y1="196" x2="884" y2="196" stroke="#EFF1F3"/>
+      <rect x="632" y="208" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="632" y="222" width="252" height="42" rx="8" fill="#F7F8F9" stroke="#E2E5E9"/>
+      <circle cx="658" cy="243" r="13" fill="#3660B0"/>
+      <rect x="680" y="234" width="70" height="7" rx="3" fill="#343B44"/>
+      <rect x="680" y="246" width="110" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="632" y="274" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="632" y="286" width="120" height="6" rx="3" fill="#CBD1D8"/>
+      <rect x="820" y="286" width="64" height="6" rx="3" fill="#CBD1D8"/>
+      <text x="234" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">对话流</text>
+      <text x="632" y="296" font-family="Inter,sans-serif" font-size="9" fill="#6B7480" opacity="0"> </text>
+    </svg>
+    <a class="link" href="mockups/06-im-chat.html">打开高保真稿 →</a>
+  </div>
+
+  <!-- 7.7 文书 -->
+  <div class="wf" id="w7">
+    <h4>7.7 文书工作台 · 纸感编辑区 + 实时风险提示</h4>
+    <p class="desc">中间是「纸张」质感的编辑区（衬线字体、2.1 行高、2em 首行缩进），变量以金色下划线高亮、风险句以朱砂下划线标注；右栏是风险卡片、待填变量与版本历史。</p>
+    <svg viewBox="0 0 900 300" role="img" aria-label="文书工作台线框">
+      <rect x="0" y="0" width="900" height="300" fill="#F7F8F9"/>
+      <rect x="0" y="0" width="180" height="300" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="14" y="16" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="32" width="152" height="28" rx="6" fill="#EEF3FB" stroke="#B6C9EE"/>
+      <rect x="14" y="72" width="152" height="40" rx="6" fill="#EEF3FB"/>
+      <rect x="0" y="84" width="2.5" height="16" rx="1" fill="#274C93"/>
+      <rect x="26" y="80" width="100" height="7" rx="3" fill="#21262D" opacity=".7"/>
+      <rect x="26" y="93" width="120" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="120" width="152" height="34" rx="6" fill="#fff"/>
+      <rect x="26" y="128" width="90" height="7" rx="3" fill="#21262D" opacity=".6"/>
+      <rect x="26" y="141" width="110" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="162" width="152" height="34" rx="6" fill="#fff"/>
+      <rect x="26" y="170" width="80" height="7" rx="3" fill="#21262D" opacity=".6"/>
+      <rect x="26" y="183" width="100" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="210" width="50" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="14" y="226" width="152" height="26" rx="5" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="14" y="258" width="152" height="26" rx="5" fill="#fff" stroke="#E2E5E9"/>
+      <!-- 中编辑区 -->
+      <rect x="180" y="0" width="470" height="44" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="196" y="18" width="130" height="8" rx="3" fill="#21262D" opacity=".75"/>
+      <rect x="196" y="30" width="110" height="6" rx="3" fill="#9AA3AE"/>
+      <rect x="520" y="11" width="54" height="22" rx="6" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="582" y="11" width="56" height="22" rx="6" fill="#1E8E6E"/>
+      <rect x="180" y="44" width="470" height="256" fill="#EFF1F3"/>
+      <!-- 纸张 -->
+      <rect x="248" y="62" width="336" height="228" rx="2" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="316" y="80" width="200" height="12" rx="3" fill="#21262D" opacity=".8"/>
+      <rect x="336" y="100" width="160" height="5" rx="2.5" fill="#CBD1D8"/>
+      <g fill="#4A525C">
+        <rect x="272" y="122" width="288" height="6" rx="3"/>
+        <rect x="272" y="136" width="270" height="6" rx="3"/>
+        <rect x="272" y="158" width="288" height="6" rx="3"/>
+        <rect x="272" y="172" width="240" height="6" rx="3"/>
+        <rect x="272" y="186" width="288" height="6" rx="3"/>
+        <rect x="272" y="200" width="264" height="6" rx="3"/>
+        <rect x="272" y="222" width="288" height="6" rx="3"/>
+        <rect x="272" y="236" width="252" height="6" rx="3"/>
+        <rect x="272" y="250" width="288" height="6" rx="3"/>
+      </g>
+      <!-- 变量高亮 -->
+      <rect x="380" y="120" width="60" height="10" rx="2" fill="#F4EAD6"/>
+      <line x1="380" y1="130" x2="440" y2="130" stroke="#B08A4F" stroke-width="1.2" stroke-dasharray="3 2"/>
+      <rect x="330" y="184" width="80" height="10" rx="2" fill="#F4EAD6"/>
+      <line x1="330" y1="194" x2="410" y2="194" stroke="#B08A4F" stroke-width="1.2" stroke-dasharray="3 2"/>
+      <!-- 风险句 -->
+      <rect x="272" y="220" width="180" height="10" rx="2" fill="#C0392B" opacity=".12"/>
+      <line x1="272" y1="230" x2="452" y2="230" stroke="#C0392B" stroke-width="1.6"/>
+      <circle cx="456" cy="222" r="7" fill="#C0392B"/>
+      <!-- 右栏 -->
+      <rect x="650" y="0" width="250" height="300" fill="#fff" stroke="#E2E5E9"/>
+      <rect x="666" y="18" width="90" height="9" rx="3" fill="#21262D" opacity=".75"/>
+      <rect x="846" y="16" width="38" height="14" rx="7" fill="#FDF0EE" stroke="#F1C8C1"/>
+      <rect x="666" y="44" width="218" height="58" rx="8" fill="#FDF0EE" stroke="#F1C8C1"/>
+      <rect x="678" y="54" width="110" height="7" rx="3" fill="#C0392B"/>
+      <rect x="678" y="68" width="194" height="6" rx="3" fill="#9C2C20" opacity=".55"/>
+      <rect x="678" y="80" width="160" height="6" rx="3" fill="#9C2C20" opacity=".55"/>
+      <rect x="678" y="92" width="46" height="10" rx="3" fill="#fff" stroke="#E5B4AC"/>
+      <rect x="666" y="110" width="218" height="58" rx="8" fill="#FDF6E9" stroke="#EED9B4"/>
+      <rect x="678" y="120" width="130" height="7" rx="3" fill="#8F5F14"/>
+      <rect x="678" y="134" width="194" height="6" rx="3" fill="#8A5A12" opacity=".55"/>
+      <rect x="678" y="146" width="140" height="6" rx="3" fill="#8A5A12" opacity=".55"/>
+      <rect x="666" y="184" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="666" y="198" width="218" height="26" rx="6" fill="#EDF8F4" stroke="#1E8E6E"/>
+      <rect x="666" y="232" width="218" height="26" rx="6" fill="#fff" stroke="#E2E5E9" stroke-dasharray="4 3"/>
+      <rect x="666" y="268" width="60" height="7" rx="3" fill="#9AA3AE"/>
+      <rect x="666" y="282" width="130" height="6" rx="3" fill="#CBD1D8"/>
+      <text x="248" y="298" font-family="Inter,sans-serif" font-size="9" fill="#6B7480">衬线纸张编辑区 · 金色变量高亮 · 朱砂风险标注</text>
+    </svg>
+    <a class="link" href="mockups/07-documents.html">打开高保真稿 →</a>
+  </div>
+</section>
+
+<!-- ================= 08 移动端 ================= -->
+<section id="s8">
+  <h2><span class="num">08</span>移动端设计规范</h2>
+  <div class="rule"></div>
+  <p class="lead">法律服务的真实使用场景大量发生在手机上：客户半夜遇到纠纷先掏手机问一句、律师在法院走廊等开庭时翻案卷、
+  企业法务在会议室里核对条款、HR 在招聘现场拍一份劳动合同回来扫描。<strong>移动端不是「桌面端的缩小版」，而是需要独立设计的第二主场。</strong></p>
+
+  <div class="callout">
+    <b>本规范的立场：</b>移动端优先（Mobile First），但<strong>不是所有页面都要移动化</strong>。
+    运营驾驶舱的复杂图表、文书编辑器的长文排版仍以桌面为主；而咨询、问答、案件阅读、证据上传、复核审批——
+    这些<strong>高频、碎片、移动场景明确</strong>的动作必须原生适配移动端。
+  </div>
+
+  <h3 id="m1">8.1 各端移动端优先度</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:120px">端</th><th style="width:130px">移动端定位</th><th>必须移动适配的功能</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>im（客户端）</b></td>
+          <td><span class="tag ok">移动优先</span></td>
+          <td>全部。C 端客户几乎只用手机。设计基准直接按 375px 起草，桌面端视为放大适配</td>
+        </tr>
+        <tr>
+          <td><b>web（企业法务）</b></td>
+          <td><span class="tag ok">移动优先</span></td>
+          <td>登录、工作台、问答、合规扫描（拍照即扫）、案件进度、通知、我的。文书编辑器仅支持移动端预览与批注</td>
+        </tr>
+        <tr>
+          <td><b>lawyer（律师端）</b></td>
+          <td><span class="tag wait">移动强需求</span></td>
+          <td>派单池（抢单）、案件阅读、证据拍照上传、复核审批、沟通记录、工时填报。卷宗整理以桌面为主</td>
+        </tr>
+        <tr>
+          <td><b>admin（运营后台）</b></td>
+          <td><span class="tag n">桌面为主</span></td>
+          <td>仅支持<strong>只读查看</strong>：驾驶舱核心指标、告警、案件查询。批量操作、规则配置不移动化</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="m2">8.2 断点与布局切换</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:130px">断点</th><th style="width:90px">宽度</th><th style="width:150px">导航形态</th><th>内容区</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">compact</td><td>&lt; 640px</td><td>底部 Tab Bar + 顶部 AppBar</td><td>单列，页边距 16px；表格转卡片</td></tr>
+        <tr><td class="mono">medium</td><td>640 – 1023px</td><td>底部 Tab Bar（平板可改侧栏图标态）</td><td>单列为主，允许两列卡片；页边距 24px</td></tr>
+        <tr><td class="mono">expanded</td><td>1024 – 1599px</td><td>侧栏 240px 常驻</td><td>12 栅格，页边距 24px，内容最大宽 1280</td></tr>
+        <tr><td class="mono">wide</td><td>≥ 1600px</td><td>侧栏 240px 常驻</td><td>驾驶舱全宽（1600），其余保持 1280</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13px;color:var(--ink-500)">
+    <strong>⚠️ 修订（2026-09-23）：</strong><code>wide</code> 原写 <code>≥ 1440px</code>、<code>expanded</code> 原写 <code>1024 – 1439px</code>，与 §4.2「断点 640 / 1024 / 1280 / <strong>1600</strong>」及 <code>tailwind.preset.ts</code> 的 <code>screens.wide = 1600px</code> <strong>自相矛盾</strong>（<strong>1440 在实现里根本不存在</strong> —— 全仓 <code>wide:</code> 工具类 <strong>0 处</strong>）。现按 <strong>1600</strong> 对齐（1600 有三处实现支撑：<code>screens.wide</code> / <code>maxWidth.wide</code> / <code>--content-wide</code>），并把 <code>expanded</code> 上界一并改为 <strong>1599</strong>，<strong>以消除 1440–1599 的空档</strong>（只改 <code>wide</code> 会留空档）。
+  </p>
+  <p style="font-size:13px;color:var(--ink-500)">
+    <strong>关键规则：</strong>侧栏在 &lt; 1024px 时<strong>不折叠成 64px 图标条，而是完全收起为抽屉</strong>——
+    64px 图标条在手机上仍然占用宝贵宽度，且图标无语义提示时难以辨认。
+  </p>
+
+  <h3 id="m3">8.3 触控目标与拇指热区</h3>
+  <div class="grid g3">
+    <div class="card">
+      <h4>触控目标尺寸</h4>
+      <ul style="font-size:13px;margin:0">
+        <li><strong>最小 44 × 44px</strong>（Apple HIG / WCAG 2.5.5）</li>
+        <li><strong>本项目标准 48 × 48px</strong>——法律产品用户年龄跨度大，含 45+ 律师与客户</li>
+        <li>列表行高 ≥ 48px；主按钮高度 48px</li>
+        <li>相邻可点元素间距 ≥ 8px，避免误触</li>
+        <li>图标按钮必须有 48px 的<strong>不可见热区</strong>，即使图标只有 20px</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>拇指热区</h4>
+      <ul style="font-size:13px;margin:0">
+        <li><strong>底部 1/3</strong>：主操作、Tab Bar、输入框</li>
+        <li><strong>中部</strong>：内容阅读区</li>
+        <li><strong>顶部</strong>：仅放标题、返回、低频操作</li>
+        <li>「AI 提问」入口放在首页<strong>首屏中下部</strong>，不放在顶部</li>
+        <li>破坏性操作（删除、退回）不放在右手拇指自然落点</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>安全区与手势</h4>
+      <ul style="font-size:13px;margin:0">
+        <li>所有固定底部元素加 <code>env(safe-area-inset-bottom)</code></li>
+        <li>顶部状态栏区域留 44px（刘海屏 / 灵动岛）</li>
+        <li>底部横向手势区（Home Indicator）高 34px，不放可点元素</li>
+        <li>支持左滑返回；右滑不绑定操作</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="m4">8.4 导航模式</h3>
+  <div class="wf">
+    <svg viewBox="0 0 900 200" role="img" aria-label="移动端导航结构线框">
+      <rect x="0" y="0" width="900" height="200" fill="#F7F8F9"/>
+      <!-- 客户端 -->
+      <rect x="16" y="16" width="270" height="168" rx="12" fill="#fff" stroke="#E2E5E9"/>
+      <text x="30" y="36" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#343B44">客户端 · 4 项 Tab</text>
+      <rect x="30" y="48" width="242" height="20" rx="4" fill="#F7F8F9"/>
+      <text x="38" y="62" font-family="Inter,sans-serif" font-size="9" fill="#9AA3AE">AppBar 52px · 标题 + 通知</text>
+      <rect x="30" y="76" width="242" height="64" rx="6" fill="#F7F8F9"/>
+      <text x="38" y="112" font-family="Inter,sans-serif" font-size="9" fill="#9AA3AE">内容区 · 单列滚动</text>
+      <rect x="30" y="148" width="242" height="24" rx="6" fill="#0A1830"/>
+      <text x="42" y="164" font-family="Inter,sans-serif" font-size="9" fill="#C6D2E4">工作台 · 咨询 · 案件 · 我的</text>
+      <!-- 律师端 -->
+      <rect x="315" y="16" width="270" height="168" rx="12" fill="#fff" stroke="#E2E5E9"/>
+      <text x="329" y="36" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#343B44">律师端 · 5 项 Tab</text>
+      <rect x="329" y="48" width="242" height="20" rx="4" fill="#F7F8F9"/>
+      <text x="337" y="62" font-family="Inter,sans-serif" font-size="9" fill="#9AA3AE">AppBar 52px · 返回 + 标题 + 更多</text>
+      <rect x="329" y="76" width="242" height="64" rx="6" fill="#F7F8F9"/>
+      <text x="337" y="112" font-family="Inter,sans-serif" font-size="9" fill="#9AA3AE">内容区 · 底部固定操作条</text>
+      <rect x="329" y="140" width="242" height="22" rx="6" fill="#EEF3FB" stroke="#B6C9EE"/>
+      <text x="341" y="155" font-family="Inter,sans-serif" font-size="9" fill="#274C93">常驻操作条 48px（确认本段 / 提交复核）</text>
+      <rect x="329" y="168" width="242" height="10" rx="4" fill="#0A1830"/>
+      <!-- 驾驶舱 -->
+      <rect x="614" y="16" width="270" height="168" rx="12" fill="#fff" stroke="#E2E5E9"/>
+      <text x="628" y="36" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#343B44">运营后台 · 移动只读</text>
+      <rect x="628" y="48" width="242" height="20" rx="4" fill="#F7F8F9"/>
+      <text x="636" y="62" font-family="Inter,sans-serif" font-size="9" fill="#9AA3AE">AppBar + 只读标识</text>
+      <rect x="628" y="76" width="116" height="40" rx="6" fill="#F7F8F9"/>
+      <rect x="754" y="76" width="116" height="40" rx="6" fill="#F7F8F9"/>
+      <rect x="628" y="124" width="242" height="40" rx="6" fill="#FDF0EE" stroke="#F1C8C1"/>
+      <text x="636" y="148" font-family="Inter,sans-serif" font-size="9" fill="#9C2C20">告警卡片（唯一可交互项：跳转详情）</text>
+      <text x="636" y="176" font-family="Inter,sans-serif" font-size="9" fill="#9AA3AE">批量操作 / 规则配置不提供移动入口</text>
+    </svg>
+    <h4 style="margin-top:14px">三种移动导航形态</h4>
+    <p class="desc">客户端 4 项 Tab、律师端 5 项 Tab（派单池带红色待办角标、待同步带琥珀角标）、运营后台仅只读。
+    律师端额外有<strong>常驻底部操作条</strong>——办案过程中「确认本段」「提交复核」需要随时可点，不能藏在菜单里。</p>
+  </div>
+
+  <div class="callout warn">
+    <b>Tab Bar 的取舍：</b>iOS 规范建议不超过 5 项。律师端正好 5 项（工作台 / 派单池 / 案件 / 复核 / 我的）——
+    「归档」「工时」「模板库」等次级功能收进「我的」或工作台的快捷入口，<strong>不塞第 6 个 Tab</strong>。
+  </div>
+
+  <h3 id="m5">8.5 表格转卡片规则</h3>
+  <p>桌面端的数据表格在移动端无法使用。转换规则如下，开发时按列数自动判定：</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:170px">桌面表格特征</th><th style="width:150px">移动端形态</th><th>转换规则</th></tr></thead>
+      <tbody>
+        <tr><td>列数 ≤ 3，行数 ≤ 8</td><td>保留表格</td><td>隐藏表头，用首列 + 右侧值的形式展示</td></tr>
+        <tr><td>列数 4 – 6</td><td><b>卡片列表</b>（首选）</td><td>主标识 + 状态徽章置顶；其余字段两列网格排布；操作按钮置于卡片底部</td></tr>
+        <tr><td>列数 &gt; 6</td><td>卡片列表 + 详情页</td><td>卡片只保留 3 个关键字段，其余进详情页</td></tr>
+        <tr><td>需要横向对比数值</td><td>横向滚动 + 首列冻结</td><td>仅在驾驶舱等强对比场景使用，必须显示滚动提示</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13px;color:var(--ink-500)">
+    案号、金额、日期在移动端<strong>仍保持等宽字体</strong>，但字号可降至 11–12px 以节省宽度。
+  </p>
+
+  <h3 id="m6">8.6 弱网与离线</h3>
+  <p>律师在法院、看守所、地下停车场经常没有信号。这是法律行业特有的、必须在设计阶段就解决的场景。</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>离线可读</h4>
+      <ul style="font-size:13px;margin:0">
+        <li>打开案件时<strong>预缓存</strong>六段式分析、证据索引、文书正文（单案上限 20 MB）</li>
+        <li>缓存状态在证据列表用 ✓ 明示，用户知道哪些能离线看</li>
+        <li>离线模式下顶部显示琥珀色状态条，并提供「重试」入口</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>待同步队列</h4>
+      <ul style="font-size:13px;margin:0">
+        <li>离线期间的拍照、批注、状态变更全部进队列，不报错、不丢失</li>
+        <li>队列项显示进度与状态（上传中 / 等待）</li>
+        <li>恢复网络后<strong>自动补传</strong>，并在 Tab 角标上用<strong>琥珀色</strong>区分「待同步」与「待办」（红色）</li>
+        <li>冲突处理：以服务端为准，本地变更保留为批注草稿</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="m7">8.7 移动端概念图</h3>
+  <div class="grid g2">
+    <div class="wf" style="margin-bottom:0">
+      <h4>概念图 08 · 移动端（客户 / 企业法务）</h4>
+      <p class="desc">6 屏：登录注册 / 工作台首页 / IM 咨询 / 问答结果 / 案件进度 / 我的。
+      手机号 + 验证码为主登录路径，底部 Sheet 替代居中弹窗，引用溯源在移动端改为<strong>页内展开</strong>（不放右侧面板）。</p>
+      <a class="link" href="mockups/08-mobile-client.html">打开高保真稿 →</a>
+    </div>
+    <div class="wf" style="margin-bottom:0">
+      <h4>概念图 09 · 移动端（律师端）</h4>
+      <p class="desc">5 屏：派单池 / 案件阅读 / 证据拍照 / 复核审批 / 弱网离线。
+      相机内嵌文档取景框与自动裁边，六段式折叠阅读 + 底部常驻操作条，离线态展示待同步队列。</p>
+      <a class="link" href="mockups/09-mobile-lawyer.html">打开高保真稿 →</a>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>移动端带来的额外工作量（已计入第 09 节路线图）：</b>
+    底部 Tab Bar、底部 Sheet、折叠面板、相机取景框与裁边、离线缓存与同步队列、下拉刷新与上滑加载、
+    安全区适配、移动端专属空状态。组件层新增约 8 个移动端组件，页面层四端全部需要移动形态。
+  </div>
+</section>
+
+<!-- ================= 09 路线图 ================= -->
+<section id="s9">
+  <h2><span class="num">09</span>落地路线图</h2>
+  <div class="rule"></div>
+  <p class="lead">四阶段推进。每阶段结束都是一个<strong>可交付、可回滚</strong>的完整状态，不存在「改到一半不能跑」的中间态。</p>
+
+  <div class="road">
+    <div class="ph2">
+      <h4>阶段一 · 设计基建 <span class="dur">P0</span></h4>
+      <p>建立 Token 与框架，不改变任何现有页面行为。</p>
+      <ul>
+        <li>新增 <code>packages/ui/src/tokens.css</code>：全部 CSS 变量（色彩 / 间距 / 圆角 / 阴影 / 字体）</li>
+        <li>重写 <code>tailwind.preset.ts</code>：注册语义色名，移除 <code>brand-gradient</code> 与旧 <code>brand-*</code> 冲突项</li>
+        <li>废弃 <code>theme/colors.ts</code> 的错位映射，改为直接导出语义 token（<strong>修复 0.1 第 04 项缺陷</strong>）</li>
+        <li>新建 <code>AppShell</code> 组件（桌面侧栏 + 移动 Tab Bar 双形态）</li>
+        <li>新增移动端 Token：<code>--tap: 48px</code>、安全区变量、移动端间距档</li>
+        <li>删除 <code>globals.css</code> 中全部 <code>!important</code> 深色覆盖，改由变量切换</li>
+        <li>验收：四端构建通过、<code>pnpm audit</code> 与 ruff 门禁保持绿色、深色模式切换无遗漏</li>
+      </ul>
+    </div>
+
+    <div class="ph2">
+      <h4>阶段二 · 组件层 <span class="dur">P0</span></h4>
+      <p>把新语言沉淀为可复用组件，替换全部旧组件。</p>
+      <ul>
+        <li>改造现有 14 个组件：Button（5 变体 3 尺寸 + loading）、Card、KpiCard、Sidebar、Header、Input、Modal、Table、Badge、Alert、EmptyState、Skeleton、Spinner、Toast、LoginShell</li>
+        <li>新增 P0 组件：DataTable、CitationPanel、ProvenanceBadge、Timeline</li>
+        <li>新增 P1 组件：SegmentedControl、Drawer、FilterBar、Pagination</li>
+        <li><b>新增移动端组件</b>：TabBar、BottomSheet、CollapsePanel、PullToRefresh、InfiniteList、CameraCapture、OfflineBanner、SyncQueue</li>
+        <li>在 Storybook 或独立 <code>components-preview</code> 页面中逐一验收视觉</li>
+      </ul>
+    </div>
+
+    <div class="ph2">
+      <h4>阶段三 · 页面重构 <span class="dur">P1</span></h4>
+      <p>按「使用频率 × 改造收益」排序重构页面。</p>
+      <ul>
+        <li>接入 AppShell：web（6 页）、lawyer（6 页）、admin（2 页）、im（2 页）</li>
+        <li>首页从大卡片门户改为工作台（7.2）</li>
+        <li>问答页三栏化 + 引用溯源常驻（7.3）</li>
+        <li>新增律师案件详情页（7.5）——当前完全缺失</li>
+        <li>驾驶舱漏斗与图表改为真实数据（7.4）</li>
+        <li>IM 从固定卡片改为完整布局（7.6）</li>
+        <li><b>移动端页面适配</b>：im 与 web 按 375px 基准重构；lawyer 新增派单池、案件阅读、证据拍照、复核审批四个移动形态；admin 增加只读移动视图</li>
+      </ul>
+    </div>
+
+    <div class="ph2">
+      <h4>阶段四 · 收尾 <span class="dur">P2</span></h4>
+      <p>补齐体验细节与工程化约束。</p>
+      <ul>
+        <li>响应式：&lt;1024px 侧栏抽屉化、表格转卡片、IM 单栏化</li>
+        <li><b>移动端体验</b>：下拉刷新、上滑加载更多、长按操作、底部 Sheet 手势关闭、安全区全面适配</li>
+        <li><b>弱网与离线</b>：案件预缓存、待同步队列、恢复网络自动补传、冲突处理</li>
+        <li>可访问性：全站键盘可达、焦点环统一、对比度复核、<code>prefers-reduced-motion</code>、移动端 VoiceOver / TalkBack</li>
+        <li>CommandPalette（⌘K）全局搜索</li>
+        <li>空状态、加载骨架、错误态的全面补齐</li>
+        <li>导出 PDF / Word 时保留责任边界标记</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 10 决策记录 ================= -->
+<section id="s10">
+  <h2><span class="num">10</span>决策记录</h2>
+  <div class="rule"></div>
+  <p class="lead">v2.1 定稿版：以下 16 项已由项目方<strong>全部确认按推荐方案执行</strong>，并追加一条移动端要求。
+  本表作为后续实现的唯一依据，如有变更需在此更新并记录。</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:52px">#</th><th style="width:230px">决策点</th><th style="width:280px">确认结论</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">01</td><td>主色下沉为墨蓝</td>
+          <td><span class="tag ok">✓ 确认</span> <code>#4F46E5</code> → <code>#274C93</code></td>
+          <td>Tailwind preset 重写；全站颜色类批量替换</td></tr>
+        <tr><td class="mono">02</td><td>引入衬线体用于法条与文书</td>
+          <td><span class="tag ok">✓ 确认</span> Noto Serif SC（子集化）</td>
+          <td>新增字体资源约 400 KB；CitationPanel、文书页、问答法条引用</td></tr>
+        <tr><td class="mono">03</td><td>首页形态</td>
+          <td><span class="tag ok">✓ 确认</span> 改为工作台（KPI + 待办）</td>
+          <td>web / lawyer 首页重写，取消大卡片门户</td></tr>
+        <tr><td class="mono">04</td><td>引用溯源呈现方式</td>
+          <td><span class="tag ok">✓ 确认</span> 桌面常驻右侧面板；<b>移动端页内展开</b></td>
+          <td>CitationPanel（桌面）/ 折叠引用卡（移动）；删除 CitationDrawer</td></tr>
+        <tr><td class="mono">05</td><td>统一四端 Shell</td>
+          <td><span class="tag ok">✓ 确认</span> 统一 AppShell + 应用切换器</td>
+          <td>AppShell 桌面侧栏 + 移动 Tab Bar 双形态</td></tr>
+        <tr><td class="mono">06</td><td>圆角风格</td>
+          <td><span class="tag ok">✓ 确认</span> 收敛为 4 / 6 / 8 / 12px</td>
+          <td>废弃 rounded-xl 及以上</td></tr>
+        <tr><td class="mono">07</td><td>深色模式策略</td>
+          <td><span class="tag ok">✓ 确认</span> CSS 变量化，零 <code>!important</code></td>
+          <td>删除 globals.css 中 20 余条覆盖规则</td></tr>
+        <tr><td class="mono">08</td><td>责任边界三态是否落库</td>
+          <td><span class="tag ok">✓ 确认</span> 需要，本次一并设计</td>
+          <td>后端新增 provenance 字段（状态 + 确认人 + 时间 + 流转记录）</td></tr>
+        <tr><td class="mono">09</td><td>案件等级配色</td>
+          <td><span class="tag ok">✓ 确认</span> S 金 / A 朱砂 / B 墨蓝 / C 中性</td>
+          <td>徽章组件 + 表格列 + 移动卡片角标</td></tr>
+        <tr><td class="mono">10</td><td>表格密度档位</td>
+          <td><span class="tag ok">✓ 确认</span> 提供紧凑 / 标准 / 宽松三档</td>
+          <td>DataTable 需支持密度切换并记忆用户偏好</td></tr>
+        <tr><td class="mono">11</td><td>登录页演示账号区</td>
+          <td><span class="tag ok">✓ 确认</span> 2×2 紧凑列表 + 角色分段切换</td>
+          <td>LoginShell 重写；移动端改为手机号 + 验证码为主路径</td></tr>
+        <tr><td class="mono">12</td><td>IM 端形态</td>
+          <td><span class="tag ok">✓ 确认</span> 桌面三栏 + <b>移动端优先单栏</b></td>
+          <td>IM 以 375px 为设计基准起草，桌面为放大适配</td></tr>
+        <tr><td class="mono">13</td><td>文书编辑器选型</td>
+          <td><span class="tag ok">✓ 确认</span> Tiptap</td>
+          <td>变量高亮与风险标注基于 Tiptap 扩展实现</td></tr>
+        <tr><td class="mono">14</td><td>⌘K 全局搜索</td>
+          <td><span class="tag ok">✓ 确认</span> 引入（阶段四）</td>
+          <td>需后端统一搜索接口</td></tr>
+        <tr><td class="mono">15</td><td>设计稿交付形式</td>
+          <td><span class="tag ok">✓ 确认</span> HTML 稿 + 组件代码同步</td>
+          <td>不额外产出 Figma 源文件</td></tr>
+        <tr><td class="mono">16</td><td>推进范围</td>
+          <td><span class="tag ok">✓ 确认</span> 先做 web 端试点（阶段一 + 二 + web 页面）</td>
+          <td>试点验收通过后再推 lawyer / admin / im</td></tr>
+        <tr style="background:var(--gold-50)">
+          <td class="mono">17</td><td><b>移动端支持（项目方追加）</b></td>
+          <td><span class="tag gold">★ 追加要求</span> 全产品考虑移动端，不假定用户有电脑工作环境</td>
+          <td><b>新增第 08 节移动端设计规范</b>；im 与 web 改为移动优先；lawyer 新增 4 个移动形态；admin 提供只读移动视图；新增 8 个移动端组件与弱网离线能力</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>10.1 移动端追加要求带来的变更</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>设计基准的改变</h4>
+      <ul style="font-size:13px;margin:0">
+        <li><strong>im 与 web 端改为以 375px 为设计基准起草</strong>，桌面端视为放大适配（此前是反过来）</li>
+        <li>第 7.3 节问答页的「右侧常驻引用面板」在移动端改为<strong>页内展开</strong>，不强行套用桌面布局</li>
+        <li>所有页面增加移动形态评审，桌面稿通过≠设计通过</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>新增工作量</h4>
+      <ul style="font-size:13px;margin:0">
+        <li>8 个移动端组件：TabBar、BottomSheet、CollapsePanel、PullToRefresh、InfiniteList、CameraCapture、OfflineBanner、SyncQueue</li>
+        <li>lawyer 端 4 个移动专属页面形态</li>
+        <li>弱网与离线能力（预缓存、待同步队列、自动补传、冲突处理）——<strong>这是后端也要配合的项</strong></li>
+        <li>安全区适配、移动端空状态、手势交互</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>10.2 实施前的准备清单</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:200px">事项</th><th style="width:110px">负责方</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>字体子集化方案</td><td>前端</td><td>Noto Serif SC 按常用 3000 字子集，控制在 400 KB 内</td></tr>
+        <tr><td>provenance 数据模型</td><td>后端</td><td>内容段级的状态、确认人、时间、流转记录表结构</td></tr>
+        <tr><td>移动端断点验收基准</td><td>设计</td><td>375 / 390 / 430px 三档真机截图比对</td></tr>
+        <tr><td>离线缓存策略</td><td>前后端</td><td>单案缓存上限 20 MB、同步冲突以服务端为准</td></tr>
+        <tr><td>组件预览页</td><td>前端</td><td>阶段二需有一个可浏览全部组件的内部页面用于验收</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout" style="margin-top:26px">
+    <b>下一步：</b>从<strong>阶段一（设计基建）</strong>开工——新增 <code>tokens.css</code>、重写 <code>tailwind.preset.ts</code>、
+    修复 <code>theme/colors.ts</code> 的语义色错位缺陷、新建 AppShell、深色模式变量化。
+    阶段一完成后四端构建与全部门禁必须保持绿色，再进入组件层。
+  </div>
+</section>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,81 @@
+§2.4「案件等级」门禁
+
+── 源码层 G2：等级→变体映射的来源数 ──
+  GRADE_TONE 定义点 6 处：
+    · apps/admin/app/(app)/cases/page.tsx:103
+    · apps/im/lib/imApi.ts:137
+    · apps/lawyer/app/(app)/archives/page.tsx:75
+    · apps/lawyer/app/(app)/cases/[id]/page.tsx:232
+    · apps/lawyer/app/(app)/cases/page.tsx:63
+    · apps/lawyer/app/(app)/dispatches/page.tsx:74
+    ✓ 6 份内容一致（尚未漂移）
+    映射体：{'S': 'danger', 'A': 'pending', 'B': 'info', 'C': 'neutral'}
+    Badge.tsx 可用变体：['ai', 'danger', 'default', 'gold', 'info', 'neutral', 'outline', 'pending', 'primary', 'verified']
+    ✗ S 级：映射到 `danger`，§2.4 要求 --gold-500 系（变体 `gold`）
+    ✗ A 级：映射到 `pending`，§2.4 要求 --danger-500 系（变体 `danger`）
+    ✗ B 级：映射到 `info`，§2.4 要求 --brand-600 系（变体 `brand`，不存在） ← 组件层**没有**该变体（缺口）
+    ✗ C 级：映射到 `neutral`，§2.4 要求 --ink-400 系（变体 `ink`，不存在） ← 组件层**没有**该变体（缺口）
+  ✗ [G2] `GRADE_TONE`（等级→变体映射）有 6 份定义，其中 `packages/ui` 里 0 份（应集中到 packages/ui，避免同一语义 N 份来源）
+
+── 渲染层 G1/G3/G4（26 页）──
+  · [web] /                      Badge=  0 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 0  缺陷=0
+  ✗ [web] /qa                    Badge=  4 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 3/不判 1  缺陷=3
+  ✗ [web] /documents             Badge= 27 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗27/不判 0  缺陷=27
+  · [web] /contract-review       Badge=  0 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 0  缺陷=0
+  · [web] /compliance            Badge=  0 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 0  缺陷=0
+  · [web] /knowledge             Badge=  1 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 1  缺陷=0
+  · [web] /billing               Badge=  0 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 0  缺陷=0
+  · [lawyer] /                      Badge=  4 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 4  缺陷=0
+  ✗ [lawyer] /dispatches            Badge=  4 等级= 2 G1✓ 0 G3✓ 2 G4✓ 0✗ 0/不判 4  缺陷=2
+  ✗ [lawyer] /cases                 Badge=  8 等级= 4 G1✓ 0 G3✓ 4 G4✓ 0✗ 4/不判 4  缺陷=8
+  ✗ [lawyer] /cases/@first-case     Badge= 13 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 8/不判 5  缺陷=8
+  ✗ [lawyer] /reviews               Badge=  5 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 3/不判 2  缺陷=3
+  ✗ [lawyer] /archives              Badge=  2 等级= 1 G1✓ 0 G3✓ 1 G4✓ 0✗ 0/不判 2  缺陷=1
+  · [lawyer] /notifications         Badge=  0 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 0  缺陷=0
+  ✗ [admin] /                      Badge=  4 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 2/不判 2  缺陷=2
+  ✗ [admin] /reviews               Badge=  6 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 2/不判 4  缺陷=2
+  ✗ [admin] /cases                 Badge= 11 等级= 4 G1✓ 0 G3✓ 4 G4✓ 0✗ 7/不判 4  缺陷=11
+  · [admin] /dispatches            Badge=  4 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 4  缺陷=0
+  ✗ [admin] /compliance            Badge=  6 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 2/不判 4  缺陷=2
+  ✗ [admin] /billing               Badge=  9 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 5/不判 4  缺陷=5
+  ✗ [admin] /complaints            Badge=  3 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 1/不判 2  缺陷=1
+  · [admin] /audit                 Badge=  2 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 2  缺陷=0
+  ✗ [im] /                      Badge=  3 等级= 3 G1✓ 0 G3✓ 3 G4✓ 0✗ 2/不判 1  缺陷=5
+  · [im] /chat                  Badge=  0 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 0  缺陷=0
+  ✗ [im] /cases                 Badge= 20 等级=10 G1✓ 0 G3✓10 G4✓ 0✗15/不判 5  缺陷=25
+  ✗ [im] /cases/@first-case     Badge=  2 等级= 1 G1✓ 0 G3✓ 1 G4✓ 0✗ 1/不判 1  缺陷=2
+  · [im] /me                    Badge=  0 等级= 0 G1✓ 0 G3✓ 0 G4✓ 0✗ 0/不判 0  缺陷=0
+
+跑成 27 页（其中 20 页有 Badge） · Badge 138 个 · 等级徽章 25 个
+  G1 底色符 §2.4：0/25
+  G3 字母通道：25/25
+  G4 文字色由变体决定：0 通过 / **82 失败** / 56 不判（default·neutral 底色相同，无法区分）
+
+  ✗ 渲染层缺陷 107 条，聚为 13 条根因：
+    [G1] A 级徽章的底色
+          @ 2 处：admin/cases, im/cases
+    [G1] B 级徽章的底色
+          @ 4 处：admin/cases, im/, im/cases, lawyer/cases
+    [G1] C 级徽章的底色
+          @ 7 处：admin/cases, im/, im/cases, im/cases/@first-case, lawyer/archives, lawyer/cases …
+    [G1] S 级徽章的底色
+          @ 2 处：im/, im/cases
+    [G4] `ai` 变体徽章文字色 rgb(20, 24, 29) ≠ Badge.tsx 声明的 --ai-600 = rgb(91, 69, 176)
+          @ 2 处：lawyer/cases/@first-case, web/qa
+    [G4] `danger` 变体徽章文字色 rgb(20, 24, 29) ≠ Badge.tsx 声明的 --danger-600 = rgb(166, 47, 35)
+          @ 4 处：im/, im/cases, lawyer/cases/@first-case, web/documents
+    [G4] `info` 变体徽章文字色 rgb(20, 24, 29) ≠ Badge.tsx 声明的 --info-600 = rgb(34, 92, 147)
+          @ 4 处：admin/complaints, im/, im/cases, im/cases/@first-case
+    [G4] `info` 变体徽章文字色 rgb(52, 59, 68) ≠ Badge.tsx 声明的 --info-600 = rgb(34, 92, 147)
+          @ 2 处：admin/cases, lawyer/cases
+    [G4] `pending` 变体徽章文字色 rgb(20, 24, 29) ≠ Badge.tsx 声明的 --pending-600 = rgb(143, 95, 20)
+          @ 4 处：im/cases, lawyer/cases/@first-case, web/documents, web/qa
+    [G4] `pending` 变体徽章文字色 rgb(52, 59, 68) ≠ Badge.tsx 声明的 --pending-600 = rgb(143, 95, 20)
+          @ 6 处：admin/, admin/billing, admin/cases, admin/compliance, admin/reviews, lawyer/cases
+    [G4] `primary` 变体徽章文字色 rgb(52, 59, 68) ≠ Badge.tsx 声明的 --link = rgb(39, 76, 147)
+          @ 2 处：admin/cases, lawyer/reviews
+    [G4] `verified` 变体徽章文字色 rgb(20, 24, 29) ≠ Badge.tsx 声明的 --verified-600 = rgb(22, 112, 85)
+          @ 3 处：im/cases, lawyer/cases/@first-case, web/qa
+    [G4] `verified` 变体徽章文字色 rgb(52, 59, 68) ≠ Badge.tsx 声明的 --verified-600 = rgb(22, 112, 85)
+          @ 5 处：admin/billing, admin/cases, admin/compliance, lawyer/cases, lawyer/reviews
+EXIT=1

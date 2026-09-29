@@ -1,0 +1,49 @@
+evidence\authz_probe.py:72:5: I001 [*] Import block is un-sorted or un-formatted
+evidence\verify_adjacent_targets.py:593:19: E741 Ambiguous variable name: `l`
+evidence\verify_api_base_baked.py:65:8: F401 [*] `re` imported but unused
+evidence\verify_breakpoints.py:257:29: E741 Ambiguous variable name: `l`
+evidence\verify_breakpoints.py:561:20: F401 [*] `json` imported but unused
+evidence\verify_buttons.py:893:19: F541 [*] f-string without any placeholders
+evidence\verify_buttons.py:898:19: F541 [*] f-string without any placeholders
+evidence\verify_component_wiring.py:429:19: F541 [*] f-string without any placeholders
+evidence\verify_component_wiring.py:430:19: F541 [*] f-string without any placeholders
+evidence\verify_contrast.py:266:5: F841 Local variable `no_vals` is assigned to but never used
+evidence\verify_conversation_channel_500.py:108:5: I001 [*] Import block is un-sorted or un-formatted
+evidence\verify_conversation_channel_500.py:128:5: I001 [*] Import block is un-sorted or un-formatted
+evidence\verify_conversation_channel_500.py:174:5: I001 [*] Import block is un-sorted or un-formatted
+evidence\verify_design_tokens.py:393:19: F541 [*] f-string without any placeholders
+evidence\verify_enum_domain_drift.py:116:5: I001 [*] Import block is un-sorted or un-formatted
+evidence\verify_font_stack.py:171:12: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:178:9: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:511:52: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:592:16: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:595:17: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:599:17: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:602:17: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:609:17: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:710:15: F541 [*] f-string without any placeholders
+evidence\verify_font_stack.py:711:15: F541 [*] f-string without any placeholders
+evidence\verify_font_stack.py:712:15: F541 [*] f-string without any placeholders
+evidence\verify_font_stack.py:748:15: F541 [*] f-string without any placeholders
+evidence\verify_font_stack.py:749:15: F541 [*] f-string without any placeholders
+evidence\verify_font_stack.py:763:13: E741 Ambiguous variable name: `l`
+evidence\verify_font_stack.py:765:41: E741 Ambiguous variable name: `l`
+evidence\verify_im_safe_area.py:196:5: F841 Local variable `env_notes` is assigned to but never used
+evidence\verify_migration_enum_defaults.py:57:9: I001 [*] Import block is un-sorted or un-formatted
+evidence\verify_migration_enum_defaults.py:83:5: I001 [*] Import block is un-sorted or un-formatted
+evidence\verify_mobile_375.py:51:8: F401 [*] `json` imported but unused
+evidence\verify_mobile_375.py:325:27: F541 [*] f-string without any placeholders
+evidence\verify_mobile_actionbar.py:477:19: F541 [*] f-string without any placeholders
+evidence\verify_mobile_actionbar.py:486:19: F541 [*] f-string without any placeholders
+evidence\verify_mobile_safe_area.py:285:19: F541 [*] f-string without any placeholders
+evidence\verify_motion_tokens.py:67:8: F401 [*] `sys` imported but unused
+evidence\verify_provenance_tristate.py:397:20: F541 [*] f-string without any placeholders
+evidence\verify_radius_scale.py:608:15: F541 [*] f-string without any placeholders
+evidence\verify_radius_scale.py:655:15: F541 [*] f-string without any placeholders
+evidence\verify_register_abuse_defense.py:259:5: F841 Local variable `prune` is assigned to but never used
+evidence\verify_spacing_scale.py:381:15: F541 [*] f-string without any placeholders
+evidence\verify_tap_targets.py:199:11: F541 [*] f-string without any placeholders
+evidence\verify_typography.py:678:15: F541 [*] f-string without any placeholders
+evidence\verify_typography.py:682:15: F541 [*] f-string without any placeholders
+Found 47 errors.
+[*] 32 fixable with the `--fix` option (3 hidden fixes can be enabled with the `--unsafe-fixes` option).

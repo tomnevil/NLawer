@@ -1,0 +1,161 @@
+# 生产本地/自托管 Postgres + pgvector + Redis（开发默认用 SQLite，无需启动本服务）
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: nlawer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nlawer
+      # 凭据不再硬编码：缺失即启动失败（与 SECRET_KEY 同一 fail-fast 风格）
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请先设置 POSTGRES_PASSWORD 环境变量（或写入仓库根目录 .env）}
+      POSTGRES_DB: nlawer
+    ports:
+      # 宿主 5433：避免与本机其它 Postgres（5432）冲突；
+      # 仅绑定环回——裸暴露 5432 等于把数据库挂到外网（P1-4）
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - nlawer-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # 启动后确保 pgvector 扩展可用
+      test: ["CMD-SHELL", "pg_isready -U nlawer -d nlawer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 限流跨副本共享计数（多副本部署时必须；缺失则各实例独立计数）
+  redis:
+    image: redis:7-alpine
+    container_name: nlawer-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - nlawer-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nlawer-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        # 等数据库健康后再启动，避免首次连接失败
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      # 生产禁止 DEBUG（config.py 会 fail-fast）：SQL echo 会把含令牌/口令
+      # 哈希的语句写进日志。必须显式置 false，否则容器直接启动失败。
+      DEBUG: "false"
+      # 容器内通过服务名访问数据库：db:5432（不是宿主的 localhost:5433）；
+      # 密码与 db 服务的 POSTGRES_PASSWORD **同源**（同一变量），改一处即两处同步
+      DATABASE_URL: postgresql+asyncpg://nlawer:${POSTGRES_PASSWORD}@db:5432/nlawer
+      DATABASE_URL_SYNC: postgresql+psycopg2://nlawer:${POSTGRES_PASSWORD}@db:5432/nlawer
+      # 生产必须显式提供强密钥（缺失则 compose 启动失败，避免弱密钥上线）
+      SECRET_KEY: ${SECRET_KEY:?请先设置 SECRET_KEY 环境变量（或写入 .env）}
+      CORS_ORIGINS: ${CORS_ORIGINS:-"http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003"}
+      # 限流默认开启；配了 REDIS_URL 则多副本共享计数
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_LOGIN_MAX: "20"
+      RATE_LIMIT_UPLOAD_MAX: "10"
+      RATE_LIMIT_GENERATE_MAX: "15"
+      RATE_LIMIT_WINDOW_SECONDS: "60"
+      REDIS_URL: "redis://redis:6379/0"
+      # 异步任务：并发消费者数 / 僵尸任务回收
+      JOB_MAX_CONCURRENCY: "4"
+      JOB_STALE_TIMEOUT_SECONDS: "300"
+      # 可观测性（P0-10）：生产用结构化 JSON 日志，便于采集器直读
+      LOG_FORMAT: "json"
+      LOG_LEVEL: "INFO"
+      METRICS_ENABLED: "true"
+    ports:
+      # 仅绑定环回（P1-4）：后端 API 没有理由暴露到非本机网卡
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # 上传证据 / 文书 / 开庭材料包持久化
+      - nlawer-storage:/app/storage/local
+    healthcheck:
+      # 用 /api/health/readyz 而非 /api/health：
+      #   - readyz 检查**真实数据库往返**，语义是"能否接流量"（编排器需要的就是这个）
+      #   - /api/health 是综合自检，会因 LLM 档位未配置等原因报 degraded，
+      #     那些与"容器能否服务请求"无关，用它做探针会误判
+      test: ["CMD-SHELL", "python -c \"import httpx,sys; sys.exit(0 if httpx.get('http://localhost:8000/api/health/readyz', timeout=5).status_code == 200 else 1)\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── 前端四端（standalone 产物，见 frontend/Dockerfile）───────────────
+  # NEXT_PUBLIC_* 在构建期内联：API 地址默认指向本 compose 的 backend:8000。
+  # 生产镜像不传 NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS，登录页演示账号自动隐藏
+  # （审查 P1-1 的机制收益）。端口仅绑定环回，与后端/DB 同策略。
+  admin:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        APP: admin
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    container_name: nlawer-admin
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3002:3000"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        APP: web
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    container_name: nlawer-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  lawyer:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        APP: lawyer
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    container_name: nlawer-lawyer
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3001:3000"
+
+  im:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        APP: im
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    container_name: nlawer-im
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3003:3000"
+
+volumes:
+  nlawer-pgdata:
+  nlawer-redisdata:
+  nlawer-storage:

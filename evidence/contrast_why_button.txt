@@ -1,0 +1,49 @@
+
+── web/ @390/light  color-scheme=light  命中 1 个（直接文本节点含「发起咨询」）──
+   <button> 13px/500 color=rgb(20, 24, 29) opacity=1 86×48 子元素 0 []
+      class=`inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50 bg-brand-600 shadow-s1 hover:bg-brand-700 active:bg-brand-800 border border-transparent h-[34px] min-h-tap sm:min-h-0 px-4 text-body-sm rounded-r2 gap-2`
+      文本=`发起咨询`  大字号=False（13px/500）
+      自身   <button> bg=rgb(39, 76, 147) color=rgb(20, 24, 29)  `inline-flex items-center justify-center font-medium whitespace-now`
+      父1   <header> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `flex flex-wrap items-end justify-between gap-3`
+      父2   <div> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `space-y-6`
+      父3   <div> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `mx-auto w-full max-w-workbench`
+      父4   <main> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `flex-1 px-4 py-4 lg:px-6 lg:py-6`
+      父5   <div> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `flex min-h-screen flex-col lg:pl-sidebar`
+      父6   <div> bg=rgb(247, 248, 249) color=rgb(20, 24, 29)  `min-h-screen bg-ink-50 font-sans text-ink-900`
+
+── web/ @390/dark  color-scheme=dark  命中 1 个（直接文本节点含「发起咨询」）──
+   <button> 13px/500 color=rgb(242, 244, 246) opacity=1 86×48 子元素 0 []
+      class=`inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50 bg-brand-600 shadow-s1 hover:bg-brand-700 active:bg-brand-800 border border-transparent h-[34px] min-h-tap sm:min-h-0 px-4 text-body-sm rounded-r2 gap-2`
+      文本=`发起咨询`  大字号=False（13px/500）
+      自身   <button> bg=rgb(58, 99, 176) color=rgb(242, 244, 246)  `inline-flex items-center justify-center font-medium whitespace-now`
+      父1   <header> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `flex flex-wrap items-end justify-between gap-3`
+      父2   <div> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `space-y-6`
+      父3   <div> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `mx-auto w-full max-w-workbench`
+      父4   <main> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `flex-1 px-4 py-4 lg:px-6 lg:py-6`
+      父5   <div> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `flex min-h-screen flex-col lg:pl-sidebar`
+      父6   <div> bg=rgb(11, 14, 18) color=rgb(242, 244, 246)  `min-h-screen bg-ink-50 font-sans text-ink-900`
+
+── web/ @1280/light  color-scheme=light  命中 1 个（直接文本节点含「发起咨询」）──
+   <button> 13px/500 color=rgb(20, 24, 29) opacity=1 86×34 子元素 0 []
+      class=`inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50 bg-brand-600 shadow-s1 hover:bg-brand-700 active:bg-brand-800 border border-transparent h-[34px] min-h-tap sm:min-h-0 px-4 text-body-sm rounded-r2 gap-2`
+      文本=`发起咨询`  大字号=False（13px/500）
+      自身   <button> bg=rgb(39, 76, 147) color=rgb(20, 24, 29)  `inline-flex items-center justify-center font-medium whitespace-now`
+      父1   <header> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `flex flex-wrap items-end justify-between gap-3`
+      父2   <div> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `space-y-6`
+      父3   <div> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `mx-auto w-full max-w-workbench`
+      父4   <main> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `flex-1 px-4 py-4 lg:px-6 lg:py-6`
+      父5   <div> bg=rgba(0, 0, 0, 0) color=rgb(20, 24, 29)  `flex min-h-screen flex-col lg:pl-sidebar`
+      父6   <div> bg=rgb(247, 248, 249) color=rgb(20, 24, 29)  `min-h-screen bg-ink-50 font-sans text-ink-900`
+
+── web/ @1280/dark  color-scheme=dark  命中 1 个（直接文本节点含「发起咨询」）──
+   <button> 13px/500 color=rgb(242, 244, 246) opacity=1 86×34 子元素 0 []
+      class=`inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50 bg-brand-600 shadow-s1 hover:bg-brand-700 active:bg-brand-800 border border-transparent h-[34px] min-h-tap sm:min-h-0 px-4 text-body-sm rounded-r2 gap-2`
+      文本=`发起咨询`  大字号=False（13px/500）
+      自身   <button> bg=rgb(58, 99, 176) color=rgb(242, 244, 246)  `inline-flex items-center justify-center font-medium whitespace-now`
+      父1   <header> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `flex flex-wrap items-end justify-between gap-3`
+      父2   <div> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `space-y-6`
+      父3   <div> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `mx-auto w-full max-w-workbench`
+      父4   <main> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `flex-1 px-4 py-4 lg:px-6 lg:py-6`
+      父5   <div> bg=rgba(0, 0, 0, 0) color=rgb(242, 244, 246)  `flex min-h-screen flex-col lg:pl-sidebar`
+      父6   <div> bg=rgb(11, 14, 18) color=rgb(242, 244, 246)  `min-h-screen bg-ink-50 font-sans text-ink-900`
+WHY_EXIT=0

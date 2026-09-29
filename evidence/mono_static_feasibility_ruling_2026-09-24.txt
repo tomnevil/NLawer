@@ -1,0 +1,206 @@
+================================================================================
+§1 原则 4「全站等宽」静态可判性实测与裁定（任务 #58 第一步）
+2026-09-24 · NLawer · 未改动任何产品代码
+================================================================================
+
+【结论先行】
+
+  ❌ **不能按 `className="num"` 写静态门禁。**
+     在 30 个「疑似未覆盖的渲染点」里，只有 **2 个是真缺口**（精确率 ≈ 6.7%），
+     其余 28 个是**稳定假红**。这种门禁的结局是被加进豁免名单、然后再也没人看
+     （`methodology` #184 / `evidence/README.md` 坑 58：「只报不判」是双重豁免）。
+
+  ✅ 正确解法：**渲染期实测**（读 computed style 的 `font-variant-numeric` /
+     `font-family`）⇒ 与任务 **#59**（§8.3 安全区与手势）**同一件事**，
+     应并进「**浏览器 job**」立项，**别单干**。
+
+  ⚠️ 副产品：实测过程中揪出 **2 处真缺口**（案号未等宽），已单列登记，
+     **不归本门禁**（见第 6 节）。
+
+--------------------------------------------------------------------------------
+1. 为什么先测、不直接写
+--------------------------------------------------------------------------------
+
+规范原文（`deliverables/ui-design/design-spec.md:47`，§1 核心原则 4）：
+
+    「数字与案号必须对齐 —— 金额、案号、日期、条款号全部等宽 + `tabular-nums`。」
+
+现状：`verify_component_refactor.py` 的 **J7/J8 只覆盖 KpiCard**（且引的是 §6.3），
+⇒ 覆盖率审计把它记为**真·零判据**（`design-audit.md` §14.1）。
+
+但「哪些字符串算金额/案号/日期」需要**语义分类**，所以 `design-audit.md` §14.4
+候选② 明写：**第一步是小样本实测**，看会不会稳定假红，
+否则会**重蹈「每页 ≤1 primary」那条规则**的覆辙（规则能跑、每次都红、红的不是缺陷）。
+
+--------------------------------------------------------------------------------
+2. 方法（可复现）
+--------------------------------------------------------------------------------
+
+  工具：`evidence/probe_mono_coverage.py`（**只测量、不判定、恒 exit 0**）
+  跑法：`cd <仓库根> && backend/.venv/Scripts/python.exe evidence/probe_mono_coverage.py --list`
+  原始输出：`evidence/mono_coverage_measure_2026-09-24.txt`
+
+  三步：
+    ① **高精度锚点**：只挑「出现即几乎必然在渲染金额/案号/日期」的标识符
+       （格式化函数调用 `fmtAmount(`/`fmtDate(`/`yuan(` + 明确语义的字段名
+       `case_no`/`claim_amount`/`price_cents`/`created_at`/`due_at`/`deadline` …），
+       **不用**「任意数字字面量」这种宽锚点（会把 `{i+1}`、`{items.length}` 全捞进来）。
+    ② **覆盖判定**：同行有没有 `className` 含 `num`；没有则向前回溯 6 行找**最近**的
+       `className`。分 `same-line` / `window` / `none` 三档。
+    ③ **形状分桶**：把锚点出现在**非渲染位**的行自动分出去
+       （`def` 定义行 / `type` 类型声明 / `key` 列元数据 / `comment` 注释），
+       剩下的桶才进**人工逐条分诊**。
+
+--------------------------------------------------------------------------------
+3. 实测数字
+--------------------------------------------------------------------------------
+
+  语料：`frontend/` 下 **89 个 `.tsx`**（剪枝排除 `.next`/`node_modules`/`dist`/`*.test.*`）
+
+  锚点命中（行次）            126
+    ① 同行即含 `num`           24
+    ② 回溯窗口内命中 `num`     13      ⚠️ 可能误判为覆盖（外层容器的 num 算到内层）
+    ③ 两者都没有（未覆盖）     89（**去重后 85 行**；同一行命中两个锚点会重复计数）
+
+  未覆盖按行形状分桶：
+
+    type      39   TS 类型声明（`order_no: string;`）
+    def       12   函数/常量定义（`function fmtDate(iso…`）
+    jsx       12   JSX 文本位（`{row.case_no}`）
+    other     11   需人工看
+    logic      7   非 JSX 逻辑（`reduce(...)` / `daysLeft(...)`）
+    prop       4   组件属性值（`<Row … mono />`）
+    comment    4   注释/说明行
+
+  ⇒ **确定假红**（`def`+`type`+`key`+`comment`，锚点根本不在渲染位）：**55/89**
+  ⇒ **需人工分诊**（其余桶）：**34 行次 = 30 个去重行**
+
+  ⚠️ 这一分桶是**本实测的核心**：**「未覆盖 70.6%」这个数字单独看是误导性的** ——
+     锚点 `case_no` 大量出现在**类型声明 / 列元数据 / 计算式**里，
+     那些位置**根本不存在「加不加等宽」这回事**。
+
+--------------------------------------------------------------------------------
+4. 🚨 核心发现：「等宽」在本项目有**三种**落地机制
+--------------------------------------------------------------------------------
+
+这才是「单点静态判据必然失明」的根因：
+
+  机制① **直接写类名**：`<span className="num">{row.tenant_id}</span>`（全前端 **151 处**）
+        · 定义：`packages/ui/src/styles.css:53` `html .num { font-family: var(--font-mono); … }`
+
+  机制② **列标 `numeric: true`**，等宽由表格组件注入
+        · `packages/ui/src/components/DataTable.tsx:519`  `col.numeric && "num"`
+        · 同文件 `:630`（卡片模式）`col.numeric && "num text-[11px] leading-5"`
+        ⇒ 该列的**所有**单元格自动等宽，**调用点一个 `num` 都不用写**
+
+  机制③ **局部组件 `mono` prop**，等宽由组件内部注入
+        · `apps/im/app/(app)/cases/[id]/page.tsx:278`  `(mono ? "num" : "")`  ← `<Row … mono />`
+        · `apps/lawyer/app/(app)/cases/[id]/page.tsx:1170`                        ← `<KV … mono />`
+
+  ⇒ 任何「**在 JSX 里找 `num` 类名**」的静态规则，对**机制②③ 结构性失明** ——
+    失明的部分是**假红**（把已等宽的点报成未覆盖）。
+    要修就得跨文件解析组件实现 + 关联列定义 ⇒ 成本跳到 AST 级，**不划算**。
+
+  ⚠️ **附带发现（命名风险）**：`mono` 这个 prop 名在本项目**同名反义** ——
+    `Row`/`KV` 的 `mono` = **等宽（font-mono）**；
+    而 `apps/im/app/(app)/chat/page.tsx:993` 的 `Section` 的 `mono` = **衬线**
+    （`mono && "font-serif leading-[1.85]"`，用于「法律依据」正文）。
+    ⇒ 同名 prop 表示**相反**的字体族，后续任何按 prop 名做的静态判断都会翻车。
+
+--------------------------------------------------------------------------------
+5. 34 行次 / 30 行 的**逐条分诊结果**
+--------------------------------------------------------------------------------
+
+  【假红 · 机制② 列标 `numeric: true`（5 行）】等宽已由 DataTable 注入
+    admin/(app)/cases/page.tsx:366      render: fmtAmount(row.claim_amount)   ← 该列 numeric:true
+    lawyer/(app)/archives/page.tsx:219  render: fmtAmount(v)                  ← numeric:true
+    lawyer/(app)/archives/page.tsx:228  fmtDate(a.archived_at)                ← numeric:true
+    lawyer/(app)/cases/page.tsx:242     render: fmtAmount(v)                  ← numeric:true
+    lawyer/(app)/dispatches/page.tsx:224 render: fmtAmount(...)               ← numeric:true
+
+  【假红 · 机制③ 局部组件 `mono` prop（2 行）】
+    im/(app)/cases/[id]/page.tsx:146        <Row label="标的额" value={fmtAmount(…)} mono />
+    lawyer/(app)/cases/[id]/page.tsx:1170   <KV k="标的额" v={fmtAmount(…)} mono />
+
+  【假红 · 组件内部处理（4 行）】
+    admin/(app)/billing/page.tsx:365   value={yuan(dash?.work_orders?.amount_cents ?? 0)}
+    admin/(app)/billing/page.tsx:371   value={yuan(shownCents)}
+    web/(app)/billing/page.tsx:236     value={yuan(dash?.work_orders.amount_cents ?? 0)}
+    lawyer/(app)/cases/[id]/page.tsx:1046  at={analysis.confirmed_at ? fmtDateTime(…) : undefined}
+      （`value=`/`at=` 是组件属性 ⇒ 等宽在组件内部，KpiCard 一类）
+
+  【假红 · 数据字面量 / 列元数据 / useState（11 行）】
+    web/app/components-preview/page.tsx:86-94  mock 数据数组字面量（`{ id:"c1", caseNo:…, amount:… }`）
+    web/app/components-preview/page.tsx:140    列元数据 `{ key:"deadline", header:"期限", numeric:true, … }`
+    web/app/components-preview/page.tsx:322    `useState<string|null>("deadline")`
+      （且该页是 **组件预览页**，非产品页）
+
+  【假红 · 纯逻辑（2 行）】
+    admin/(app)/billing/page.tsx:219    `const shownCents = orders.reduce(…)`
+    admin/(app)/complaints/page.tsx:319 `const d = daysLeft(row.due_at);`
+
+  【假红 · 类型内联（被误分到 other/logic，1 行）】
+    admin/(app)/reviews/page.tsx:93     `| { case_no?: string; title?: string; … }[]`
+
+  【语义边界 · 需拍板（3 行）】——「相对时间 / 文案内日期」算不算「日期」？
+    lawyer/(app)/notifications/page.tsx:362   `<span>{formatRelativeTime(n.created_at)}</span>`
+    packages/ui/src/components/NotificationCenter.tsx:269  同上（返回「3 分钟前」）
+    admin/(app)/audit/page.tsx:395   `截点 {fmtDate(dryRun.cutoff ?? null)} · 保留 … 天 · …`（文案内嵌日期）
+
+  【🚨 真缺口（2 行）】—— 案号，**两处都没等宽**
+    admin/(app)/cases/page.tsx:318
+        render: (_v, row) => (
+          <button … className="font-medium text-link underline-offset-2 hover:underline">
+            {row.case_no}
+          </button>
+        )
+      ⇒ 该列 **没有** `numeric: true`（案号不是数字）⇒ DataTable **不会**注入 `num`；
+        按钮 className 里也没有 `num`。
+    admin/(app)/reviews/page.tsx:732
+        <li key={i} className="text-ink-700">
+          {c.case_no ? `${c.case_no}　` : ""}{c.title ?? "—"}…
+        </li>
+      ⇒ 「相似案例」列表里的案号，`<li>` 无 `num`。
+
+  **汇总**：30 行 = **假红 25**（机制②③ 7 + 组件内部 4 + 数据/元数据 11 + 纯逻辑 2 + 类型 1）
+                     + **语义边界 3** + **真缺口 2**
+  ⇒ 若写成门禁：**30 个报错里只有 2 个是真的 ⇒ 精确率 ≈ 6.7%**。
+
+--------------------------------------------------------------------------------
+6. 「真缺口 2 处」怎么处置
+--------------------------------------------------------------------------------
+
+  ⚠️ **不归本门禁**，也**不在本轮修**（设计类改动须先出规范、用户定稿后才动工；
+     且这两处属**产品代码**，与并行会话的写入面可能重叠）。
+  ⇒ 登记为 **UI 待修项**（见 `design-audit.md` §14.7），由用户裁定何时动。
+
+  判据出处已核实（**没有**凭空断言）：
+    · §1 原则 4 明文要求「**案号**…全部等宽 + `tabular-nums`」；
+    · `styles.css` 里**只有两条** `font-family` 规则（`.legal-text`→衬线、`.num`→等宽）
+      ⇒ **不存在**让 `button`/`a` 自动等宽的全局规则；
+    · `DataTable.tsx:519` 只在 `col.numeric` 时注入 `num`，案号列未标 ⇒ 确实没覆盖。
+
+--------------------------------------------------------------------------------
+7. 未验证边界（写清「我没测到什么」）
+--------------------------------------------------------------------------------
+
+  · 探针是**行级启发式**，**不是 AST**：`className` 跨行、条件类名、`cn()` 拼接、
+    模板串拼类名等情形可能误判（两个方向都可能）。
+  · 「回溯 6 行」这个窗口是**经验值**，没有做敏感性分析（窗口调大调小结论会变）。
+  · **没有真跑浏览器**：本实测**全部是读码/静态扫描**；
+    第 6 节那 2 处真缺口**未在渲染期复核**（未读 computed style 确认「确实不等宽」）。
+  · 「条款号」是四类里**唯一没有稳定标识符**的 ⇒ **本遍完全没测**（本身就是一条缺口）。
+  · 未统计 `.ts`（非 `.tsx`）里的渲染（本项目渲染都在 `.tsx`，但未证明）。
+  · 未覆盖 **`packages/ui` 之外的组件库**、未覆盖 `.next` 产物（按设计排除）。
+
+--------------------------------------------------------------------------------
+8. 与既有纪律的对应
+--------------------------------------------------------------------------------
+
+  · `design-audit.md` §14.4 候选② 的预设（「先实测再决定」）**被本次执行，并给出否定结论**
+    —— 这本身是「**先实测 → 再解释**」纪律的一次正向使用：
+    **否定的实测结论同样有价值**，它省掉了一条注定被豁免掉的假门禁。
+  · 同族坑：`evidence/README.md` 坑 60 / `methodology` #186
+    「含**渲染期概念词**（每屏/相邻/位置/可见）的要求，静态计数往往是**另一个量**」
+    ⇒ 本遍补充一类新形态：**不是概念词的问题，而是「同一语义有多个落地机制」**。
+================================================================================

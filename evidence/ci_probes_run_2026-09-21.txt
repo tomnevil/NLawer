@@ -1,0 +1,36 @@
+── 阶段 1：探针自检（合成夹具，与产品无关）──
+  ✓ verify_component_refactor.py             exit=0 (1.0s)  门禁内
+  ✓ verify_component_wiring.py               exit=0 (1.1s)  门禁内
+  ✓ verify_enum_domain_drift.py              exit=0 (1.1s)  门禁内
+  ✓ verify_font_stack.py                     exit=0 (1.5s)  门禁内
+  ✓ verify_motion_tokens.py                  exit=0 (1.2s)  门禁内
+  ✓ verify_provenance_tristate.py            exit=0 (1.2s)  门禁内
+  ✓ verify_radius_scale.py                   exit=0 (1.3s)  门禁内
+  ✓ verify_register_abuse_defense.py         exit=0 (1.1s)  门禁内
+  ✓ verify_token_storage.py                  exit=0 (1.1s)  门禁内
+  —— 以下探针**测不了**（要浏览器/服务/产物），只验「工具没坏」——
+  ✓ verify_buttons.py                        exit=0 (1.9s)  仅自检
+  ✓ verify_contrast.py                       exit=0 (1.6s)  仅自检
+  ✓ verify_focus_ring.py                     exit=0 (1.8s)  仅自检
+  ✓ verify_grade_badges.py                   exit=0 (1.3s)  仅自检
+
+── 阶段 2：实测（exit 1 = 产品缺陷，exit 2 = 环境问题）──
+  ✓ verify_component_wiring.py               exit=0   PASS (12.0s)
+  ✓ verify_conversation_channel_500.py       exit=0   PASS (27.2s)
+  ✓ verify_enum_domain_drift.py              exit=0   PASS (4.7s)
+  ✓ verify_migration_enum_defaults.py        exit=0   PASS (24.3s)
+  ✓ verify_token_storage.py                  exit=0   PASS (23.1s)
+  ✓ verify_register_abuse_defense.py         exit=0   PASS (1.2s)
+  ✓ verify_route_coverage.py                 exit=0   PASS (8.2s)
+  ✓ verify_spacing_scale.py                  exit=0   PASS (12.7s)
+  ✓ verify_font_stack.py                     exit=0   PASS (1.7s)
+  ✓ verify_service_tenant_param.py           exit=0   PASS (1.2s)
+  ✓ verify_provenance_tristate.py            exit=0   PASS (1.1s)
+  ✓ verify_radius_scale.py                   exit=0   PASS (1.2s)
+  ✓ verify_component_refactor.py             exit=0   PASS (1.3s)
+  ✓ verify_motion_tokens.py                  exit=0   PASS (1.2s)
+
+============================================================================
+通过 14 · 失败 0 · 跳过 0 · 共 14
+
+✅ evidence 门禁通过。

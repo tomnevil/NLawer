@@ -1,0 +1,16 @@
+── 设计令牌迁移「全量验证」（判据出处：phase3-implementation.md §6.4）──
+
+[源码级] 扫描 116 个文件（apps + packages）
+         已排除：node_modules（第三方依赖）、_prev_build（归档的旧产物，不是源码）、components-preview（组件预览页；**原 §6.4 口径即排除**，此处照搬并显式列出（排除本身就是需要被看见的动作））
+         ✓ 旧色系残留 0 命中
+         观察（不判缺陷）：源码里有用到半透明白叠加 ——
+           bg-white/15  2 处：['apps\\im\\app\\(app)\\page.tsx', 'apps\\im\\app\\(app)\\me\\page.tsx']
+           ⇒ §6.4 的口径是**不透明**的 `.bg-white{`，不含这种；列出来是为了它不被误以为「这里没有 bg-white」
+         ✓ 被删文件不存在、bridge.css 0 处真实引用
+
+[产物级] --source-only，跳过
+
+── 汇总 ──
+  ✓ 旧色系 0 残留；无 !important；无 .dark 覆盖；安全区链路在产物里
+
+EXIT=0  通过

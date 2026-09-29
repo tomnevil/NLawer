@@ -1,0 +1,21 @@
+扁平 `1.`–`204.`（204 条，止于 L1953） · 标题式 `## 205.`–`## 213.`（9 条） · 合计 213 条
+
+【只报 18 条 —— 不判红，交人工】
+  M7s .workbuddy-ai/memory/design-audit.md:1695  `#187` —— 歧义号段（扁平 187 与续编 209 同号），需人工判语义
+  M7s .workbuddy-ai/memory/design-audit.md:1774  `#187` —— 歧义号段（扁平 187 与续编 209 同号），需人工判语义
+  M7s .workbuddy-ai/memory/design-audit.md:1851  `#186` —— 歧义号段（扁平 186 与续编 208 同号），需人工判语义
+  M7s .workbuddy-ai/memory/design-audit.md:2328  `#186` —— 歧义号段（扁平 186 与续编 208 同号），需人工判语义
+  M7s .workbuddy-ai/memory/design-audit.md:2444  `#186` —— 歧义号段（扁平 186 与续编 208 同号），需人工判语义
+  M7s deliverables/product-strategy/loop-closure-verification-2026-09-23.md:222  `#184` —— 歧义号段（扁平 184 与续编 206 同号），需人工判语义
+  M7s deliverables/product-strategy/loop-closure-verification-2026-09-23.md:226  `#186` —— 歧义号段（扁平 186 与续编 208 同号），需人工判语义
+  M7s evidence/README.md:2393  `#184` —— 歧义号段（扁平 184 与续编 206 同号），需人工判语义
+  M7s evidence/README.md:2646  `#186` —— 歧义号段（扁平 186 与续编 208 同号），需人工判语义
+  M7s evidence/probe_mono_coverage.py:22  `#184` —— 歧义号段（扁平 184 与续编 206 同号），需人工判语义
+  M7s evidence/run_ci_probes.py:364  `#183` —— 歧义号段（扁平 183 与续编 205 同号），需人工判语义
+  M7s evidence/run_ci_probes.py:371  `#183` —— 歧义号段（扁平 183 与续编 205 同号），需人工判语义
+  M7s evidence/run_ci_probes.py:371  `#187` —— 歧义号段（扁平 187 与续编 209 同号），需人工判语义
+  M7s evidence/run_ci_probes.py:372  `#187` —— 歧义号段（扁平 187 与续编 209 同号），需人工判语义
+  M7s evidence/run_ci_probes.py:373  `#187` —— 歧义号段（扁平 187 与续编 209 同号），需人工判语义
+  M7s evidence/run_ci_probes.py:374  `#187` —— 歧义号段（扁平 187 与续编 209 同号），需人工判语义
+  M7s evidence/verify_contract_review_gate_e2e.py:19  `#184` —— 歧义号段（扁平 184 与续编 206 同号），需人工判语义
+  M7s evidence/verify_typography.py:57  `#184` —— 歧义号段（扁平 184 与续编 206 同号），需人工判语义

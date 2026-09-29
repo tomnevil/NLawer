@@ -1,0 +1,96 @@
+
+[web] /  Badge 总数=0  等级徽章=0  (html.dark=False)
+
+[web] /qa  Badge 总数=4  等级徽章=0  (html.dark=False)
+
+[web] /documents  Badge 总数=27  等级徽章=0  (html.dark=False)
+
+[web] /knowledge  Badge 总数=1  等级徽章=0  (html.dark=False)
+
+[lawyer] /cases  Badge 总数=16  等级徽章=4  (html.dark=False)
+    浅 B 'B 级'         35x23 letter=✓ color=rgb(52, 59, 68)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-1.5 py-0.5 text-caption gap-1
+    浅 C 'C 级'         36x23 letter=✓ color=rgb(52, 59, 68)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    浅 C 'C 级'         36x23 letter=✓ color=rgb(52, 59, 68)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    浅 B 'B 级'         35x23 letter=✓ color=rgb(52, 59, 68)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-1.5 py-0.5 text-caption gap-1
+    → 深色（html.dark=True）等级徽章=4
+    深 B 'B 级'         35x23 letter=✓ color=rgb(205, 211, 218) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+    深 C 'C 级'         36x23 letter=✓ color=rgb(205, 211, 218) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 C 'C 级'         36x23 letter=✓ color=rgb(205, 211, 218) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 B 'B 级'         35x23 letter=✓ color=rgb(205, 211, 218) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+
+[lawyer] /dispatches  Badge 总数=8  等级徽章=2  (html.dark=False)
+    浅 C 'C 级'         36x23 letter=✓ color=rgb(52, 59, 68)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    浅 C 'C 级'         36x23 letter=✓ color=rgb(52, 59, 68)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    → 深色（html.dark=True）等级徽章=2
+    深 C 'C 级'         36x23 letter=✓ color=rgb(205, 211, 218) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 C 'C 级'         36x23 letter=✓ color=rgb(205, 211, 218) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+
+[lawyer] /archives  Badge 总数=3  等级徽章=1  (html.dark=False)
+    浅 C 'C 级'         36x23 letter=✓ color=rgb(52, 59, 68)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    → 深色（html.dark=True）等级徽章=1
+    深 C 'C 级'         36x23 letter=✓ color=rgb(205, 211, 218) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+
+[admin] /cases  Badge 总数=15  等级徽章=4  (html.dark=False)
+    浅 B 'B'           26x24 letter=✓ color=rgb(52, 59, 68)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-2 py-0.5 text-label gap-1.5
+    浅 C 'C'           26x24 letter=✓ color=rgb(52, 59, 68)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-2 py-0.5 text-label gap-1.5
+    浅 A 'A'           26x24 letter=✓ color=rgb(52, 59, 68)    bg=rgba(180, 121, 31, 0.15) bd=rgba(180, 121, 31, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-pending-500/15 border-pending-500/30 px-2 py-0.5 text-label gap-1.5
+    浅 B 'B'           26x24 letter=✓ color=rgb(52, 59, 68)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-2 py-0.5 text-label gap-1.5
+    → 深色（html.dark=True）等级徽章=4
+    深 B 'B'           26x24 letter=✓ color=rgb(205, 211, 218) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+    深 C 'C'           26x24 letter=✓ color=rgb(205, 211, 218) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 A 'A'           26x24 letter=✓ color=rgb(205, 211, 218) bg=rgba(200, 145, 48, 0.15) bd=rgba(200, 145, 48, 0.3)
+    深 B 'B'           26x24 letter=✓ color=rgb(205, 211, 218) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+
+[im] /  Badge 总数=3  等级徽章=3  (html.dark=False)
+    浅 C 'C'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    浅 S 'S'           20x23 letter=✓ color=rgb(20, 24, 29)    bg=rgba(192, 57, 43, 0.15)  bd=rgba(192, 57, 43, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-danger-500/15 border-danger-500/30 px-1.5 py-0.5 text-caption gap-1
+    浅 B 'B'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-1.5 py-0.5 text-caption gap-1
+    → 深色（html.dark=True）等级徽章=3
+    深 C 'C'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 S 'S'           20x23 letter=✓ color=rgb(242, 244, 246) bg=rgba(214, 84, 72, 0.15)  bd=rgba(214, 84, 72, 0.3)
+    深 B 'B'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+
+[im] /cases  Badge 总数=20  等级徽章=10  (html.dark=False)
+    浅 C 'C'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    浅 S 'S'           20x23 letter=✓ color=rgb(20, 24, 29)    bg=rgba(192, 57, 43, 0.15)  bd=rgba(192, 57, 43, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-danger-500/15 border-danger-500/30 px-1.5 py-0.5 text-caption gap-1
+    浅 B 'B'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-1.5 py-0.5 text-caption gap-1
+    浅 C 'C'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    浅 B 'B'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-1.5 py-0.5 text-caption gap-1
+    浅 A 'A'           22x23 letter=✓ color=rgb(20, 24, 29)    bg=rgba(180, 121, 31, 0.15) bd=rgba(180, 121, 31, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-pending-500/15 border-pending-500/30 px-1.5 py-0.5 text-caption gap-1
+    浅 C 'C'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgb(239, 241, 243)       bd=rgb(226, 229, 233)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-surface-subtle border-line px-1.5 py-0.5 text-caption gap-1
+    浅 B 'B'           21x23 letter=✓ color=rgb(20, 24, 29)    bg=rgba(42, 111, 176, 0.15) bd=rgba(42, 111, 176, 0.3)
+        cls=inline-flex items-center whitespace-nowrap border font-medium rounded-r1 bg-info-500/15 border-info-500/30 px-1.5 py-0.5 text-caption gap-1
+    → 深色（html.dark=True）等级徽章=10
+    深 C 'C'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 S 'S'           20x23 letter=✓ color=rgb(242, 244, 246) bg=rgba(214, 84, 72, 0.15)  bd=rgba(214, 84, 72, 0.3)
+    深 B 'B'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+    深 C 'C'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 B 'B'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+    深 A 'A'           22x23 letter=✓ color=rgb(242, 244, 246) bg=rgba(200, 145, 48, 0.15) bd=rgba(200, 145, 48, 0.3)
+    深 C 'C'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgb(26, 31, 38)          bd=rgb(35, 41, 49)
+    深 B 'B'           21x23 letter=✓ color=rgb(242, 244, 246) bg=rgba(92, 158, 214, 0.15) bd=rgba(92, 158, 214, 0.3)
+
+[im] /chat  Badge 总数=0  等级徽章=0  (html.dark=False)
+
+合计浅色等级徽章 22 个

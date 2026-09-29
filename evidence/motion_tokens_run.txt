@@ -1,0 +1,22 @@
+C:\Users\RS\Documents\trae_projects\NLawer\evidence\verify_motion_tokens.py:47: SyntaxWarning: invalid escape sequence '\w'
+  ⚠️ 右边界 `(?![\w-])` 必需，否则 `animate-pulse-soft` 会被自己误伤。
+[ENV] 规范：deliverables/ui-design/design-spec.md
+[ENV] §4.4 解析出 4 行：['hover / 颜色变化', '展开 / 折叠', '抽屉 / 模态 / 底部 Sheet', '流式打字光标']
+[ENV] 扫描 119 个源码文件
+
+=== 判据 ===
+  ✓ A0 守卫：§4.4 4 行表 + 4 个 `--dur-*` + preset 缓动表均已解析
+  ✓ A1 时长逐条相等：3 行按「场景名 ↔ 令牌注释」精确配对，全部一致
+  ✓ A2 缓动：令牌化关键字已指向 `var(--ease-*)`，`cubic-bezier` 字面量均有等价令牌
+  ✓ A3 机制：`.flow-typing::after` 的时长接在 `var(--dur-pulse)` 上（可被 reduce 归零）
+  ✓ A4 机制：源码无 Tailwind 内置动画工具类（骨架屏一律经 `animate-pulse-soft`）
+
+=== 只报不判（需拍板 / 机制说明，**不是判据**） ===
+  · R6 下列缓动走 **CSS 原生关键字**、未令牌化（规范没要求，**不判**）：['流式打字光标→`ease-in-out`'] —— 若将来要支持「品牌化缓动」需补令牌。
+  · R1 🚨 **流式打字光标的时长与规范不符**：§4.4 写 **1.2s**，实现 `--dur-pulse` = **1.6s**（慢 33%）。⚠️ **不当缺陷报 —— 它是「合并令牌」**：注释写着「骨架屏**与**打字光标的循环周期」，改它会**连带改骨架屏** ⇒ 需拍板（改规范 / 拆令牌 / 改实现）。
+  · R2 `--dur-pulse` 的消费者：**直接** 2 个文件 ['frontend/packages/ui/src/styles.css', 'frontend/tailwind.preset.ts']；**经 `animate-pulse-soft` 工具类间接** 6 个文件 ['frontend/apps/im/app/(app)/chat/page.tsx', 'frontend/apps/im/app/(app)/page.tsx', 'frontend/apps/web/app/(app)/qa/page.tsx', 'frontend/packages/ui/src/components/NotificationCenter.tsx', 'frontend/packages/ui/src/components/Skeleton.tsx', 'frontend/packages/ui/src/components/mobile/SyncQueue.tsx'] ⇒ **这就是 R1 不能直接改值的理由**：它同时驱动骨架屏与打字光标。
+  · R3 §4.4 的表**没有「骨架屏」这一行**，但实现里 `--dur-pulse` 的注释声明它同时服务骨架屏 ⇒ **骨架屏周期在规范里没有出处**，建议 §4.4 补一行（或拆出独立令牌）。
+  · R4 preset 把 `ease-out` **重定义**为 `var(--ease-out)` = `cubic-bezier(0,0,0.2,1)`，**不等于** CSS 关键字 `ease-out` 的标准值 `cubic-bezier(0,0,0.58,1)`。项目**有意为之**（`preset` 的「动效」段，且实测 0 处代码用内置 `ease-in-out` 工具类）⇒ **不是缺陷**，但读者容易被名字误导。
+  · R7 🚨 `animate-spin` **33 处**：它和 `animate-pulse` 一样是 Tailwind **内置**类（不经 `--dur-*`、reduce 下不归零），但**刻意没纳入 A4** —— 「**加载指示**算不算『必须归零的动效』」是**设计问题、需拍板**：要么给它建令牌（如 `--dur-spin` + `animate-spin-soft`），要么在 §4.4 明文豁免「**功能型**加载指示」。⚠️ 纳入 A4 前必须先收敛这 33 处，否则判据上线当天就红。示例：['frontend/apps/admin/app/(app)/_components/TenantScopeBar.tsx:147', 'frontend/apps/admin/app/(app)/audit/page.tsx:198', 'frontend/apps/admin/app/(app)/audit/page.tsx:334']
+
+[结论] exit 0 —— 已登记欠账 0 条（棘轮内），无新违反

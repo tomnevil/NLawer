@@ -1,0 +1,22 @@
+[ENV] 规范：deliverables/ui-design/design-spec.md
+[ENV] §6.3 解析出 6 条改造要点：Sidebar、Header、Card、KpiCard、Button、LoginShell
+[ENV] 扫描 105 个源码文件
+
+=== 判据 ===
+  ✓ J1 Sidebar 底色 == `brand-950`（期望值取自 §6.3 反引号）
+  ✓ J2 Sidebar 激活项指示条：`w-[3px]` + `bg-gold-500`（宽度取自 §6.3）
+  ✓ J3 顶栏高度 == §6.3 的 56px（`--topbar-h`，且 AppShell 引用）
+  ✓ J4 `AppShell.tsx` 无 `dark:` 变体（深色完全由 CSS 变量驱动）
+  ✓ J5 Card 的 hover 无位移/缩放（只有边框与阴影变化）
+  ✓ J6 Card `default` = 1px 边框 + `--s1`（`bg-surface border border-line shadow-s1`）
+  ✓ J7 KpiCard 数值 == §6.3 的 28px 且带等宽类
+  ✓ J8 KpiCard 单位以**小字**呈现（`unit` → caption/label/body-sm 档）
+  ✓ J9 Button 无渐变类（`bg-gradient-*` / `from-*` / `via-*`）
+  ✓ J10 LoginShell：网格纹理 + 角色分段切换（`SegmentedControl`）均在
+
+=== 只报不判（功能缺口 / 依赖，**不是判据**） ===
+  · R1 §6.3 KpiCard「新增环比与**迷你趋势线**」：**环比已做**（`change` → ↑/↓ N%），但 `KpiCard.tsx` 里**没有趋势线**（无 sparkline / trend 相关实现）⇒ **功能缺口**，不是覆盖率缺口。**门禁判不了「该不该做」**，只登记。
+  · R2 §6.3 Button「补 **loading 态**」：`Button.tsx` 里**没有 `loading` 属性/状态**（`variant` 有 7 个、尺寸 3 个，都已有判据）⇒ **功能缺口**，登记。
+  · R3 §6.3 LoginShell「移动端改为**手机号 + 验证码**为主路径」：组件已实现（`modes` / `phone` / `SegmentedControl`），但 `LoginShell.tsx:37` 注明「`phone` **需要后端提供短信下发与验证码校验端点**」⇒ **依赖后端**，不是前端待办（与 `backend-cooperation-2026-09-21.md` 口径一致）。
+
+[结论] exit 0 —— 已登记欠账 0 条（棘轮内），无新违反

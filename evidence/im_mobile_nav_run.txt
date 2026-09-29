@@ -1,0 +1,9 @@
+── im 移动端导航静态不变量（`im-mobile-nav-spec.md` §6.1/§6.2/§6.3）──
+  规范现读：4 项 Tab = 工作台 / 咨询 / 我的案件 / 我的
+  §5.1  frontend/apps/im/app/(app)/page.tsx  294 行
+  §5.2  frontend/apps/im/app/(app)/chat/page.tsx  1205 行
+  §5.3  frontend/apps/im/app/(app)/cases/page.tsx  202 行
+  §5.4  frontend/apps/im/app/(app)/me/page.tsx  179 行
+
+✓ §6.1 / §6.2 / §6.3 静态不变量全部成立，四个落地页都在。
+  ⚠️ 本门禁**不替代**渲染级探针：几何量（34px 空白带 / 三栏宽度）只有真浏览器有值。

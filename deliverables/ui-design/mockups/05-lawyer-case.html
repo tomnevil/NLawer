@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>概念图 05 · 律师案件详情（六段式分析） — 律小智设计系统 v2「墨与纸」</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--ai-50:#F4F2FD;--ai-100:#E8E4FA;--ai-200:#D2CAF4;--ai-500:#6E56CF;--ai-600:#5B45B5;
+--verified-50:#EDF8F4;--verified-100:#D6EFE6;--verified-500:#1E8E6E;--verified-600:#167055;
+--pending-50:#FDF6E9;--pending-500:#B4791F;
+--danger-50:#FDF0EE;--danger-500:#C0392B;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);--s3:0 16px 40px -8px rgba(16,24,40,.18);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html,body{margin:0;height:100%}
+body{font-family:var(--font-ui);font-size:14px;line-height:1.6;color:var(--ink-800);background:var(--ink-50);
+-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.app{display:flex;min-height:100vh}
+.sb{width:224px;flex:0 0 224px;background:var(--brand-950);color:#C6D2E4;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.sb-top{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-top .mark{width:32px;height:32px;border-radius:var(--r3);display:grid;place-items:center;flex:0 0 32px;
+background:linear-gradient(150deg,#274C93,#0F2A4A);border:1px solid rgba(198,164,105,.4)}
+.sb-top .mark svg{width:18px;height:18px;stroke:var(--gold-400)}
+.sb-top b{display:block;font-size:14px;font-weight:600;color:#fff}
+.sb-top span{font-size:10.5px;color:#7E97BC;letter-spacing:.06em}
+.nav{flex:1;overflow-y:auto;padding:12px}
+.nav .gt{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5E769B;padding:0 8px 8px;margin-top:14px}
+.nav .gt:first-child{margin-top:0}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r2);color:#AFC0D8;text-decoration:none;font-size:13.5px;margin-bottom:1px;position:relative;transition:.15s}
+.nav a svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;flex:0 0 16px}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.on{background:rgba(54,96,176,.32);color:#fff;font-weight:500}
+.nav a.on::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:0 3px 3px 0;background:var(--gold-400)}
+.nav a .cnt{margin-left:auto;font-size:11px;font-weight:600;padding:0 6px;height:18px;line-height:18px;border-radius:99px;background:rgba(255,255,255,.1);color:#DCE6F4}
+.nav a .cnt.d{background:rgba(192,57,43,.3);color:#F5B7B0}
+.sb-user{border-top:1px solid rgba(255,255,255,.07);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.sb-user .av{width:30px;height:30px;border-radius:50%;flex:0 0 30px;display:grid;place-items:center;background:linear-gradient(140deg,#3660B0,#1E3C77);color:#fff;font-size:12px;font-weight:600}
+.sb-user .nm{font-size:12.5px;color:#fff;font-weight:500}
+.sb-user .rl{font-size:11px;color:#7E97BC}
+.main{flex:1;min-width:0}
+.top{height:56px;background:rgba(255,255,255,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--ink-200);
+display:flex;align-items:center;gap:12px;padding:0 24px;position:sticky;top:0;z-index:20}
+.crumb{font-size:12.5px;color:var(--ink-400);display:flex;gap:7px;align-items:center}
+.crumb b{color:var(--ink-800);font-weight:600}
+.crumb .no{font-family:var(--mono);color:var(--brand-700)}
+.top .sp{margin-left:auto;display:flex;gap:8px}
+.btn{border:0;border-radius:var(--r2);font:inherit;font-size:13px;font-weight:600;padding:0 13px;height:34px;
+display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:.15s}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-p{background:var(--brand-600);color:#fff;box-shadow:var(--s1)}
+.btn-p:hover{background:var(--brand-700)}
+.btn-g{background:#fff;color:var(--ink-700);border:1px solid var(--ink-200)}
+.btn-v{background:var(--verified-500);color:#fff;box-shadow:var(--s1)}
+
+/* 案件头 */
+.case-head{background:#fff;border-bottom:1px solid var(--ink-200);padding:20px 24px}
+.ch-top{display:flex;align-items:flex-start;gap:14px;max-width:1400px}
+.grade{width:44px;height:44px;flex:0 0 44px;border-radius:var(--r3);display:grid;place-items:center;font-size:19px;font-weight:700;color:#fff;
+background:var(--danger-500);box-shadow:0 3px 10px rgba(192,57,43,.28)}
+.ch-top h1{margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em;color:var(--ink-900)}
+.ch-meta{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--ink-500);flex-wrap:wrap;align-items:center}
+.ch-meta .no{font-family:var(--mono);color:var(--ink-600)}
+.ch-meta .sep{color:var(--ink-300)}
+.tag{font-size:11px;padding:2px 8px;border-radius:var(--r1);border:1px solid;line-height:1.6;font-weight:500;white-space:nowrap}
+.tag.wait{color:var(--pending-500);border-color:#EED9B4;background:var(--pending-50)}
+.tag.ok{color:var(--verified-500);border-color:#BFE4D7;background:var(--verified-50)}
+.tag.ai{color:var(--ai-500);border-color:var(--ai-200);background:var(--ai-50)}
+.tag.risk{color:var(--danger-500);border-color:#F1C8C1;background:var(--danger-50)}
+.tag.n{color:var(--ink-500);border-color:var(--ink-200);background:var(--ink-50)}
+
+/* 阶段条 */
+.stages{display:flex;gap:0;margin-top:18px;max-width:1400px}
+.stage{flex:1;position:relative;padding-top:16px}
+.stage::before{content:"";position:absolute;top:5px;left:0;right:0;height:2px;background:var(--ink-200)}
+.stage:first-child::before{left:50%}
+.stage:last-child::before{right:50%}
+.stage .dot{position:absolute;top:0;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;
+background:#fff;border:2px solid var(--ink-300);z-index:1}
+.stage.done::before{background:var(--verified-500)}
+.stage.done .dot{background:var(--verified-500);border-color:var(--verified-500)}
+.stage.cur::before{background:linear-gradient(90deg,var(--verified-500) 0 50%,var(--ink-200) 50% 100%)}
+.stage.cur .dot{background:#fff;border-color:var(--pending-500);box-shadow:0 0 0 4px rgba(180,121,31,.18)}
+.stage .lb{text-align:center;font-size:11.5px;color:var(--ink-400)}
+.stage.done .lb,.stage.cur .lb{color:var(--ink-700);font-weight:500}
+.stage .tm{text-align:center;font-size:10.5px;color:var(--ink-400);margin-top:2px}
+
+/* 布局 */
+.body{display:grid;grid-template-columns:1fr 336px;gap:16px;padding:20px 24px 48px;max-width:1400px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--ink-200);margin-bottom:16px}
+.tabs button{border:0;background:transparent;font:inherit;font-size:13.5px;color:var(--ink-500);padding:0 12px 11px;cursor:pointer;position:relative;font-weight:500}
+.tabs button.on{color:var(--brand-700)}
+.tabs button.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--brand-600);border-radius:2px 2px 0 0}
+.tabs .n{font-size:11px;margin-left:5px;color:var(--ink-400)}
+
+.panel{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);box-shadow:var(--s1);margin-bottom:16px;overflow:hidden}
+.ph{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--ink-100)}
+.ph b{font-size:13.5px;font-weight:600;color:var(--ink-800)}
+.ph .sub{font-size:11.5px;color:var(--ink-400)}
+.ph .r{margin-left:auto;font-size:12px;color:var(--brand-600);font-weight:500;cursor:pointer}
+.pb{padding:16px}
+
+/* 六段式 */
+.six{counter-reset:seg}
+.seg{border-bottom:1px solid var(--ink-100)}
+.seg:last-child{border-bottom:0}
+.seg-hd{display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer}
+.seg-hd .n{width:24px;height:24px;flex:0 0 24px;border-radius:var(--r2);display:grid;place-items:center;font-size:12px;
+font-weight:600;background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100)}
+.seg-hd b{font-size:13.5px;font-weight:600;color:var(--ink-800)}
+.seg-hd .st{font-size:11px;color:var(--ink-400);margin-left:2px}
+.seg-hd .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.seg-hd .chev{width:15px;height:15px;stroke:var(--ink-400);fill:none;stroke-width:2}
+.seg-bd{padding:0 16px 16px 51px;font-size:13.5px;line-height:1.85;color:var(--ink-700)}
+.seg-bd p{margin:0 0 10px}
+.seg-bd p:last-child{margin-bottom:0}
+.seg-bd ol,.seg-bd ul{margin:0 0 10px;padding-left:18px}
+.seg-bd li{margin-bottom:6px}
+.seg-bd em{font-style:normal;background:var(--gold-100);padding:1px 3px;border-radius:3px;box-shadow:inset 0 -1px 0 var(--gold-400)}
+.seg-bd .quote{font-family:var(--font-serif);border-left:3px solid var(--gold-400);background:var(--ink-50);padding:10px 14px;
+border-radius:0 var(--r2) var(--r2) 0;font-size:13px;line-height:1.95;margin:10px 0}
+.ref{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;margin:0 2px;
+border-radius:4px;background:var(--brand-50);border:1px solid var(--brand-200);color:var(--brand-700);font-size:10.5px;font-weight:600;vertical-align:1px;cursor:pointer}
+.ref:hover{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+.conflict{background:var(--danger-50);border:1px solid #F1C8C1;border-radius:var(--r2);padding:11px 13px;margin:10px 0;font-size:12.5px;line-height:1.8;color:#9C4034}
+.conflict b{display:block;color:var(--danger-500);margin-bottom:4px;font-size:12.5px}
+
+/* 右栏 */
+.card{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);box-shadow:var(--s1);margin-bottom:14px;overflow:hidden}
+.card .hd{padding:12px 14px;border-bottom:1px solid var(--ink-100);font-size:13px;font-weight:600;color:var(--ink-800);display:flex;align-items:center;gap:8px}
+.card .hd .r{margin-left:auto;font-size:11.5px;color:var(--brand-600);font-weight:500;cursor:pointer}
+.kv{display:flex;padding:8px 14px;font-size:12.5px;border-bottom:1px solid var(--ink-100)}
+.kv:last-child{border-bottom:0}
+.kv .k{color:var(--ink-400);width:82px;flex:0 0 82px}
+.kv .v{color:var(--ink-700);flex:1}
+
+/* 复核流转时间线 */
+.tl{padding:14px}
+.tl .item{display:flex;gap:11px;padding-bottom:16px;position:relative}
+.tl .item:last-child{padding-bottom:0}
+.tl .item::before{content:"";position:absolute;left:8px;top:20px;bottom:0;width:1.5px;background:var(--ink-200)}
+.tl .item:last-child::before{display:none}
+.tl .item.done::before{background:var(--verified-500)}
+.tl .dot{width:17px;height:17px;flex:0 0 17px;border-radius:50%;border:2px solid var(--ink-300);background:#fff;z-index:1;display:grid;place-items:center}
+.tl .item.done .dot{background:var(--verified-500);border-color:var(--verified-500)}
+.tl .item.done .dot::after{content:"";width:7px;height:4px;border-left:1.8px solid #fff;border-bottom:1.8px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+.tl .item.cur .dot{border-color:var(--pending-500);box-shadow:0 0 0 4px rgba(180,121,31,.16)}
+.tl .item.cur .dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--pending-500)}
+.tl .bd{flex:1;min-width:0}
+.tl .t{font-size:12.5px;font-weight:600;color:var(--ink-800)}
+.tl .m{font-size:11.5px;color:var(--ink-400);margin-top:2px;line-height:1.7}
+.tl .note{font-size:11.5px;color:var(--ink-600);background:var(--ink-50);border-radius:var(--r1);padding:6px 9px;margin-top:6px;line-height:1.7}
+
+/* 证据 */
+.ev{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--ink-100)}
+.ev:last-child{border-bottom:0}
+.ev .ic{width:28px;height:28px;flex:0 0 28px;border-radius:var(--r2);display:grid;place-items:center;background:var(--ink-100)}
+.ev .ic svg{width:14px;height:14px;stroke:var(--ink-600);fill:none;stroke-width:1.8}
+.ev .bd{flex:1;min-width:0}
+.ev .t{font-size:12.5px;font-weight:500;color:var(--ink-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .m{font-size:11px;color:var(--ink-400);margin-top:1px}
+.ev .flag{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.ev .flag.g{background:var(--verified-500)}
+.ev .flag.y{background:var(--pending-500)}
+.ev .flag.r{background:var(--danger-500)}
+
+.banner{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--r3);background:var(--ai-50);
+border:1px dashed var(--ai-200);font-size:12px;color:var(--ai-600);margin-bottom:16px;line-height:1.7}
+.banner b{color:var(--ai-600)}
+@media (max-width:1300px){.body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sb">
+    <div class="sb-top">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7h6L5 7Zm14 0-3 7h6l-3-7Z"/></svg></div>
+      <div><b>律小智</b><span>律师工作台</span></div>
+    </div>
+    <nav class="nav">
+      <div class="gt">办案</div>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>工作台</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>派单池<span class="cnt d">4</span></a>
+      <a class="on" href="#"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>我的案件<span class="cnt">18</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></svg>复核队列<span class="cnt">6</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg>归档卷宗</a>
+      <div class="gt">工具</div>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/></svg>文书模板库</a>
+      <a href="#"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/></svg>法条检索</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>工时与计费</a>
+    </nav>
+    <div class="sb-user">
+      <div class="av">王</div>
+      <div><div class="nm">王振宇</div><div class="rl">执业律师 · 一级复核</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="crumb">
+        <span>我的案件</span><span>/</span><span class="no">NL-2026-0148</span><span>/</span><b>案件详情</b>
+      </div>
+      <div class="sp">
+        <button class="btn btn-g"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>导出卷宗</button>
+        <button class="btn btn-g"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/></svg>转他人</button>
+        <button class="btn btn-v"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>提交复核</button>
+      </div>
+    </header>
+
+    <!-- 案件头 -->
+    <div class="case-head">
+      <div class="ch-top">
+        <div class="grade">A</div>
+        <div style="flex:1">
+          <h1>智元科技 诉 恒达机电 买卖合同纠纷（逾期交货损害赔偿）</h1>
+          <div class="ch-meta">
+            <span class="no">NL-2026-0148</span>
+            <span class="sep">·</span>
+            <span>标的额 ¥1,860,000</span>
+            <span class="sep">·</span>
+            <span>承办：王振宇</span>
+            <span class="sep">·</span>
+            <span>委托方：智元科技（企业）</span>
+            <span class="sep">·</span>
+            <span class="tag wait">复核中 · L2</span>
+            <span class="tag ai">AI 辅助已生成 6 段分析</span>
+            <span class="tag risk">2 项证据缺口</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 阶段条 -->
+      <div class="stages">
+        <div class="stage done"><span class="dot"></span><div class="lb">接单</div><div class="tm">09-10 14:20</div></div>
+        <div class="stage done"><span class="dot"></span><div class="lb">案情梳理</div><div class="tm">09-11 09:05</div></div>
+        <div class="stage done"><span class="dot"></span><div class="lb">证据收集</div><div class="tm">09-13 17:40</div></div>
+        <div class="stage done"><span class="dot"></span><div class="lb">策略定稿</div><div class="tm">09-15 11:12</div></div>
+        <div class="stage cur"><span class="dot"></span><div class="lb">L2 复核</div><div class="tm">进行中</div></div>
+        <div class="stage"><span class="dot"></span><div class="lb">交付客户</div><div class="tm">—</div></div>
+        <div class="stage"><span class="dot"></span><div class="lb">归档</div><div class="tm">—</div></div>
+      </div>
+    </div>
+
+    <div class="body">
+      <!-- 左：主内容 -->
+      <div>
+        <div class="tabs">
+          <button class="on">六段式分析</button>
+          <button>证据材料<span class="n">12</span></button>
+          <button>法律文书<span class="n">4</span></button>
+          <button>沟通记录<span class="n">23</span></button>
+          <button>复核记录<span class="n">3</span></button>
+        </div>
+
+        <div class="banner">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/></svg>
+          <span>以下六段分析由 <b>AI 生成</b>（09-15 11:12），律师可逐段编辑并标记确认。已确认段落将转为绿色并记录确认人与时间。</span>
+        </div>
+
+        <div class="panel six">
+          <!-- 1 事实梳理 -->
+          <div class="seg">
+            <div class="seg-hd">
+              <span class="n">1</span><b>事实梳理</b><span class="st">已由律师确认 · 王振宇 09-15 11:20</span>
+              <div class="right"><span class="tag ok">律师已确认</span>
+                <svg class="chev" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></div>
+            </div>
+            <div class="seg-bd">
+              <p>2026 年 3 月 12 日，委托人智元科技与恒达机电签订《设备采购合同》（编号 HT-2026-0412），约定由恒达机电供应精密加工设备 8 台，合同总价 ¥1,860,000，交货期限为 <em>2026 年 6 月 30 日前</em>。</p>
+              <p>合同未约定逾期交货违约金条款。恒达机电实际于 <em>2026 年 8 月 15 日</em> 完成全部交付，逾期 46 天。委托人因设备延迟到位，向第三方客户承担了替代采购差价及工期违约金合计约 ¥420,000。</p>
+              <p>2026 年 7 月 8 日、7 月 24 日，委托人先后两次以 EMS 发函催告，恒达机电均未书面回复；8 月 15 日交付时，委托人未在签收单上提出异议。</p>
+            </div>
+          </div>
+
+          <!-- 2 争议焦点 -->
+          <div class="seg">
+            <div class="seg-hd">
+              <span class="n">2</span><b>争议焦点</b><span class="st">AI 生成 · 待律师确认</span>
+              <div class="right"><span class="tag ai">AI 生成</span>
+                <svg class="chev" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></div>
+            </div>
+            <div class="seg-bd">
+              <ol>
+                <li>合同未约定违约金时，损失赔偿范围如何确定，可得利益损失能否获支持；</li>
+                <li>委托人接收货物未即时提出异议，是否构成对迟延履行的接受，进而影响损失主张；</li>
+                <li>第三方客户索赔损失与本案违约行为之间的因果关系及可预见性认定；</li>
+                <li>催告函是否足以证明委托人已履行减损义务。</li>
+              </ol>
+            </div>
+          </div>
+
+          <!-- 3 法律适用 -->
+          <div class="seg">
+            <div class="seg-hd">
+              <span class="n">3</span><b>法律适用</b><span class="st">引用 5 条 · 均已核验时效</span>
+              <div class="right"><span class="tag ai">AI 生成</span>
+                <svg class="chev" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></div>
+            </div>
+            <div class="seg-bd">
+              <div class="quote">
+                《民法典》第五百八十四条：当事人一方不履行合同义务或者履行合同义务不符合约定，造成对方损失的，损失赔偿额应当相当于因违约所造成的损失，包括合同履行后可以获得的利益；但是，不得超过违约一方订立合同时预见到或者应当预见到的因违约可能造成的损失。
+              </div>
+              <p>结合《民法典》第五百七十七条<span class="ref">1</span>、第五百八十三条<span class="ref">2</span>，本案请求权基础为违约损害赔偿，赔偿范围以实际损失与可得利益损失为限，并受可预见性规则限制。</p>
+              <p>另参考《买卖合同司法解释》第二十一条<span class="ref">3</span>，出卖人逾期交付的，买受人可主张替代购买差价损失。本案委托人向第三方替代采购的差价有采购合同与发票佐证，具备主张基础。</p>
+            </div>
+          </div>
+
+          <!-- 4 证据分析 -->
+          <div class="seg">
+            <div class="seg-hd">
+              <span class="n">4</span><b>证据分析</b><span class="st">12 份材料 · 2 项缺口</span>
+              <div class="right"><span class="tag risk">存在缺口</span>
+                <svg class="chev" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></div>
+            </div>
+            <div class="seg-bd">
+              <p>现有证据可形成「合同约定 → 迟延事实 → 催告记录 → 损失发生」的基本链条，但以下两项存在缺口，直接影响可得利益损失的主张：</p>
+              <div class="conflict">
+                <b>⚠ 证据缺口 1：第三方索赔的实际支付凭证缺失</b>
+                现有材料仅有第三方客户出具的《索赔函》，缺少银行付款凭证或和解协议。法院对未实际支付的损失通常不予支持，建议补充付款回单。
+              </div>
+              <div class="conflict">
+                <b>⚠ 证据缺口 2：催告函送达证据不完整</b>
+                7 月 8 日 EMS 回执缺失，仅 7 月 24 日有签收记录。建议向邮政调取投递查询单，否则对方可能抗辩未收到首次催告。
+              </div>
+              <p>另需注意：8 月 15 日签收单未标注异议，可能被对方援引主张委托人已接受迟延履行，需以催告函形成对抗。</p>
+            </div>
+          </div>
+
+          <!-- 5 策略建议 -->
+          <div class="seg">
+            <div class="seg-hd">
+              <span class="n">5</span><b>策略建议</b><span class="st">AI 生成 · 待律师确认</span>
+              <div class="right"><span class="tag ai">AI 生成</span>
+                <svg class="chev" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></div>
+            </div>
+            <div class="seg-bd">
+              <ol>
+                <li><b>补强证据优先</b>：7 日内取得第三方付款凭证与 EMS 投递查询单，此为胜诉关键；</li>
+                <li><b>调整诉请结构</b>：以实际支出损失 ¥420,000 为主张基础，可得利益损失作为备位请求，降低举证风险；</li>
+                <li><b>发律师函</b>：以诉前催告固定违约事实并中断时效，同时为调解争取空间；</li>
+                <li><b>保全评估</b>：核查恒达机电资产状况，若存在转移风险应及时申请诉前财产保全。</li>
+              </ol>
+            </div>
+          </div>
+
+          <!-- 6 风险预判 -->
+          <div class="seg">
+            <div class="seg-hd">
+              <span class="n">6</span><b>风险预判</b><span class="st">3 项风险 · 2 项高</span>
+              <div class="right"><span class="tag risk">高风险</span>
+                <svg class="chev" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></div>
+            </div>
+            <div class="seg-bd">
+              <ul>
+                <li><b>可预见性抗辩（高）</b>：对方可能主张第三方索赔金额超出其订立合同时可预见范围，需以合同磋商记录或往来邮件证明其知悉设备用途；</li>
+                <li><b>减损义务抗辩（高）</b>：若委托人未及时替代采购，对方可能主张扩大损失不予赔偿；</li>
+                <li><b>诉讼时效（低）</b>：自 2026-08-15 起算 3 年，当前无时效风险。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右：侧栏 -->
+      <div>
+        <div class="card">
+          <div class="hd">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+            复核流转
+          </div>
+          <div class="tl">
+            <div class="item done">
+              <span class="dot"></span>
+              <div class="bd">
+                <div class="t">L1 复核通过</div>
+                <div class="m">李思远 · 09-15 16:30</div>
+                <div class="note">六段分析结构完整，证据分析部分建议补充缺口说明，已采纳。</div>
+              </div>
+            </div>
+            <div class="item cur">
+              <span class="dot"></span>
+              <div class="bd">
+                <div class="t">L2 复核中</div>
+                <div class="m">赵敏 · 已受理 3.2 小时 · SLA 剩余 4.8 小时</div>
+                <div class="note">重点关注可得利益损失的举证方案。</div>
+              </div>
+            </div>
+            <div class="item">
+              <span class="dot"></span>
+              <div class="bd">
+                <div class="t">L3 终审</div>
+                <div class="m">未开始 · 合伙人复核</div>
+              </div>
+            </div>
+            <div class="item">
+              <span class="dot"></span>
+              <div class="bd">
+                <div class="t">交付客户</div>
+                <div class="m">未开始</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="hd">案件信息</div>
+          <div class="kv"><span class="k">案件等级</span><span class="v"><b style="color:var(--danger-500)">A 级</b> · 系统评定 09-10</span></div>
+          <div class="kv"><span class="k">案由</span><span class="v">买卖合同纠纷</span></div>
+          <div class="kv"><span class="k">标的额</span><span class="v" style="font-family:var(--mono)">¥1,860,000</span></div>
+          <div class="kv"><span class="k">管辖法院</span><span class="v">上海市浦东新区人民法院</span></div>
+          <div class="kv"><span class="k">受理日期</span><span class="v">2026-09-10</span></div>
+          <div class="kv"><span class="k">承办律师</span><span class="v">王振宇</span></div>
+          <div class="kv"><span class="k">协办</span><span class="v">张一凡（助理）</span></div>
+          <div class="kv"><span class="k">预计工时</span><span class="v">32 小时 · 已投入 18.5 小时</span></div>
+        </div>
+
+        <div class="card">
+          <div class="hd">证据材料<span class="r">全部 12 份 →</span></div>
+          <div class="ev">
+            <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/></svg></div>
+            <div class="bd"><div class="t">设备采购合同 HT-2026-0412</div><div class="m">PDF · 12 页 · 已核验</div></div>
+            <span class="flag g"></span>
+          </div>
+          <div class="ev">
+            <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
+            <div class="bd"><div class="t">催告函（7/24）+ EMS 签收记录</div><div class="m">PDF · 3 页 · 已核验</div></div>
+            <span class="flag g"></span>
+          </div>
+          <div class="ev">
+            <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
+            <div class="bd"><div class="t">催告函（7/8）+ EMS 回执</div><div class="m">回执缺失 · 待补充</div></div>
+            <span class="flag r"></span>
+          </div>
+          <div class="ev">
+            <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div class="bd"><div class="t">第三方客户《索赔函》</div><div class="m">PDF · 2 页 · 缺少付款凭证</div></div>
+            <span class="flag r"></span>
+          </div>
+          <div class="ev">
+            <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/></svg></div>
+            <div class="bd"><div class="t">替代采购合同及发票</div><div class="m">PDF · 8 页 · 待律师核验</div></div>
+            <span class="flag y"></span>
+          </div>
+          <div class="ev">
+            <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15V5a2 2 0 0 0-2-2H9"/><path d="m3 3 18 18"/></svg></div>
+            <div class="bd"><div class="t">设备签收单（8/15）</div><div class="m">JPG · 未标注异议</div></div>
+            <span class="flag y"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

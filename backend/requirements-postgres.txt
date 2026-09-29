@@ -1,0 +1,10 @@
+# 生产 Postgres 依赖（开发用 SQLite 无需安装）
+# 安装：pip install -r requirements.txt -r requirements-postgres.txt
+-r requirements.txt
+
+# Postgres 异步驱动（DATABASE_URL=postgresql+asyncpg://...）
+asyncpg>=0.29.0
+# Alembic / 同步场景驱动（DATABASE_URL_SYNC=postgresql+psycopg2://...）
+psycopg2-binary>=2.9.9
+# pgvector：向量类型与 cosine_distance 算子（RAG 向量召回）
+pgvector>=0.2.5

@@ -1,0 +1,113 @@
+# 律小智告警规则（P0-10 可观测性配套）
+#
+# 设计原则：**每条告警都对应一个具体的用户可感知故障或合规风险**，
+# 不做"指标看起来不太对"这类无法行动（non-actionable）的告警——
+# 这类告警会训练运维忽略告警，比没有告警更危险。
+#
+# 阈值依据：
+#   - P99 延迟 5s：法律问答涉及 LLM 调用，用户对 5s 内的首屏可接受；
+#     超过则大概率会放弃（GENERATE/QA 场景）。
+#   - 5xx 率 5%：低于此值多为单请求偶发；持续高于则说明系统性问题。
+#   - 审计丢失 0 容忍：等保 2.0（三级）要求审计记录完整留存，
+#     丢一条就是合规缺陷，不存在"少量可接受"。
+#   - 队列积压 200：单任务均值数十秒、并发 4，积压 200 意味着等待
+#     超过 10 分钟，用户体感已是"卡死"。
+groups:
+  - name: nlawer-availability
+    rules:
+      - alert: NLawerHighErrorRate
+        expr: |
+          sum(rate(nlaw_http_requests_total{status=~"5.."}[5m]))
+          /
+          sum(rate(nlaw_http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API 5xx 错误率超过 5%"
+          description: "过去 5 分钟 5xx 占比 {{ $value | humanizePercentage }}，用户已可感知失败。"
+
+      - alert: NLawerApiDown
+        expr: up{job="nlawer-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API 实例不可达"
+          description: "Prometheus 连续 2 分钟抓不到 /metrics，实例可能已崩溃或网络隔离。"
+
+  - name: nlawer-latency
+    rules:
+      - alert: NLawerHighP99Latency
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (le, path) (rate(nlaw_http_request_duration_milliseconds_bucket[5m]))
+          ) > 5000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.path }} P99 延迟超过 5s"
+          description: "P99 = {{ $value }}ms。该路径 1% 的请求慢于 5 秒。"
+
+  - name: nlawer-security
+    rules:
+      - alert: NLawerRateLimitSurging
+        expr: sum(rate(nlaw_rate_limit_hits_total[5m])) * 60 > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "限流命中激增（疑似暴力破解或脚本刷量）"
+          description: "过去 5 分钟限流命中 {{ $value }} 次/分钟，请核查来源 IP。"
+
+      - alert: NLawerCsrfRejectionsSpike
+        expr: sum(rate(nlaw_csrf_rejections_total[10m])) * 60 > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CSRF 拒绝激增（疑似跨站攻击或前端令牌逻辑异常）"
+          description: "需同时排查：真实攻击 / 前端 CSRF 令牌未正确回传。"
+
+  - name: nlawer-compliance
+    rules:
+      - alert: NLawerAuditWriteLost
+        expr: increase(nlaw_audit_write_failures_total[5m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "审计日志写入失败（合规事故）"
+          description: |
+            等保 2.0（三级）要求审计记录完整留存，丢失即为合规缺陷。
+            常见根因：数据库锁竞争导致脱附会话重试耗尽（见 core/audit.py）。
+
+      - alert: NLawerModerationBlocksSpiking
+        expr: sum(rate(nlaw_moderation_blocks_total[10m])) * 60 > 20
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "内容安全拦截激增"
+          description: "可能为恶意投放，也可能是词库过严误伤正常业务；需人工复核。"
+
+  - name: nlawer-capacity
+    rules:
+      - alert: NLawerJobQueueBacklog
+        expr: nlaw_job_queue_pending > 200
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "异步任务队列积压超过 200"
+          description: "按并发 4 估算等待已超 10 分钟，用户体感为卡死。考虑扩容副本。"
+
+      - alert: NLawerQuotaExhaustedSurging
+        expr: sum(increase(nlaw_quota_exhausted_total[1h])) > 50
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: "配额耗尽转工单频次异常"
+          description: "可能是套餐定价不合理或存在滥用，建议核对用量分布。"

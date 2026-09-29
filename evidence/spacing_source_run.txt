@@ -1,0 +1,36 @@
+§4.2「间距（4pt 网格）」门禁
+  刻度 11 个值（解析自 design-spec.md:185）· 点名禁止 [5.0, 13.0, 18.0]（:191）· 明文允许 [6.0, 7.0, 8.0]（:190）
+
+── 源码层 S1/S2/S3/S4 ──
+  命名档命中 1762 处（其中离 4pt 网格 265 处 ⇒ S4 只报）
+  任意值命中 15 处（其中 13 处是定位属性 ⇒ S3 只报）
+
+  ✓ 源码层未发现 S1/S2 缺陷
+
+  · 只报不判 267 条（**不是缺陷**，供拍板）：
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:111  `px-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:111  `py-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:165  `px-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:165  `py-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:177  `p-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:183  `gap-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:183  `py-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:185  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:191  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:198  `py-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/_components/TenantScopeBar.tsx:243  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:307  `py-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:314  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:329  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:377  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:390  `p-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:402  `p-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:446  `p-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/audit/page.tsx:479  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/billing/page.tsx:323  `px-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/billing/page.tsx:323  `py-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/billing/page.tsx:408  `mt-0.5` = 2px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/billing/page.tsx:425  `p-3.5` = 14px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/billing/page.tsx:468  `px-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    [S4·只报不判] apps/admin/app/(app)/billing/page.tsx:488  `px-2.5` = 10px 不在 §4.2 的 4pt 刻度上（Tailwind 默认刻度是 **2pt**，半档都来自它）⇒ 规范内部 tension，只报不判
+    …（另有 242 条同类，见 --dump）

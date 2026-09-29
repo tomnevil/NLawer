@@ -1,0 +1,29 @@
+── document.fonts.status: loaded
+── 令牌声明（浏览器解析后）──
+  --font-sans: Inter, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui,
+    -apple-system, "Segoe UI", sans-serif
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", SimSun, Georgia, serif
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace
+── document.fonts.check('16px "<族>"') —— 该族在本机**是否可用** ──
+  ✅ Inter                  True
+  ✅ PingFang SC            True
+  ✅ Microsoft YaHei        True
+  ✅ Hiragino Sans GB       True
+  ✅ Noto Serif SC          True
+  ✅ Source Han Serif SC    True
+  ✅ Songti SC              True
+  ✅ SimSun                 True
+  ✅ Georgia                True
+  ✅ SFMono-Regular         True
+  ✅ Menlo                  True
+  ✅ Consolas               True
+  ✅ Liberation Mono        True
+── CSS.getPlatformFontsForNode —— 浏览器**实际渲染**用的字体 ──
+  var(--font-sans)  探针       -> Microsoft YaHei (glyphs=16, custom=False)
+  var(--font-serif) 探针       -> Noto Serif SC (glyphs=17, custom=False)
+  var(--font-mono)  探针       -> NSimSun (glyphs=9, custom=False) · Consolas (glyphs=7, custom=False)
+  Inter, sans-serif 探针       -> Noto Sans SC (glyphs=12, custom=False)
+── 页面里真实的 font-serif / .legal-text 元素（若本页有）──
+  [class*='font-serif']      -> Noto Serif SC(4)
+  .legal-text                -> （本页无此元素）
+  h1                         -> Noto Serif SC(4)

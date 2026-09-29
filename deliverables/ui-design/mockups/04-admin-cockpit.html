@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>概念图 04 · 运营驾驶舱 — 律小智设计系统 v2「墨与纸」</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--ai-50:#F4F2FD;--ai-200:#D2CAF4;--ai-500:#6E56CF;
+--verified-50:#EDF8F4;--verified-500:#1E8E6E;
+--pending-50:#FDF6E9;--pending-500:#B4791F;
+--danger-50:#FDF0EE;--danger-500:#C0392B;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html,body{margin:0;height:100%}
+body{font-family:var(--font-ui);font-size:14px;line-height:1.6;color:var(--ink-800);background:var(--ink-50);
+-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.app{display:flex;min-height:100vh}
+.sb{width:224px;flex:0 0 224px;background:var(--brand-950);color:#C6D2E4;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.sb-top{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-top .mark{width:32px;height:32px;border-radius:var(--r3);display:grid;place-items:center;flex:0 0 32px;
+background:linear-gradient(150deg,#274C93,#0F2A4A);border:1px solid rgba(198,164,105,.4)}
+.sb-top .mark svg{width:18px;height:18px;stroke:var(--gold-400)}
+.sb-top b{display:block;font-size:14px;font-weight:600;color:#fff}
+.sb-top span{font-size:10.5px;color:#7E97BC;letter-spacing:.06em}
+.nav{flex:1;overflow-y:auto;padding:12px}
+.nav .gt{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5E769B;padding:0 8px 8px;margin-top:14px}
+.nav .gt:first-child{margin-top:0}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r2);color:#AFC0D8;text-decoration:none;
+font-size:13.5px;margin-bottom:1px;position:relative;transition:.15s}
+.nav a svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;flex:0 0 16px}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.on{background:rgba(54,96,176,.32);color:#fff;font-weight:500}
+.nav a.on::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:18px;
+border-radius:0 3px 3px 0;background:var(--gold-400)}
+.nav a .cnt{margin-left:auto;font-size:11px;font-weight:600;padding:0 6px;height:18px;line-height:18px;border-radius:99px;background:rgba(255,255,255,.1);color:#DCE6F4}
+.nav a .cnt.d{background:rgba(192,57,43,.3);color:#F5B7B0}
+.sb-user{border-top:1px solid rgba(255,255,255,.07);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.sb-user .av{width:30px;height:30px;border-radius:50%;flex:0 0 30px;display:grid;place-items:center;
+background:linear-gradient(140deg,#3660B0,#1E3C77);color:#fff;font-size:12px;font-weight:600}
+.sb-user .nm{font-size:12.5px;color:#fff;font-weight:500}
+.sb-user .rl{font-size:11px;color:#7E97BC}
+
+.main{flex:1;min-width:0}
+.top{height:56px;background:rgba(255,255,255,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--ink-200);
+display:flex;align-items:center;gap:14px;padding:0 24px;position:sticky;top:0;z-index:20}
+.crumb{font-size:13px;color:var(--ink-400);display:flex;gap:8px;align-items:center}
+.crumb b{color:var(--ink-800);font-weight:600}
+.range{margin-left:auto;display:flex;gap:2px;padding:3px;background:var(--ink-100);border-radius:var(--r2)}
+.range button{border:0;background:transparent;font:inherit;font-size:12px;color:var(--ink-500);padding:5px 12px;border-radius:var(--r1);cursor:pointer;font-weight:500}
+.range button.on{background:#fff;color:var(--brand-700);box-shadow:var(--s1)}
+.content{padding:24px;max-width:1600px}
+.pg-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;gap:16px}
+.pg-head h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink-900)}
+.pg-head p{margin:5px 0 0;font-size:13px;color:var(--ink-500)}
+.btn{border:0;border-radius:var(--r2);font:inherit;font-size:13px;font-weight:600;padding:0 14px;height:36px;
+display:inline-flex;align-items:center;gap:7px;cursor:pointer;background:#fff;color:var(--ink-700);border:1px solid var(--ink-200)}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* 告警条 */
+.alert{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--r3);background:var(--danger-50);
+border:1px solid #F1C8C1;margin-bottom:18px}
+.alert .ic{width:26px;height:26px;flex:0 0 26px;border-radius:var(--r2);background:var(--danger-500);display:grid;place-items:center}
+.alert .ic svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.2}
+.alert b{font-size:13px;color:var(--danger-500);display:block}
+.alert span{font-size:12px;color:#9C4034}
+.alert .go{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--danger-500);cursor:pointer;white-space:nowrap}
+
+/* KPI 行 */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);padding:14px 15px;box-shadow:var(--s1)}
+.kpi .lb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-500)}
+.kpi .lb svg{width:13px;height:13px;stroke:var(--ink-400);fill:none;stroke-width:1.8}
+.kpi .vl{font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--ink-900);margin:7px 0 4px;line-height:1.1}
+.kpi .vl small{font-size:12px;font-weight:500;color:var(--ink-400);margin-left:2px}
+.kpi .dl{font-size:11.5px;color:var(--ink-400);display:flex;align-items:center;gap:5px}
+.kpi .up{color:var(--verified-500);font-weight:600}
+.kpi .down{color:var(--danger-500);font-weight:600}
+.kpi .spark{display:block;margin-top:8px;width:100%;height:26px}
+
+.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-bottom:16px}
+.panel{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);box-shadow:var(--s1);overflow:hidden}
+.ph{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--ink-100)}
+.ph b{font-size:14px;font-weight:600;color:var(--ink-800)}
+.ph .sub{font-size:11.5px;color:var(--ink-400)}
+.ph .r{margin-left:auto;font-size:12px;color:var(--brand-600);font-weight:500;cursor:pointer}
+.pb{padding:16px}
+
+/* 漏斗 */
+.funnel{display:flex;flex-direction:column;gap:9px}
+.fn{display:grid;grid-template-columns:76px 1fr 88px;align-items:center;gap:12px}
+.fn .n{font-size:12.5px;color:var(--ink-600)}
+.fn .track{height:26px;background:var(--ink-100);border-radius:var(--r1);overflow:hidden;position:relative}
+.fn .fill{height:100%;border-radius:var(--r1);display:flex;align-items:center;padding:0 9px;font-size:11px;font-weight:600;color:#fff}
+.fn .meta{font-size:11.5px;color:var(--ink-400);text-align:right}
+.fn .meta b{color:var(--ink-700);font-weight:600}
+.drop{font-size:10.5px;color:var(--danger-500);padding-left:88px;margin-top:-4px}
+
+/* 折线图 */
+.chart{width:100%;height:170px}
+.chart-x{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-400);padding:0 2px;margin-top:4px}
+.legend2{display:flex;gap:14px;font-size:11.5px;color:var(--ink-500);margin-top:10px;flex-wrap:wrap}
+.legend2 span{display:flex;align-items:center;gap:6px}
+.legend2 i{width:9px;height:9px;border-radius:2px;display:block}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400);
+text-align:left;padding:9px 16px;background:var(--ink-50);border-bottom:1px solid var(--ink-200);white-space:nowrap}
+tbody td{padding:11px 16px;border-bottom:1px solid var(--ink-100);font-size:13px;color:var(--ink-700);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--ink-50)}
+.no{font-family:var(--mono);font-size:12px;color:var(--ink-600)}
+.grade{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:var(--r1);font-size:11.5px;font-weight:700;color:#fff}
+.grade.S{background:var(--gold-500)}
+.grade.A{background:var(--danger-500)}
+.grade.B{background:var(--brand-600)}
+.grade.C{background:var(--ink-400)}
+.tag{font-size:11px;padding:2px 7px;border-radius:var(--r1);border:1px solid;line-height:1.5;white-space:nowrap;font-weight:500}
+.tag.ok{color:var(--verified-500);border-color:#BFE4D7;background:var(--verified-50)}
+.tag.wait{color:var(--pending-500);border-color:#EED9B4;background:var(--pending-50)}
+.tag.ai{color:var(--ai-500);border-color:var(--ai-200);background:var(--ai-50)}
+.tag.n{color:var(--ink-500);border-color:var(--ink-200);background:var(--ink-50)}
+.bar-mini{width:56px;height:4px;border-radius:99px;background:var(--ink-100);display:inline-block;vertical-align:middle;overflow:hidden}
+.bar-mini i{display:block;height:100%;border-radius:99px;background:var(--brand-500)}
+@media (max-width:1400px){.kpis{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sb">
+    <div class="sb-top">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7h6L5 7Zm14 0-3 7h6l-3-7Z"/></svg></div>
+      <div><b>律小智</b><span>运营管理后台</span></div>
+    </div>
+    <nav class="nav">
+      <div class="gt">运营</div>
+      <a class="on" href="#"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>驾驶舱</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>案件管理<span class="cnt">128</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg>派单规则</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></svg>复核队列<span class="cnt d">9</span></a>
+      <div class="gt">质量与合规</div>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>合规扫描</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Z"/></svg>内容审核</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>审计日志</a>
+      <div class="gt">商业</div>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4V3Z"/></svg>计费与工单</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>租户管理</a>
+      <div class="gt">系统</div>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>系统设置</a>
+    </nav>
+    <div class="sb-user">
+      <div class="av">管</div>
+      <div><div class="nm">周文彬</div><div class="rl">平台管理员</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="crumb">运营管理 <span>/</span> <b>驾驶舱</b></div>
+      <div class="range">
+        <button>今日</button><button class="on">近 7 天</button><button>近 30 天</button><button>本季度</button>
+      </div>
+      <button class="btn"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>导出报表</button>
+    </header>
+
+    <div class="content">
+      <div class="pg-head">
+        <div>
+          <h1>运营驾驶舱</h1>
+          <p>案件 · 派单 · 复核 · 计费 · 合规 全链路监控 · 数据更新于 2026-09-16 00:28</p>
+        </div>
+      </div>
+
+      <!-- 告警 -->
+      <div class="alert">
+        <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></div>
+        <div>
+          <b>9 个复核任务已超过 SLA（其中 3 个超期 24 小时以上）</b>
+          <span>复核积压将直接影响案件交付时效，建议立即调整派单策略或增派复核律师。</span>
+        </div>
+        <span class="go">前往处理 →</span>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpis">
+        <div class="kpi">
+          <div class="lb"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>案件总数</div>
+          <div class="vl">128<small>件</small></div>
+          <div class="dl"><span class="up">↑ 12.3%</span> 环比上周</div>
+          <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none">
+            <polyline points="0,20 14,17 28,18 42,13 56,14 70,9 84,10 100,5" fill="none" stroke="#3660B0" stroke-width="1.8" stroke-linejoin="round"/>
+            <polygon points="0,20 14,17 28,18 42,13 56,14 70,9 84,10 100,5 100,26 0,26" fill="rgba(54,96,176,.10)"/>
+          </svg>
+        </div>
+        <div class="kpi">
+          <div class="lb"><svg viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></svg>复核任务</div>
+          <div class="vl" style="color:var(--pending-500)">36<small>件</small></div>
+          <div class="dl"><span class="down">↑ 8 件待处理</span></div>
+          <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none">
+            <polyline points="0,10 14,12 28,8 42,14 56,11 70,16 84,15 100,19" fill="none" stroke="#B4791F" stroke-width="1.8" stroke-linejoin="round"/>
+            <polygon points="0,10 14,12 28,8 42,14 56,11 70,16 84,15 100,19 100,26 0,26" fill="rgba(180,121,31,.10)"/>
+          </svg>
+        </div>
+        <div class="kpi">
+          <div class="lb"><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Z"/></svg>工单数</div>
+          <div class="vl">64<small>单</small></div>
+          <div class="dl"><span class="up">↑ 5.1%</span> 环比上周</div>
+          <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none">
+            <polyline points="0,18 14,16 28,17 42,12 56,13 70,11 84,8 100,7" fill="none" stroke="#3660B0" stroke-width="1.8" stroke-linejoin="round"/>
+            <polygon points="0,18 14,16 28,17 42,12 56,13 70,11 84,8 100,7 100,26 0,26" fill="rgba(54,96,176,.10)"/>
+          </svg>
+        </div>
+        <div class="kpi">
+          <div class="lb"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>工单金额</div>
+          <div class="vl">¥286,400</div>
+          <div class="dl"><span class="up">↑ 14.8%</span> 环比上周</div>
+          <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none">
+            <polyline points="0,21 14,19 28,15 42,16 56,12 70,13 84,9 100,6" fill="none" stroke="#1E8E6E" stroke-width="1.8" stroke-linejoin="round"/>
+            <polygon points="0,21 14,19 28,15 42,16 56,12 70,13 84,9 100,6 100,26 0,26" fill="rgba(30,142,110,.10)"/>
+          </svg>
+        </div>
+        <div class="kpi">
+          <div class="lb"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>合规扫描</div>
+          <div class="vl">52<small>次</small></div>
+          <div class="dl"><span class="down">6 项高风险</span></div>
+          <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none">
+            <polyline points="0,14 14,15 28,12 42,13 56,10 70,12 84,9 100,10" fill="none" stroke="#C0392B" stroke-width="1.8" stroke-linejoin="round"/>
+            <polygon points="0,14 14,15 28,12 42,13 56,10 70,12 84,9 100,10 100,26 0,26" fill="rgba(192,57,43,.08)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <!-- 全链路漏斗 -->
+        <div class="panel">
+          <div class="ph"><b>全链路转化漏斗</b><span class="sub">入口咨询 → 归档 · 近 7 天</span><span class="r">查看明细 →</span></div>
+          <div class="pb">
+            <div class="funnel">
+              <div class="fn"><span class="n">入口咨询</span><div class="track"><div class="fill" style="width:100%;background:linear-gradient(90deg,#1E3C77,#274C93)">486</div></div><span class="meta">100%</span></div>
+              <div class="fn"><span class="n">意图识别</span><div class="track"><div class="fill" style="width:88%;background:linear-gradient(90deg,#274C93,#3660B0)">428</div></div><span class="meta"><b>88.1%</b> · -58</span></div>
+              <div class="fn"><span class="n">派单</span><div class="track"><div class="fill" style="width:64%;background:linear-gradient(90deg,#3660B0,#5A80CB)">312</div></div><span class="meta"><b>64.2%</b> · -116</span></div>
+              <div class="fn"><span class="n">接单</span><div class="track"><div class="fill" style="width:58%;background:linear-gradient(90deg,#5A80CB,#8AA8E0)">284</div></div><span class="meta"><b>58.4%</b> · -28</span></div>
+              <div class="fn"><span class="n">办案</span><div class="track"><div class="fill" style="width:47%;background:linear-gradient(90deg,#6E56CF,#8B7BE0)">228</div></div><span class="meta"><b>46.9%</b> · -56</span></div>
+              <div class="fn"><span class="n">复核</span><div class="track"><div class="fill" style="width:38%;background:linear-gradient(90deg,#B4791F,#D19A45)">186</div></div><span class="meta"><b>38.3%</b> · -42</span></div>
+              <div class="fn"><span class="n">定稿</span><div class="track"><div class="fill" style="width:33%;background:linear-gradient(90deg,#1E8E6E,#3FAE8C)">162</div></div><span class="meta"><b>33.3%</b> · -24</span></div>
+              <div class="fn"><span class="n">归档</span><div class="track"><div class="fill" style="width:30%;background:linear-gradient(90deg,#167055,#1E8E6E)">148</div></div><span class="meta"><b>30.5%</b> · -14</span></div>
+            </div>
+            <div style="margin-top:14px;padding:10px 12px;border-radius:var(--r2);background:var(--pending-50);border:1px solid #EED9B4;font-size:11.5px;color:#8A5A12;line-height:1.7">
+              <b>最大流失点：意图识别 → 派单（-116，流失 24.1%）</b><br />建议核查派单规则匹配率与律师在线时长，该环节环比上周恶化 3.2 个百分点。
+            </div>
+          </div>
+        </div>
+
+        <!-- 质量监控 -->
+        <div class="panel">
+          <div class="ph"><b>质量监控</b><span class="sub">近 7 天趋势</span></div>
+          <div class="pb">
+            <svg class="chart" viewBox="0 0 400 170" preserveAspectRatio="none">
+              <g stroke="#EFF1F3" stroke-width="1">
+                <line x1="0" y1="20" x2="400" y2="20"/><line x1="0" y1="55" x2="400" y2="55"/>
+                <line x1="0" y1="90" x2="400" y2="90"/><line x1="0" y1="125" x2="400" y2="125"/><line x1="0" y1="160" x2="400" y2="160"/>
+              </g>
+              <polyline points="0,52 66,44 133,40 200,36 266,30 333,26 400,22" fill="none" stroke="#1E8E6E" stroke-width="2.2" stroke-linejoin="round"/>
+              <polyline points="0,88 66,80 133,74 200,70 266,62 333,58 400,50" fill="none" stroke="#3660B0" stroke-width="2.2" stroke-linejoin="round"/>
+              <polyline points="0,120 66,116 133,108 200,104 266,96 333,88 400,82" fill="none" stroke="#B08A4F" stroke-width="2.2" stroke-linejoin="round"/>
+              <g fill="#1E8E6E"><circle cx="0" cy="52" r="2.6"/><circle cx="133" cy="40" r="2.6"/><circle cx="266" cy="30" r="2.6"/><circle cx="400" cy="22" r="2.6"/></g>
+              <g fill="#3660B0"><circle cx="0" cy="88" r="2.6"/><circle cx="133" cy="74" r="2.6"/><circle cx="266" cy="62" r="2.6"/><circle cx="400" cy="50" r="2.6"/></g>
+              <g fill="#B08A4F"><circle cx="0" cy="120" r="2.6"/><circle cx="133" cy="108" r="2.6"/><circle cx="266" cy="96" r="2.6"/><circle cx="400" cy="82" r="2.6"/></g>
+            </svg>
+            <div class="chart-x"><span>9/10</span><span>9/11</span><span>9/12</span><span>9/13</span><span>9/14</span><span>9/15</span><span>9/16</span></div>
+            <div class="legend2">
+              <span><i style="background:#1E8E6E"></i>引用溯源完整率 <b style="color:var(--ink-800)">96.4%</b></span>
+              <span><i style="background:#3660B0"></i>复核一次通过率 <b style="color:var(--ink-800)">87.2%</b></span>
+              <span><i style="background:#B08A4F"></i>律师采纳率 <b style="color:var(--ink-800)">78.9%</b></span>
+            </div>
+            <div style="margin-top:14px;border-top:1px solid var(--ink-100);padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div><div style="font-size:11px;color:var(--ink-400)">AI 内容占比</div><div style="font-size:19px;font-weight:600;color:var(--ink-900)">42.6%</div></div>
+              <div><div style="font-size:11px;color:var(--ink-400)">平均复核时长</div><div style="font-size:19px;font-weight:600;color:var(--ink-900)">3.4 <small style="font-size:12px;font-weight:500;color:var(--ink-400)">小时</small></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近案件表 -->
+      <div class="panel">
+        <div class="ph">
+          <b>最近案件</b><span class="sub">按更新时间倒序</span>
+          <span class="r">全部案件 →</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:150px">案件号</th>
+              <th>案由</th>
+              <th style="width:110px">委托人</th>
+              <th style="width:96px">承办律师</th>
+              <th style="width:74px">等级</th>
+              <th style="width:118px">状态</th>
+              <th style="width:110px">进度</th>
+              <th style="width:120px">更新时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="no">NL-2026-0148</td>
+              <td>买卖合同纠纷 · 逾期交货损害赔偿</td>
+              <td>智元科技</td>
+              <td>王振宇</td>
+              <td><span class="grade A">A</span></td>
+              <td><span class="tag wait">复核中</span></td>
+              <td><span class="bar-mini"><i style="width:62%"></i></span> <span style="font-size:11.5px;color:var(--ink-400)">62%</span></td>
+              <td style="font-size:12px;color:var(--ink-400)">12 分钟前</td>
+            </tr>
+            <tr>
+              <td class="no">NL-2026-0147</td>
+              <td>劳动争议 · 加班费与解除赔偿</td>
+              <td>个人客户</td>
+              <td>李思远</td>
+              <td><span class="grade B">B</span></td>
+              <td><span class="tag ok">已归档</span></td>
+              <td><span class="bar-mini"><i style="width:100%;background:var(--verified-500)"></i></span> <span style="font-size:11.5px;color:var(--ink-400)">100%</span></td>
+              <td style="font-size:12px;color:var(--ink-400)">38 分钟前</td>
+            </tr>
+            <tr>
+              <td class="no">NL-2026-0146</td>
+              <td>股权转让协议 · 对赌条款效力争议</td>
+              <td>恒信资本</td>
+              <td>王振宇</td>
+              <td><span class="grade S">S</span></td>
+              <td><span class="tag ai">AI 办案中</span></td>
+              <td><span class="bar-mini"><i style="width:34%"></i></span> <span style="font-size:11.5px;color:var(--ink-400)">34%</span></td>
+              <td style="font-size:12px;color:var(--ink-400)">1 小时前</td>
+            </tr>
+            <tr>
+              <td class="no">NL-2026-0145</td>
+              <td>房屋租赁合同 · 提前解约违约责任</td>
+              <td>个人客户</td>
+              <td>—</td>
+              <td><span class="grade C">C</span></td>
+              <td><span class="tag n">待接单</span></td>
+              <td><span class="bar-mini"><i style="width:8%"></i></span> <span style="font-size:11.5px;color:var(--ink-400)">8%</span></td>
+              <td style="font-size:12px;color:var(--ink-400)">2 小时前</td>
+            </tr>
+            <tr>
+              <td class="no">NL-2026-0144</td>
+              <td>技术服务合同 · 验收标准与付款条件</td>
+              <td>智元科技</td>
+              <td>李思远</td>
+              <td><span class="grade B">B</span></td>
+              <td><span class="tag ok">律师已确认</span></td>
+              <td><span class="bar-mini"><i style="width:88%;background:var(--verified-500)"></i></span> <span style="font-size:11.5px;color:var(--ink-400)">88%</span></td>
+              <td style="font-size:12px;color:var(--ink-400)">3 小时前</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

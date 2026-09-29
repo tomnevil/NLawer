@@ -1,0 +1,18 @@
+§2.4「案件等级」门禁
+
+── 源码层 G2：等级→变体映射的来源数 ──
+  GRADE_TONE 定义点 6 处：
+    · apps/admin/app/(app)/cases/page.tsx:103
+    · apps/im/lib/imApi.ts:137
+    · apps/lawyer/app/(app)/archives/page.tsx:75
+    · apps/lawyer/app/(app)/cases/[id]/page.tsx:232
+    · apps/lawyer/app/(app)/cases/page.tsx:63
+    · apps/lawyer/app/(app)/dispatches/page.tsx:74
+    ✓ 6 份内容一致（尚未漂移）
+    映射体：{'S': 'danger', 'A': 'pending', 'B': 'info', 'C': 'neutral'}
+    Badge.tsx 可用变体：['ai', 'danger', 'default', 'gold', 'info', 'neutral', 'outline', 'pending', 'primary', 'verified']
+    ✗ S 级：映射到 `danger`，§2.4 要求 --gold-500 系（变体 `gold`）
+    ✗ A 级：映射到 `pending`，§2.4 要求 --danger-500 系（变体 `danger`）
+    ✗ B 级：映射到 `info`，§2.4 要求 --brand-600 系（变体 `brand`，不存在） ← 组件层**没有**该变体（缺口）
+    ✗ C 级：映射到 `neutral`，§2.4 要求 --ink-400 系（变体 `ink`，不存在） ← 组件层**没有**该变体（缺口）
+  ✗ [G2] `GRADE_TONE`（等级→变体映射）有 6 份定义，其中 `packages/ui` 里 0 份（应集中到 packages/ui，避免同一语义 N 份来源）

@@ -1,0 +1,316 @@
+# 四端实测存证 · #75 运行时验证（2026-09-26）
+
+## 这是什么
+
+`#75`（33 处内置旋转类收敛进 `<Spinner>` + 新令牌 `--dur-spin` / `--spin-iter`）
+**运行时**的验证日志。源码级判据（`verify_motion_tokens.py` 的 A4 / R7）只能证明
+「源码里没有内置旋转类」，**证不了「reduce 档下真的停住了」**——那是运行时的事。
+
+同一次运行顺带复跑 #72 / #39 的两条判据（#75 改了 25 个文件的渲染，含按钮内图标）。
+
+## 编排
+
+- 临时脚本 `%TEMP%\run_rm_all.py`，**复用** `evidence/run_browser_job.py` 的生命周期函数；
+  **不往 `JOB_SPECS` / `CI_JOB_PROBES` / `ci.yml` 登记任何 job**（新增 `browser-all` 属待拍板）。
+- 隔离库 `%TEMP%\nlawer-rm-all-*\all.db`（`seed_demo.py --reset`），收尾整目录删除；
+  **`backend/demo_8001.db` 全程未被触碰**（指纹 `81dedd16c51f2699f666a45d3b93e7bf` 前后一致）。
+- 四端跑**生产构建产物**（`next start`：web 3000 / lawyer 3001 / admin 3002 / im 3003）+ 后端 8001。
+- `verify_reduced_motion.py` **不传 `--app`** ⇒ 它内部 APPS 表**四端全扫**（含加载态采样，
+  那正是 `spin-soft` 唯一会出现的地方）。
+
+## 结果（EXIT=0）
+
+| 探针 | rc | 耗时 | 关键结论 |
+|---|---|---|---|
+| `verify_reduced_motion.py` | **0** | 197.5s | `测量 24 组（加载态 8 组）；不合格 0 组` —— **reduce 档下四端全为 `reduce=0`** |
+| `verify_breakpoints.py` | **0** | 57.6s | `#39` 保持闭合（`@/cases` 在 1024/1440 均合格） |
+| `verify_adjacent_targets.py` | **0** | 116.3s | `[A1] 并排且 0 < gap < 8px：0 对` —— `#72` 保持闭合（扫描 350 个可点元素，改前 4 对） |
+
+### 这次运行对 #75 的三条具体意义
+
+1. **R1c 升为判红后不红** —— 若 reduce 档下真有内置旋转类在跑，这里必须 rc=1。
+   实测 rc=0 ⇒ **「升为判红」不是纸面动作**（同一批判据在真页面上跑过）。
+2. **加载态 8 组全绿** —— 加载态是 `<Spinner>`（`spin-soft`）+ 骨架屏（`pulse-soft`）**唯一出现**的地方，
+   `reduce=0` 证明两者都被令牌停下（这正是「归零静止」要的效果）。
+   对照：改动前同一门禁在这里抓到 **im 骨架屏 2 组红** + **R1c 4 处只报不判**（lawyer / admin 的 spinner）。
+3. **R2 覆盖新令牌** —— 输出里 `声明值` 一行含 `--dur-spin`=0ms、`--spin-iter`=1
+   ⇒ 新令牌的归零在**运行时**被断言，不只是静态比对。
+
+## 日志编码说明
+
+本文件由 `%TEMP%\rm_all.log` **还原**而来（原日志用 `ascii()` 转义打印，规避
+Windows GBK 终端把含 `✓`/`✗` 的整行变成不可逆乱码）⇒ 本文件里是**原文**。
+编排器自己的输出（服务起停、rc 行）本就是 UTF-8。
+
+```text
+============================================================================
+四端实测 · #75 运行时验证（临时编排 · 不登记任何 job）
+  隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-rm-all-zzkqquao\all.db
+  日志：C:\Users\RS\AppData\Local\Temp\nlawer-rm-all-zzkqquao\logs
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：all.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  OK 后端就绪（readyz 200）
+→ 起前端 next start（web → http://localhost:3000）
+  OK web 就绪（http://localhost:3000）
+→ 起前端 next start（lawyer → http://localhost:3001）
+  OK lawyer 就绪（http://localhost:3001）
+→ 起前端 next start（admin → http://localhost:3002）
+  OK admin 就绪（http://localhost:3002）
+→ 起前端 next start（im → http://localhost:3003）
+  OK im 就绪（http://localhost:3003）
+
+============================================================================
+跑 3 条真判据（四端）
+============================================================================
+
+>>> python evidence/verify_reduced_motion.py 
+  rc=0 · 通过 · 197.5s
+  -- stdout（尾 120 行 · ascii 转义）--
+期望值来源：`frontend\packages\ui\src\tokens.css` 的 `@media (prefers-reduced-motion: reduce)` 块
+  声明值：`--dur-base`=0ms，`--dur-fast`=0ms，`--dur-pulse`=0ms，`--dur-slow`=0ms，`--dur-spin`=0ms，`--pulse-iter`=1，`--spin-iter`=1
+  视口：390、1280；判据 R1a/R1b/R1c/R1d **全部判红**（R1c 已于 2026-09-26 随 #75 拍板由「只报不判」升为判红）
+
+════════ 视口 390（390×844，mobile=True）
+  web/ @390              ✓  no-pref=13 reduce=0
+  web/qa @390            ✓  no-pref=10 reduce=0
+  lawyer/ @390           ✓  no-pref=12 reduce=0
+  lawyer/cases @390      ✓  no-pref=14 reduce=0
+  admin/ @390            ✓  no-pref=8 reduce=0
+  admin/audit @390       ✓  no-pref=8 reduce=0
+  im/ @390               ✓  no-pref=9 reduce=0
+  im/chat @390           ✓  no-pref=9 reduce=0
+════════ 视口 1280（1280×900，mobile=False）
+  web/ @1280             ✓  no-pref=17 reduce=0
+  web/qa @1280           ✓  no-pref=13 reduce=0
+  lawyer/ @1280          ✓  no-pref=15 reduce=0
+  lawyer/cases @1280     ✓  no-pref=21 reduce=0
+  admin/ @1280           ✓  no-pref=18 reduce=0
+  admin/audit @1280      ✓  no-pref=15 reduce=0
+  im/ @1280              ✓  no-pref=5 reduce=0
+  im/chat @1280          ✓  no-pref=8 reduce=0
+
+════════ 加载态采样（`Fetch` 挂起 `/api/*`；取数期间的 spinner / 骨架屏）
+  web/ @390·加载态              ✓  no-pref=15 reduce=0
+  lawyer/ @390·加载态           ✓  no-pref=12 reduce=0
+  admin/ @390·加载态            ✓  no-pref=10 reduce=0
+  im/ @390·加载态               ✓  no-pref=10 reduce=0
+  web/ @1280·加载态             ✓  no-pref=19 reduce=0
+  lawyer/ @1280·加载态          ✓  no-pref=15 reduce=0
+  admin/ @1280·加载态           ✓  no-pref=17 reduce=0
+  im/ @1280·加载态              ✓  no-pref=6 reduce=0
+
+==========================================================================
+测量 24 组（其中**加载态 8 组**）；不合格 0 组。
+`prefers-reduced-motion`：令牌机制（R2）、过渡（R1a）、装饰动画（R1b/R1d）—— 限已测到的组。
+⚠️ 已知边界：不含 WCAG 2.3.3 的主观判定、不含 JS 驱动动画、加载态只在**每端首页**采样、视口只取 390/1280 两档。
+
+>>> python evidence/verify_breakpoints.py 
+  rc=0 · 通过 · 57.6s
+  -- stdout（尾 120 行 · ascii 转义）--
+⚠️ B2b 豁免（**只豁免「左列宽 = 令牌」这一手段**；B2a「≥1024 必须有导航出口」对 im **照样生效**）：
+  · im：im 的桌面形态是**满屏三栏**，不是 AppShell ⇒ 不适用「宽 = 令牌 --sidebar-w」。出处：概念图 06:27 `grid-template-columns:288px 1fr 320px`；§8.1「im 桌面视为放大适配」；决策 12「IM 端形态 ✓ 桌面三栏」。最左栏是**会话列表**（内容），不是 §4.1 的墨色导航侧栏。⚠️ 与 §4.1 / §8.2 表 / 决策 05「统一四端 AppShell」冲突，已登记 §9 待裁决。
+
+
+══ web  http://localhost:3000/   （Tab：有）
+  compact（<640）                ✓   无常驻左列  TabBar可见
+  medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+  expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+  expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+
+══ lawyer  http://localhost:3001/   （Tab：有）
+  compact（<640）                ✓   无常驻左列  TabBar可见
+  medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+  expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+  expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+
+══ admin  http://localhost:3002/   （Tab：无（§8.4））
+  compact（<640）                ✓   无常驻左列  无TabBar
+  medium（640–1023）← 此前无判据      ✓   无常驻左列  无TabBar
+  expanded 起点（=1024，切换点）       ✓   常驻左列=240px  无TabBar
+  expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   常驻左列=240px  无TabBar
+
+══ im  http://localhost:3003/   （Tab：有）
+  compact（<640）                ✓   无常驻左列  TabBar可见
+  medium（640–1023）← 此前无判据      ✓   无常驻左列  TabBar可见
+  expanded 起点（=1024，切换点）       ✓   无常驻左列  无TabBar
+  expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） ✓   无常驻左列  无TabBar
+  expanded 起点（=1024，切换点） @/chat ✓   常驻左列=250px（B2b 已豁免）  无TabBar
+  expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/chat ✓   常驻左列=288px（B2b 已豁免）  无TabBar
+  expanded 起点（=1024，切换点） @/cases ✓   无常驻左列  无TabBar
+  expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/cases ✓   无常驻左列  无TabBar
+  expanded 起点（=1024，切换点） @/me  ✓   无常驻左列  无TabBar
+  expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/me ✓   无常驻左列  无TabBar
+
+==========================================================================
+测量 22 组；不合格 0 组。
+⚠️ 其中 2 组走了 B2b 豁免（**不代表它符合 §8.2 的「240px 导航侧栏」**）：
+  · im/chat@1024: 250px 常驻左列，B2b 未断言（豁免）
+  · im/chat@1440: 288px 常驻左列，B2b 未断言（豁免）
+§8.2 四档断点与 §8.4 导航模式符合规范（限已测到的组）。
+⚠️ 注意：im 的 ≥1024 两档是**按豁免通过**的 —— 见上方豁免理由与 §9 待裁决项。
+
+>>> python evidence/verify_adjacent_targets.py 
+  rc=0 · 通过 · 116.3s
+  -- stdout（尾 120 行 · ascii 转义）--
+§8.3「相邻可点元素间距 ≥ 8px」门禁（渲染级，390×844）
+  出处：design-spec.md:373（§8.3 第 4 条 bullet）· 线 = 8px
+  只做第 4 条：48px 热区归 verify_tap_targets.py；按钮高度归 verify_buttons.py；列表行高归 §8.3 另一条
+
+── 渲染层 A1/A2/A3（E1–E3 已声明的排除；E1 是**成对**判据）──
+  扫描可点元素 350 个（其中处于固定/粘性层 150 个）
+  ── 每页覆盖（可点元素数 / **内容区**可点元素数；内容区 0 = 该页没渲染出来）──
+    web: / 17/9 · /qa 11/3 · /documents 31/23 · /contract-review 13/5 · /compliance 15/7 · /knowledge 13/5 · /billing 13/5
+    lawyer: / 18/9 · /dispatches 18/9 · /cases 22/13 · /reviews 17/8 · /archives 18/9 · /notifications 12/3
+    admin: / 7/4 · /reviews 12/9 · /cases 16/13 · /dispatches 7/4 · /compliance 10/7 · /billing 13/10 · /complaints 8/5 · /audit 7/4
+    im: / 14/10 · /chat 10/6 · /cases 19/15 · /me 9/5
+    "    [E1\xb7\u5ba1\u8ba1] \u56fa\u5b9a\u5c42\u6765\u81ea\uff1a'nav.fixed.inset-x-0.bottom-0' \xd7 81 \xb7 'header.sticky.top-0.z-topbar' \xd7 69"
+  [E1] 按「跨固定/滚动层」排除 2 对（恰好一方 pinned ⇒ 间距随滚动而变，无意义；**同层**照常比较）
+  [A1] 并排且 0 < gap < 8px：0 对 ✓
+  [A2] 上下且 0 < gap < 8px：1 对（**只报不判**：上下堆叠是全宽列表/表单的常态）
+  [A3] gap == 0：67 对（其中同父 3 对）（**只报不判**：多是一个复合控件的内部）
+  [E2] 按「列表行」排除 2 对（全宽 + 上下 + ≤2px ⇒ 归 §8.3「列表行高 ≥ 48px」）
+
+-> 服务已收尾
+-> 临时目录已删：C:\Users\RS\AppData\Local\Temp\nlawer-rm-all-zzkqquao
+
+EXIT=0
+```
+
+## 附：编排脚本源码（可复现口径）
+
+下面这份**不是**仓库里的登记脚本 —— 它是本次运行用的**临时编排**（`%TEMP%\run_rm_all.py`）。
+贴在这里是为了**可复现**：它复用 `evidence/run_browser_job.py` 的生命周期函数，
+**刻意不往 `JOB_SPECS` / `CI_JOB_PROBES` / `ci.yml` 登记任何 job**
+（新增 `browser-all` job 属**待拍板**；登记了就等于绕过拍板）。
+
+⚠️ 放在 `evidence/` 下的 `.py` **必须登记**，否则门禁判据 0 **当场判红**（坑 46）
+⇒ 所以它是**文本**，不是可执行文件。
+
+```python
+# -*- coding: utf-8 -*-
+"""临时四端实测编排 —— **#75 运行时验证**（reduce 档下动效行为）。
+
+**为什么必须跑真判据**：
+  #75 把 33 处内置旋转类收敛进 `<Spinner>`（走新令牌 `--dur-spin` / `--spin-iter`），
+  并把 `verify_reduced_motion.py` 的 **R1c 由「只报不判」升为判红**。
+  源码级判据（`verify_motion_tokens.py` 的 A4 / R7）只能证明「源码里没有内置旋转类」，
+  **证不了「reduce 档下真的停住了」** —— 那是运行时的事，只能真跑。
+  ⇒ 这是「R1c 升级后门禁会不会当场变红」的**唯一**验证手段。
+
+顺带回归：#75 改了 25 个文件的渲染（含按钮内图标），把 #72/#39 的两条判据一并复跑。
+
+⚠️ 本脚本**只在临时目录**读写；库是隔离的 `all.db`，收尾整目录删掉。
+⚠️ **不往 `JOB_SPECS` / `CI_JOB_PROBES` / `ci.yml` 登记任何 job**（新增 `browser-all` 属待拍板）。
+"""
+import contextlib
+import importlib.util
+import pathlib
+import shutil
+import sys
+import tempfile
+
+ROOT = pathlib.Path(r"C:\Users\RS\Documents\trae_projects\NLawer")
+RBJ = ROOT / "evidence" / "run_browser_job.py"
+
+spec = importlib.util.spec_from_file_location("rbj", RBJ)
+rbj = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(rbj)
+
+with contextlib.suppress(Exception):
+    sys.stdout.reconfigure(line_buffering=True)
+
+APPS = ("web", "lawyer", "admin", "im")
+# (探针, 额外参数)。`verify_reduced_motion.py` **不传 `--app`** ⇒ 它内部的 APPS
+# 表会**四端全扫**（含加载态采样 —— 那正是 `spin-soft` 唯一会出现的地方）。
+PROBES = (
+    ("verify_reduced_motion.py", ()),
+    ("verify_breakpoints.py", ()),
+    ("verify_adjacent_targets.py", ()),
+)
+
+tmp_root = pathlib.Path(tempfile.mkdtemp(prefix="nlawer-rm-all-"))
+log_dir = tmp_root / "logs"
+log_dir.mkdir(parents=True, exist_ok=True)
+db_path = tmp_root / "all.db"
+env = rbj._backend_env(db_path, APPS)
+
+print("=" * 76)
+print("四端实测 · #75 运行时验证（临时编排 · 不登记任何 job）")
+print(f"  隔离库：{db_path}")
+print(f"  日志：{log_dir}")
+print("=" * 76)
+
+services = []
+exit_code = 2
+try:
+    missing = [a for a in APPS
+               if not (rbj.FRONTEND / "apps" / a / ".next" / "BUILD_ID").exists()]
+    if missing:
+        print("缺生产构建产物：", missing)
+        raise SystemExit(2)
+
+    if not rbj._seed(db_path, env):
+        print("灌种子失败")
+        raise SystemExit(2)
+
+    be = rbj._start_backend(env, log_dir)
+    services.append(be)
+    if not rbj._wait_http(f"{rbj.API_BASE}/api/health/readyz", rbj.READY_TIMEOUT_SEC, be,
+                          "后端 readyz（真 DB 往返）"):
+        print("后端未就绪")
+        raise SystemExit(2)
+    print("  OK 后端就绪（readyz 200）")
+
+    node = rbj._check_node()
+    for a in APPS:
+        fe = rbj._start_frontend(a, node, log_dir)
+        services.append(fe)
+        if not rbj._wait_http(f"http://localhost:{rbj.APP_PORTS[a]}/", rbj.PAGE_TIMEOUT_SEC, fe,
+                              f"{a} 首页"):
+            print(f"{a} 未就绪")
+            raise SystemExit(2)
+        print(f"  OK {a} 就绪（http://localhost:{rbj.APP_PORTS[a]}）")
+
+    print()
+    print("=" * 76)
+    print(f"跑 {len(PROBES)} 条真判据（四端）")
+    print("=" * 76)
+
+    worst = 0
+    for name, extra in PROBES:
+        rc, sec, out, err = rbj._run_probe(name, extra, env)
+        icon, meaning = rbj._RC_MEANING.get(rc, ("?", f"未知退出码 {rc}"))
+        print(f"\n>>> python evidence/{name} {' '.join(extra)}")
+        print(f"  rc={rc} · {meaning} · {sec:.1f}s")
+        if out.strip():
+            # ⚠️ 用 ascii() 转义打印：本机终端是 GBK，探针 stdout 是 UTF-8，
+            #    直接 print 会把含 ✓/✗ 的**整行**变成不可逆乱码。
+            print("  -- stdout（尾 120 行 · ascii 转义）--")
+            for x in out.strip().splitlines()[-120:]:
+                print("    " + ascii(x))
+        else:
+            print("  -- stdout 为空 --")
+        if err.strip():
+            print("  -- stderr（尾 40 行 · ascii 转义）--")
+            for x in err.strip().splitlines()[-40:]:
+                print("    " + ascii(x))
+        if rc == 1:
+            worst = max(worst, 1)
+        elif rc != 0:
+            worst = max(worst, 2)
+    exit_code = worst
+finally:
+    for s in reversed(services):
+        with contextlib.suppress(Exception):
+            s.stop()
+    print("\n-> 服务已收尾")
+    shutil.rmtree(tmp_root, ignore_errors=True)
+    print(f"-> 临时目录已删：{tmp_root}")
+
+print(f"\nEXIT={exit_code}")
+raise SystemExit(exit_code)
+```

@@ -1,0 +1,31 @@
+§3.2「字号阶梯」门禁
+  从 preset 解析到 17 档，最小 11px
+
+── 源码层 T1/T2/T3/T4 ──
+  任意值字号 `text-[Npx]`：产品 11 处 · 预览页 3 处
+  任意值行高 `leading-[X]`：10 处
+  任意值字号：产品 11 / 预览 3；任意值行高 10
+
+  ✗ 源码层缺陷 6 条，聚为 1 条根因：
+    [T1] `text-[10px]` 低于本项目字号下限 **11px**（§3.2 最小档 `caption` = 11px；§8.5 明文「可降至 11–12px」）
+          @ 6 处：packages/ui/src/components/CitationChip.tsx:39, packages/ui/src/components/CitationPanel.tsx:92, packages/ui/src/components/NotificationCenter.tsx:814, packages/ui/src/components/SegmentedControl.tsx:112, packages/ui/src/components/TabBar.tsx:73, packages/ui/src/components/mobile/CameraCapture.tsx:220
+
+  · 提示 18 条（**不是缺陷**，供拍板）：
+    [T2/T3] apps/admin/app/(app)/page.tsx:444  `text-[11px]` == `caption` 档 ⇒ 建议改用 `text-caption`（令牌自带 lineHeight / fontWeight，任意值只有字号）
+    [T2/T3] packages/ui/src/components/DataTable.tsx:630  `text-[11px]` == `caption` 档 ⇒ 建议改用 `text-caption`（令牌自带 lineHeight / fontWeight，任意值只有字号）
+    [T2/T3] packages/ui/src/components/KpiCard.tsx:88  `text-[28px]` 不在字号阶梯的 17 档里（最接近的是 `h1` = 30px）⇒ 该字号没有对应的行高/字重
+    [T2/T3] packages/ui/src/components/LoginShell.tsx:199  `text-[40px]` 不在字号阶梯的 17 档里（最接近的是 `display` = 38px）⇒ 该字号没有对应的行高/字重
+    [T2/T3] packages/ui/src/components/TabBar.tsx:82  `text-[11px]` == `caption` 档 ⇒ 建议改用 `text-caption`（令牌自带 lineHeight / fontWeight，任意值只有字号）
+    [预览页·不计缺陷] apps/web/app/components-preview/page.tsx:538  `text-[10px]` 低于本项目字号下限 **11px**（§3.2 最小档 `caption` = 11px；§8.5 明文「可降至 11–12px」）
+    [预览页·不计缺陷] apps/web/app/components-preview/page.tsx:556  `text-[10px]` 低于本项目字号下限 **11px**（§3.2 最小档 `caption` = 11px；§8.5 明文「可降至 11–12px」）
+    [预览页·不计缺陷] apps/web/app/components-preview/page.tsx:569  `text-[10px]` 低于本项目字号下限 **11px**（§3.2 最小档 `caption` = 11px；§8.5 明文「可降至 11–12px」）
+    [T4] apps/im/app/(app)/chat/page.tsx:993  `leading-[1.85]` == `body-lg` 档的行高 ⇒ 可改用 `text-body-lg`
+    [T4] apps/im/app/(app)/page.tsx:287  `leading-[1.55]` < 1.65 ⇒ **若用于正文**则违反 §3.3 规则 2；标题 / 角标 / 单行标签用紧行高是合理的 ⇒ 只报不判
+    [T4] apps/lawyer/app/(app)/cases/[id]/page.tsx:1495  `leading-[1.85]` == `body-lg` 档的行高 ⇒ 可改用 `text-body-lg`
+    [T4] apps/lawyer/app/(app)/cases/[id]/page.tsx:1526  `leading-[1.95]` 落在 §3.3 规则 2 的**法条原文区间 1.85–2.0** 内⇒ 合规（阶梯行高集合里没有它，属刻意的长文行高）
+    [T4] apps/web/app/(app)/contract-review/page.tsx:224  `leading-[1.9]` 落在 §3.3 规则 2 的**法条原文区间 1.85–2.0** 内⇒ 合规（阶梯行高集合里没有它，属刻意的长文行高）
+    [T4] apps/web/app/(app)/documents/page.tsx:414  `leading-[1.95]` 落在 §3.3 规则 2 的**法条原文区间 1.85–2.0** 内⇒ 合规（阶梯行高集合里没有它，属刻意的长文行高）
+    [T4] apps/web/app/(app)/qa/page.tsx:503  `leading-[1.85]` == `body-lg` 档的行高 ⇒ 可改用 `text-body-lg`
+    [T4] apps/web/app/(app)/qa/page.tsx:540  `leading-[1.85]` == `body-lg` 档的行高 ⇒ 可改用 `text-body-lg`
+    [T4] apps/web/app/(app)/qa/page.tsx:540  `leading-[1.75]` == `base` 档的行高 ⇒ 可改用 `text-base`
+    [T4] packages/ui/src/components/LoginShell.tsx:199  `leading-[1.25]` == `display` 档的行高 ⇒ 可改用 `text-display`

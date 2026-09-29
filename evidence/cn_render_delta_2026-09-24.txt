@@ -1,0 +1,53 @@
+==================================================================================
+cn() 吞字号 —— 渲染级差值实测存证（2026-09-24）
+探针：evidence/probe_cn_render_delta.py（只测量、恒 exit 0）
+环境：四端 dev server 3000-3003 均在运行；Chromium + CDP（evidence/cdp.py）
+==================================================================================
+
+【四端 body 计算字号（回退基准）】
+  localhost:3000/login  → body 计算字号：16px（行高 27.2px）
+  localhost:3001/login  → body 计算字号：16px（行高 27.2px）
+  localhost:3002/login  → body 计算字号：16px（行高 27.2px）
+  localhost:3003/login  → body 计算字号：16px（行高 27.2px）
+
+【逐档差值（页面：http://localhost:3000/login）】
+
+实际加载：http://localhost:3000/login
+body 计算字号：16px（行高 27.2px）
+
+  档                   今天（类被吞）           修法后（类生效）        字号差                     行高
+  --------------------------------------------------------------------------------
+  caption                16px               11px     **变了**        27.2px → 16.5px
+  label                  16px               12px     **变了**          27.2px → 18px
+  body-sm                16px               13px     **变了**       27.2px → 21.45px
+  body                   16px               14px     **变了**        27.2px → 23.8px
+  body-lg                16px               15px     **变了**       27.2px → 27.75px
+  h4                     16px               16px          —          27.2px → 24px
+  h3                     16px               18px     **变了**        27.2px → 26.1px
+  h2                     16px               22px     **变了**        27.2px → 30.8px
+  h1                     16px               30px     **变了**          27.2px → 39px
+  display                16px               16px          —        27.2px → 27.2px
+
+── 读数须知 ──
+  · 左列是**回退值**（继承上下文决定），右列是**声明值**（设计令牌决定）。
+  · 两者不等 ⇒ 该档被 `cn()` 吞掉的**每一个位置**都会发生这个字号变化。
+  · ⚠️ 真实站点上左列可能**不是** body 的值：祖先若已设字号，回退值就是祖先的值
+    ⇒ 本表给的是**上界/下界式的参考**，不是那 87 处的逐点实测（见脚本头注释）。
+
+【声明值（产物 CSS 里各档的字号/行高）】
+  caption    .text-caption{ font-size: 11px; line-height: 1.5; font-weight: 500; } 
+  label      .text-label{ font-size: 12px; line-height: 1.5; font-weight: 500; } 
+  body-sm    .text-body-sm{ font-size: 13px; line-height: 1.65; } 
+  body       .text-body{ font-size: 14px; line-height: 1.7; } 
+  body-lg    .text-body-lg{ font-size: 15px; line-height: 1.85; } 
+  h4         .text-h4{ font-size: 16px; line-height: 1.5; font-weight: 600; } 
+  h3         .text-h3{ font-size: 18px; line-height: 1.45; font-weight: 600; } 
+  h2         .text-h2{ font-size: 22px; line-height: 1.4; letter-spacing: -0.01em; font-weight: 600; } 
+  h1         .text-h1{ font-size: 30px; line-height: 1.3; letter-spacing: -0.01em; font-weight: 600; } 
+  display    （**产物 CSS 里不存在**）
+
+【⚠️ 方法学副产物：一个静态假值】
+  我最初用 grep -o 'body{[^}]*}' 读「body 基础字号」，得到 14px。
+  实际那是 **`.text-body{`** 的子串匹配（'body{' 是 '.text-body{' 的后缀）。
+  渲染实测的 body 计算字号是 **16px**（Tailwind 默认，四端一致）
+  ⇒ 静态读 CSS 得到的是**假值**；这类「子串假阳性」与 grep 家族的其他坑同族。

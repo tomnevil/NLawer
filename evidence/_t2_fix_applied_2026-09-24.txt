@@ -1,0 +1,80 @@
+── frontend/apps/admin/app/(app)/compliance/page.tsx
+   669: - <p className="mt-1 whitespace-pre-line rounded-r2 border border-line bg-surface-subtle p-3 text-body-sm leading-relaxed text-ink-700">
+   669: + <p className="mt-1 whitespace-pre-line rounded-r2 border border-line bg-surface-subtle p-3 text-body-sm text-ink-700">
+   678: - <p className="mt-1 whitespace-pre-line rounded-r2 bg-surface-subtle p-3 text-body-sm leading-relaxed text-ink-700">
+   678: + <p className="mt-1 whitespace-pre-line rounded-r2 bg-surface-subtle p-3 text-body-sm text-ink-700">
+   720: - <p className="mt-1.5 text-body-sm leading-relaxed text-ink-600">
+   720: + <p className="mt-1.5 text-body-sm text-ink-600">
+   ⇒ 已写盘（3 处）
+── frontend/apps/admin/app/(app)/dispatches/page.tsx
+   488: - <p className="rounded-r2 border border-line bg-surface-subtle p-3 text-body-sm leading-relaxed text-ink-700">
+   488: + <p className="rounded-r2 border border-line bg-surface-subtle p-3 text-body-sm text-ink-700">
+   ⇒ 已写盘（1 处）
+── frontend/apps/im/app/(app)/cases/[id]/page.tsx
+   154: - <p className="mt-3 border-t border-line pt-3 text-body-sm leading-relaxed text-ink-700">
+   154: + <p className="mt-3 border-t border-line pt-3 text-body-sm text-ink-700">
+   164: - <p className="mt-1.5 text-body-sm leading-relaxed text-ink-800">{info.focus}</p>
+   164: + <p className="mt-1.5 text-body-sm text-ink-800">{info.focus}</p>
+   ⇒ 已写盘（2 处）
+── frontend/apps/im/app/(app)/chat/page.tsx
+   877: - "whitespace-pre-wrap rounded-r3 px-3.5 py-2.5 text-body-sm leading-relaxed",
+   877: + "whitespace-pre-wrap rounded-r3 px-3.5 py-2.5 text-body-sm",
+   ⇒ 已写盘（1 处）
+── frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx
+   1389: - <p className="text-body-sm leading-relaxed text-ai-600">
+   1389: + <p className="text-body-sm text-ai-600">
+   1551: - <p className="mt-1 text-body-sm leading-relaxed text-ink-600">{c.holding}</p>
+   1551: + <p className="mt-1 text-body-sm text-ink-600">{c.holding}</p>
+   1572: - <dd className="text-body-sm leading-relaxed text-ink-700">{s.pros || "—"}</dd>
+   1572: + <dd className="text-body-sm text-ink-700">{s.pros || "—"}</dd>
+   1576: - <dd className="text-body-sm leading-relaxed text-ink-700">{s.cons || "—"}</dd>
+   1576: + <dd className="text-body-sm text-ink-700">{s.cons || "—"}</dd>
+   1828: - <p className="mt-1 text-body-sm leading-relaxed text-ink-600">
+   1828: + <p className="mt-1 text-body-sm text-ink-600">
+   2009: - <p className="mt-2 text-body-sm leading-relaxed text-ink-500">
+   2009: + <p className="mt-2 text-body-sm text-ink-500">
+   2027: - <p className="mt-2 text-body-sm leading-relaxed text-ink-500">
+   2027: + <p className="mt-2 text-body-sm text-ink-500">
+   ⇒ 已写盘（7 处）
+── frontend/apps/lawyer/app/(app)/page.tsx
+   240: - <p className="text-body-sm leading-relaxed text-pending-600">
+   240: + <p className="text-body-sm text-pending-600">
+   ⇒ 已写盘（1 处）
+── frontend/apps/web/app/(app)/billing/page.tsx
+   247: - "rounded-r3 border p-3.5 text-body-sm leading-relaxed",
+   247: + "rounded-r3 border p-3.5 text-body-sm",
+   ⇒ 已写盘（1 处）
+── frontend/apps/web/app/(app)/compliance/page.tsx
+   294: - <p className="mt-4 whitespace-pre-line rounded-r2 bg-surface-subtle p-3 text-body-sm leading-relaxed text-ink-700">
+   294: + <p className="mt-4 whitespace-pre-line rounded-r2 bg-surface-subtle p-3 text-body-sm text-ink-700">
+   323: - <p className="mt-1.5 text-body-sm leading-relaxed text-ink-600">
+   323: + <p className="mt-1.5 text-body-sm text-ink-600">
+   ⇒ 已写盘（2 处）
+── frontend/apps/web/app/(app)/contract-review/ResultView.tsx
+   165: - <p className="mt-2 flex items-start gap-1.5 text-body-sm leading-relaxed text-ink-700">
+   165: + <p className="mt-2 flex items-start gap-1.5 text-body-sm text-ink-700">
+   227: - <p className="mt-1 text-body-sm leading-relaxed text-ink-700">{suggestion.direction}</p>
+   227: + <p className="mt-1 text-body-sm text-ink-700">{suggestion.direction}</p>
+   439: - "mt-1 text-body-sm leading-relaxed",
+   439: + "mt-1 text-body-sm",
+   454: - "mt-1 text-body-sm leading-relaxed",
+   454: + "mt-1 text-body-sm",
+   483: - <p className="mt-1.5 whitespace-pre-wrap text-body leading-relaxed text-ink-700">
+   483: + <p className="mt-1.5 whitespace-pre-wrap text-body text-ink-700">
+   581: - <p className="flex items-start gap-1.5 px-1 py-2 text-body-sm leading-relaxed text-pending-600">
+   581: + <p className="flex items-start gap-1.5 px-1 py-2 text-body-sm text-pending-600">
+   731: - <p className="flex items-start gap-2 text-body-sm leading-relaxed text-ink-600">
+   731: + <p className="flex items-start gap-2 text-body-sm text-ink-600">
+   ⇒ 已写盘（7 处）
+── frontend/apps/web/app/(app)/contract-review/page.tsx
+   552: - <p className="mt-2 text-body-sm leading-relaxed text-ink-700">
+   552: + <p className="mt-2 text-body-sm text-ink-700">
+   584: - <p className="flex items-start gap-2 text-body-sm leading-relaxed text-ink-600">
+   584: + <p className="flex items-start gap-2 text-body-sm text-ink-600">
+   ⇒ 已写盘（2 处）
+── frontend/apps/web/app/(app)/documents/page.tsx
+   451: - <p className="mt-1.5 text-body-sm leading-relaxed text-ink-600">
+   451: + <p className="mt-1.5 text-body-sm text-ink-600">
+   ⇒ 已写盘（1 处）
+
+共 28 处（已写盘）

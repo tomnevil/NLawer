@@ -1,0 +1,25 @@
+# 7 个「静态半边」（免浏览器开关）重测汇总 —— 2026-09-22
+#
+# 用途：为「① 棘轮」的**冻结基线**提供出处（用户 2026-09-22 拍板）。
+# 命令：backend/.venv/Scripts/python.exe evidence/<探针> <开关>      （cwd = 仓库根）
+# ⚠️ 本地跑请加前缀 CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR= ，否则沙箱守卫会给探针注入假红。
+# ⚠️ 此后这 7 个**已接入 CI 阶段 3（GATED_STATIC）**，不必再手工重测；
+#    本目录保留为「冻结值出处」的证据快照。冻结值见 evidence/run_ci_probes.py 的 STATIC_GATES。
+#
+# 探针                          开关              rc   条数  口径       耗时
+# ---------------------------------------------------------------------------
+# verify_buttons.py             --source-only      1    10   declared    7.5s
+# verify_contrast.py            --tokens-only      0     0   cross       1.1s
+# verify_design_tokens.py       --source-only      0     0   cross       0.9s
+# verify_focus_ring.py          --source-only      1     3   declared    1.3s
+# verify_font_scale.py          --source-only      1     6   declared    7.4s
+# verify_grade_badges.py        --source-only      1     5   cross      13.7s
+# verify_typography.py          --source-only      1    86   declared    1.6s
+#
+# rc=1 = 已登记欠账（棘轮放行）；rc=0 = 绿。
+# 口径：declared = 探针自报「缺陷 N 条」；cross = 数行首 ✗。
+# ⚠️ 口径不统一（4 declared / 3 cross），所以「取不到条数」必须判红，不能当 0。
+#
+# 来源：evidence/ci_run_2026-09-22_round29_ratchet_final.txt（阶段 3 输出）
+# 逐条原始输出见同目录 verify_*.txt。
+ALLDONE

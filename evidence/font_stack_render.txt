@@ -1,0 +1,68 @@
+§3.1「三套字体栈」门禁
+
+── 源码层 F1/F2 ──
+  字体加载证据：0 条（**全仓 0 个 @font-face / next/font / 字体文件**）
+  · [F2/sans] `--font-sans` 里的 Inter **非系统预装**，但全仓找不到加载证据（0 个 `@font-face` / `next/font` / 字体文件）⇒ §3.1:148「Inter 负责西文与数字」**未实现**
+  ✓ F1 三套栈的族名 / 顺序 / 通用族收尾均合规
+
+── 源码层 F4（**只报不判**）：衬线使用点 18 处（产品 16 · 预览页 2）──
+  按 §3.1:149「**仅**用于法条原文、引用摘录、文书正文」逐条列出。
+  ⚠️ 「无出处注释」是**弱信号**（关键词命中 ≠ 有判据），只用来排序人工复核。
+   [font-serif] apps/im/app/(app)/chat/page.tsx:993  — 有出处注释
+       mono && "font-serif leading-[1.85]"
+   [font-serif] apps/lawyer/app/(app)/cases/[id]/page.tsx:1526  — **无出处注释**
+       <blockquote className="mt-1.5 border-l-[3px] border-gold-400 bg-surface-subtle px-3.5 py-2.5 font-serif text-b
+   [font-serif] apps/web/app/(app)/contract-review/page.tsx:224  — **无出处注释**
+       className={cn(FIELD_CLS, "min-h-[16rem] font-serif leading-[1.9]")}
+   [font-serif] apps/web/app/(app)/contract-review/ResultView.tsx:177  — **无出处注释**
+       <p className="mt-2 line-clamp-3 rounded-r2 bg-surface-subtle px-2.5 py-2 font-serif text-caption leading-relax
+   [legal-text] apps/web/app/(app)/contract-review/ResultView.tsx:212  — 有出处注释
+       <p className="legal-text mt-1 text-ink-700">{basis.citation.content}</p>
+   [legal-text] apps/web/app/(app)/contract-review/ResultView.tsx:222  — **无出处注释**
+       <p className="legal-text mt-1 text-ink-800">{suggestion.adoptable}</p>
+   [legal-text] apps/web/app/(app)/contract-review/ResultView.tsx:539  — **无出处注释**
+       <div className="legal-text scroll-thin max-h-[60vh] overflow-auto whitespace-pre-wrap px-4 py-4 text-ink-800 l
+   [legal-text] apps/web/app/(app)/contract-review/ResultView.tsx:676  — **无出处注释**
+       <div className="legal-text surface-paper scroll-thin max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-r2
+   [font-serif] apps/web/app/(app)/contract-review/ResultView.tsx:705  — **无出处注释**
+       <p className="mt-2 rounded-r2 bg-danger-500/5 px-2.5 py-2 font-serif text-caption leading-relaxed text-ink-600
+   [legal-text] apps/web/app/(app)/contract-review/ResultView.tsx:715  — **无出处注释**
+       <span className="legal-text text-ink-800">
+   [font-serif] apps/web/app/(app)/documents/page.tsx:414  — **无出处注释**
+       <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap px-4 py-4 font-serif text-body leading-[1.95] 
+   [font-serif] apps/web/app/(app)/documents/page.tsx:457  — **无出处注释**
+       <p className="mt-1.5 truncate font-serif text-caption text-ink-400" title={f.clause}>
+   [font-serif] apps/web/app/(app)/qa/page.tsx:503  — **无出处注释**
+       <p className="whitespace-pre-wrap font-serif text-body leading-[1.85] text-ink-700">
+   [font-serif] apps/web/app/(app)/qa/page.tsx:540  — 有出处注释
+       isLegal ? "font-serif leading-[1.85]" : "leading-[1.75]"
+   [legal-text] packages/ui/src/components/CitationPanel.tsx:111  — 有出处注释
+       <blockquote className="legal-text border-l-2 border-line-strong pl-3 text-ink-700">
+   [font-serif] packages/ui/src/components/LoginShell.tsx:199  — **无出处注释**
+       <h1 className="font-serif text-[40px] leading-[1.25] tracking-tight">{appName}</h1>
+  → 其中 **12 处没有出处注释**，建议优先人工裁定：
+      apps/lawyer/app/(app)/cases/[id]/page.tsx:1526  (font-serif)
+      apps/web/app/(app)/contract-review/page.tsx:224  (font-serif)
+      apps/web/app/(app)/contract-review/ResultView.tsx:177  (font-serif)
+      apps/web/app/(app)/contract-review/ResultView.tsx:222  (legal-text)
+      apps/web/app/(app)/contract-review/ResultView.tsx:539  (legal-text)
+      apps/web/app/(app)/contract-review/ResultView.tsx:676  (legal-text)
+      apps/web/app/(app)/contract-review/ResultView.tsx:705  (font-serif)
+      apps/web/app/(app)/contract-review/ResultView.tsx:715  (legal-text)
+      apps/web/app/(app)/documents/page.tsx:414  (font-serif)
+      apps/web/app/(app)/documents/page.tsx:457  (font-serif)
+      apps/web/app/(app)/qa/page.tsx:503  (font-serif)
+      packages/ui/src/components/LoginShell.tsx:199  (font-serif)
+
+── 渲染层 F3（实测实际渲染字体）──
+  document.fonts.status=loaded · 注册的 FontFace 4 个（⚠️ 本轮实测：`__nextjs-*` 系 Next dev 注入，非产品字体）
+  注入探针 3 个
+  ── 仪器选择：对照组（**证明为什么不用 `document.fonts.check`**）──
+    document.fonts.check('16px "ZZZ_NoSuchFont_9f3a"') = True  ⇒ 连**我编的**字体名都报 True ⇒ **该 API 零判别力**，故改用 CSS.getPlatformFontsForNode
+  ── 每探针实际渲染（CSS.getPlatformFontsForNode）──
+    var(--font-sans): Microsoft YaHei(glyphs=15,custom=False)
+    var(--font-serif): Noto Serif SC(glyphs=15,custom=False)
+    var(--font-mono): NSimSun(glyphs=8,custom=False) · Consolas(glyphs=7,custom=False)
+    ✓ [F3a] 衬线 ≠ 无衬线：['Noto Serif SC'] vs ['Microsoft YaHei']
+
+✓ 通过（另有 1 条只报不判，见上）

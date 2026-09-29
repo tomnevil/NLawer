@@ -1,0 +1,181 @@
+# `browser-all` job 首次本机端到端验证（2026-09-26 · 拍板 §11.4-③）
+
+## 这是什么
+
+**接线 `browser-all` job**（`ci.yml` 新增 · 把 `NOT_GATED` 的 **14 条**真判据一次接进 CI）
+之后的**本机端到端验证**。
+
+⚠️ **`ci.yml` 本机无法执行** ⇒ 这是**唯一可做的那种验证**：
+用 `evidence/run_browser_job.py --job browser-all` **按 CI 完全相同的口径**跑一遍
+（四端**生产构建** + 隔离 SQLite + `seed_demo.py --reset` + 真后端 + 逐端轮询就绪）。
+**首次 CI 运行仍是 YAML 侧唯一的端到端验证。**
+
+## 结论
+
+✅ **EXIT=0 · 14/14 通过** —— 「接线」这一步是通的，且**14 条全部为绿**。
+
+⚠️ **条数是 14 而不是 §11.6 写的「绿的 12 条」**：
+§11.6 留的 2 条 rc=1 **都不是「改一行就好」**，各自卡在一条待拍板的设计裁定上；
+用户 2026-09-26「全部按建议」拍板后，**两条都已从产品侧修完并复跑转绿**：
+
+| 探针 | §11.6 当时 | 现在 | 修它的东西 |
+|---|---|---|---|
+| `verify_breakpoints.py` | rc=1（B2a：im ≥1024 无导航出口） | **rc=0**（57.6s） | **#39** |
+| `verify_adjacent_targets.py` | rc=1（`Pagination` 4px 间距，4 对） | **rc=0**（115.8s） | **#72** |
+
+⇒ 与 §11.7 把 `task_center_e2e` 从 rc=2 修成 rc=0 **同一逻辑**：
+**先据实测收窄，再据实测接回。**
+
+## 编排
+
+- 隔离库 `%TEMP%\nlawer-browser-job-brf5f2eg\browser_job.db`（`seed_demo.py --reset`），
+  收尾整目录删除（**全部通过** ⇒ 编排器主动清掉临时目录）。
+- 四端跑**生产构建产物**（`next start`：web 3000 / lawyer 3001 / admin 3002 / im 3003）+ 后端 8001。
+- `probe_args` **全为空**（逐条核过：12 条没有 `--app`；余 3 条的 `--app` 是**单端**参数
+  且**默认四端全跑** ⇒ 本 job 刻意不传）。
+- 后端 `DEBUG=false`（§11.7 ③ 的降噪：`settings.DEBUG` 唯一用途是 SQL echo，会污染 stdout）。
+
+## 结果（EXIT=0）
+
+| 探针 | rc | 耗时 |
+|---|---|---|
+| `verify_ws_msg_type_bypass.py` | **0** | 11.1s |
+| `verify_im_safe_area.py` | **0** | 18.9s |
+| `verify_im_e2e.py` | **0** | 20.9s |
+| `verify_contract_review_gate_e2e.py` | **0** | 31.4s |
+| `verify_mobile_actionbar.py` | **0** | 36.6s |
+| `verify_im_tabs.py` | **0** | 41.5s |
+| `verify_mobile_safe_area.py` | **0** | 64.3s |
+| `verify_tap_targets.py` | **0** | 65.1s |
+| `verify_render_e2e.py` | **0** | 76.4s |
+| `verify_runtime_health.py` | **0** | 121.2s |
+| `verify_mobile_375.py` | **0** | 141.7s |
+| `verify_task_center_e2e.py` | **0** | 59.8s |
+| `verify_adjacent_targets.py` | **0** | 115.8s |
+| `verify_breakpoints.py` | **0** | 57.6s |
+
+**合计 ≈ 861.3s（14.4 min）** —— 与 §11.6 的 823s 同量级（多出的部分主要是两条转绿后
+不再提前失败；每条耗时与 §11.6 **逐条吻合**，说明环境与当时可比）。
+
+## 同轮的两条配套证据
+
+1. **编排器自检**（`--self-test`）✅ —— 含 `[L1]` 隔离库契约与 `[J1]` 登记表一致性。
+2. **运行器阶段 1 自检**（`run_ci_probes.py --self-test`）✅ —— 含 **判据 6 的 H0 阴性对照**。
+   🚨 **H0 当场判红过一次**：新增 job 时忘了同步 `_syn_ok` 合成夹具
+   （`期望 exit=0 实测 exit=1`）⇒ **「加了 job 却漏登记」在阶段 1 就被逮住**，
+   不必等 CI。这正是 H0 那条臂存在的意义（见 `README.md` 坑 74）。
+3. `ruff check evidence/` ✅ `All checks passed!` · `report_spec_coverage.py --self-test` ✅ 20/20。
+
+## ⚠️ 一个必须同时说清的边界
+
+**「有个 job 会跑它」≠「每个 PR 都会跑它」**：`browser-all` 的
+`if: github.event_name != 'pull_request'`（≈22–25 min，含四端构建）⇒ 它**只守主干**。
+⇒ 这 14 条对 **PR 而言依然不跑** —— PR 上仍靠源码级地板
+（`verify_appshell.py` / `verify_im_mobile_nav.py` 这类）兜底，**它们不可省**。
+
+## 日志编码说明
+
+下面这段由 `/tmp/browser_all.log` **原文粘贴**（编排器自己的输出本就是 UTF-8，
+未走 `ascii()` 转义路径 —— 那条路径是给探针 stdout 的 `✓/✗` 用的）。
+
+```text
+✅ 编排器自检通过（`--self-test`，纯函数、不碰服务）—— 各臂分开报：
+  [L1] 隔离库契约（编排器设 `DATABASE_URL` ⇒ 探针 `resolve_live_db()` 认它）
+        期望：解析结果 == 注入的临时库   实测：✓
+  [J1] 登记表一致性（`JOB_SPECS` / `CI_JOB_PROBES` / `JOB_ENTRYPOINTS` /
+        `probe_args` / `apps` 形态 / **同 job 内**端口冲突）
+        期望：零不一致   实测：✓
+  本编排器负责 2 个 job（其余 job 的入口见 `run_ci_probes.JOB_ENTRYPOINTS`）：
+  · [browser-admin] 前端 admin@3002 · 后端 @8001 · 3 条真判据
+      - evidence/verify_reduced_motion.py --app admin
+      - evidence/verify_dark_mode.py --app admin
+      - evidence/verify_admin_413_toast_e2e.py
+  · [browser-all] 前端 web@3000 · lawyer@3001 · admin@3002 · im@3003 · 后端 @8001 · 14 条真判据
+      - evidence/verify_ws_msg_type_bypass.py
+      - evidence/verify_im_safe_area.py
+      - evidence/verify_im_e2e.py
+      - evidence/verify_contract_review_gate_e2e.py
+      - evidence/verify_mobile_actionbar.py
+      - evidence/verify_im_tabs.py
+      - evidence/verify_mobile_safe_area.py
+      - evidence/verify_tap_targets.py
+      - evidence/verify_render_e2e.py
+      - evidence/verify_runtime_health.py
+      - evidence/verify_mobile_375.py
+      - evidence/verify_task_center_e2e.py
+      - evidence/verify_adjacent_targets.py
+      - evidence/verify_breakpoints.py
+  · `CI_JOB_PROBES` 合计 3 个 job / 19 条探针（清单来自 `run_ci_probes.CI_JOB_PROBES`，**不在这里重抄**）
+════════════════════════════════════════════════════════════════════════════
+浏览器 job 编排：browser-all（前端 web@3000、lawyer@3001、admin@3002、im@3003 · 后端 @8001）
+  隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-brf5f2eg\browser_job.db
+  日志：C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-brf5f2eg\logs
+════════════════════════════════════════════════════════════════════════════
+→ 灌种子（seed_demo.py --reset，库：browser_job.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  ✓ 后端就绪（readyz 200）
+→ 起前端 next start（web → http://localhost:3000）
+  ✓ web 就绪（http://localhost:3000/ 200）
+→ 起前端 next start（lawyer → http://localhost:3001）
+  ✓ lawyer 就绪（http://localhost:3001/ 200）
+→ 起前端 next start（admin → http://localhost:3002）
+  ✓ admin 就绪（http://localhost:3002/ 200）
+→ 起前端 next start（im → http://localhost:3003）
+  ✓ im 就绪（http://localhost:3003/ 200）
+
+============================================================================
+跑 14 条真判据（job = browser-all）
+============================================================================
+
+▸ python evidence/verify_ws_msg_type_bypass.py
+  ✅ rc=0 · 通过 · 11.1s
+
+▸ python evidence/verify_im_safe_area.py
+  ✅ rc=0 · 通过 · 18.9s
+
+▸ python evidence/verify_im_e2e.py
+  ✅ rc=0 · 通过 · 20.9s
+
+▸ python evidence/verify_contract_review_gate_e2e.py
+  ✅ rc=0 · 通过 · 31.4s
+
+▸ python evidence/verify_mobile_actionbar.py
+  ✅ rc=0 · 通过 · 36.6s
+
+▸ python evidence/verify_im_tabs.py
+  ✅ rc=0 · 通过 · 41.5s
+
+▸ python evidence/verify_mobile_safe_area.py
+  ✅ rc=0 · 通过 · 64.3s
+
+▸ python evidence/verify_tap_targets.py
+  ✅ rc=0 · 通过 · 65.1s
+
+▸ python evidence/verify_render_e2e.py
+  ✅ rc=0 · 通过 · 76.4s
+
+▸ python evidence/verify_runtime_health.py
+  ✅ rc=0 · 通过 · 121.2s
+
+▸ python evidence/verify_mobile_375.py
+  ✅ rc=0 · 通过 · 141.7s
+
+▸ python evidence/verify_task_center_e2e.py
+  ✅ rc=0 · 通过 · 59.8s
+
+▸ python evidence/verify_adjacent_targets.py
+  ✅ rc=0 · 通过 · 115.8s
+
+▸ python evidence/verify_breakpoints.py
+  ✅ rc=0 · 通过 · 57.6s
+
+────────────────────────────────────────────────────────────────────────────
+汇总：14/14 通过
+
+→ 服务已收尾（全部通过 ⇒ 连临时目录一起清掉）
+
+✅ 浏览器 job 通过：14 条真判据全绿。
+```

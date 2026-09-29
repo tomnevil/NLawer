@@ -1,0 +1,181 @@
+/* ============================================================================
+ * 律小智 UI 组件库 · 共享样式 v2「墨与纸」
+ * ----------------------------------------------------------------------------
+ * 本文件由各 app 的 globals.css 通过 @import 引入。postcss-import 会把它提升到
+ * 文件顶部（即位于 @tailwind utilities 之前），因此凡是需要「覆盖工具类」的
+ * 语义类，一律使用 `html ` 前缀把特异性提到 (0,1,1)，使其不依赖样式表顺序。
+ *
+ * 全部颜色取自 tokens.css 的 CSS 变量，深色模式自动生效，无需任何 !important。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 1. 责任边界三态系统（功能性配色，PRD 强制要求，不可省略）
+ *    规则：任何法律内容必须且只能属于三态之一；颜色不可独立承载语义，
+ *          必须「颜色 + 文字 + 图标」三重编码。
+ * ======================================================================== */
+
+/* 三态类只负责「装饰」（边框 + 底色），内边距由使用方用 Tailwind 的 p-* 控制。
+   刻意不在此设置 padding：本文件位于 @tailwind utilities 之前，
+   而 `html ` 前缀的特异性 (0,1,1) 会压过 `.p-4` (0,1,0)，导致使用方无法覆盖。 */
+
+/* AI 生成：紫色虚线上边框 + 浅紫底 */
+html .provenance-ai,
+html .ai-content {
+  border-top: 2px dashed rgb(var(--ai-500));
+  background-color: rgb(var(--ai-50));
+}
+
+/* 律师已确认：绿色实线左边条 3px + 浅绿底 */
+html .provenance-verified,
+html .lawyer-confirmed {
+  border-left: 3px solid rgb(var(--verified-500));
+  background-color: rgb(var(--verified-50));
+}
+
+/* 待复核 / 风险 / 待同步：琥珀左边条 + 浅琥珀底 */
+html .provenance-pending {
+  border-left: 3px solid rgb(var(--pending-500));
+  background-color: rgb(var(--pending-50));
+}
+
+/* ==========================================================================
+ * 2. 排印工具
+ * ======================================================================== */
+
+/* 法条原文、引用摘录、文书正文：衬线体 + 加大行高 */
+html .legal-text {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.85;
+}
+
+/* 金额、案号、日期、条款号：等宽 + 表格数字对齐 */
+html .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* 中英混排间隙：避免「3件」这类粘连 */
+html .cjk-gap {
+  margin-inline: 0.25em;
+}
+
+/* ==========================================================================
+ * 3. 移动端辅助
+ * ======================================================================== */
+
+/* 触控目标：最小 48 × 48px（优于 WCAG 2.5.5 的 44px） */
+html .tap {
+  min-width: var(--tap);
+  min-height: var(--tap);
+}
+
+/* 图标按钮的不可见热区：图标可只有 20px，热区仍为 48px */
+html .tap-ghost {
+  position: relative;
+}
+html .tap-ghost::after {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  width: var(--tap);
+  height: var(--tap);
+  transform: translate(-50%, -50%);
+}
+
+/* 固定底部元素的安全区内边距 */
+html .safe-bottom {
+  padding-bottom: var(--safe-bottom);
+}
+html .safe-top {
+  padding-top: var(--safe-top);
+}
+html .safe-x {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+/* ==========================================================================
+ * 4. 逃生舱：文书编辑器的「纸感」表面
+ *    深色模式下仍需保持纸白（阅读与打印预览一致性），故不随主题翻转。
+ * ======================================================================== */
+html .surface-paper {
+  background-color: #ffffff;
+  color: #14181d;
+}
+
+/* ==========================================================================
+ * 5. 流式打字光标
+ * ======================================================================== */
+.flow-typing::after {
+  content: "▋";
+  animation: pulse-soft var(--dur-pulse) ease-in-out var(--pulse-iter);
+}
+
+/* ==========================================================================
+ * 6. 滚动条（随主题翻转，避免深色模式出现亮白滚动条）
+ * ======================================================================== */
+html .scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ink-300)) transparent;
+}
+html .scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html .scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+html .scroll-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--ink-300));
+  border-radius: var(--r1);
+}
+html .scroll-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--ink-400));
+}
+
+/* ==========================================================================
+ * 7. 布局辅助：**不参与布局**的装饰
+ * ======================================================================== */
+
+/* 顶部发丝分隔线。
+ *
+ * ## 为什么不用 `border-t`
+ *
+ * `border` 是**盒模型的一部分**：它会把元素的 border-box 撑高 1px。
+ * 而固定条类组件（`MobileActionBar`）在流内放了一个**等高占位**来防止正文被盖住，
+ * 占位高度取的是令牌 `--actionbar-h`（60px）——
+ * 一旦分隔线用 `border`，条的实际高度就变成 61px，占位与条高**差 1px**，
+ * 「等高占位」这条契约静默失效（在零呼吸容器里会真的裁掉正文最后一行）。
+ *
+ * ⇒ 分隔线改用**背景渐变**绘制：看得见，但**一个像素都不占**，
+ * 条的 border-box 高**恒等于** `--actionbar-h`，占位与条高由构造相等。
+ * 用的是令牌 `--border-default`（`tokens.css:125` 的注释就是「首选分隔手段」）。
+ *
+ * ## ⚠️ 为什么不写成 `position: relative` + `::before`
+ *
+ * 本文件顶部的约定是：语义类用 `html ` 前缀把特异性提到 **(0,1,1)**，
+ * 才能压过 Tailwind 的工具类 **(0,1,0)**。但**这把双刃剑反过来也会伤人**——
+ * 若在这里写 `position: relative`，它会**压过 `.fixed`**（同样 (0,1,0)），
+ * 于是 `MobileActionBar` 那条 `fixed inset-x-0` 的固定条会**当场失去固定定位**。
+ * ⇒ 所以本类**只设置 `background-image`**，绝不碰 `position`。
+ *
+ * 附带好处：背景画在**内容之下**，不像定位的 `::before` 那样压在子内容之上，
+ * 因此既没有遮挡风险，也不需要 `pointer-events: none`。
+ *
+ * ## 与 `box-shadow: inset 0 1px 0` 的关系
+ *
+ * 两者等效（都不占盒模型高度）。选背景渐变是因为它**不与任何工具类争属性**：
+ * 分隔线只占 `background-image`，底色仍由使用方的 `bg-*`（`background-color`）决定。
+ *
+ * 见 `deliverables/ui-design/admin-gap-analysis.md` #17。
+ */
+html .hairline-top {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(var(--border-default)) 0,
+    rgb(var(--border-default)) 1px,
+    transparent 1px
+  );
+}

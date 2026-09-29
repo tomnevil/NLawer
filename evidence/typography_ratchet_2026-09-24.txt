@@ -1,0 +1,133 @@
+── 扫描：2447 个 `className` 块，preset 字号档 17 个，产物 `leading-*` 12 个
+── T2 已判对数（正文档 × 行高覆盖）：28
+── 产物 `leading-*` 实测值：
+     leading-4              = 1rem       → 比 13px=1.2308  14px=1.1429
+     leading-5              = 1.25rem    → 比 13px=1.5385  14px=1.4286
+     leading-[1.25]         = 1.25       → 比 13px=1.25  14px=1.25
+     leading-[1.55]         = 1.55       → 比 13px=1.55  14px=1.55
+     leading-[1.75]         = 1.75       → 比 13px=1.75  14px=1.75
+     leading-[1.85]         = 1.85       → 比 13px=1.85  14px=1.85
+     leading-[1.95]         = 1.95       → 比 13px=1.95  14px=1.95
+     leading-[1.9]          = 1.9        → 比 13px=1.9  14px=1.9
+     leading-none           = 1          → 比 13px=1.0  14px=1.0
+     leading-relaxed        = 1.625      → 比 13px=1.625  14px=1.625
+     leading-snug           = 1.375      → 比 13px=1.375  14px=1.375
+     leading-tight          = 1.25       → 比 13px=1.25  14px=1.25
+── preset 字号档：
+     caption    11px
+     label      12px
+     xs         12px
+     body-sm    13px
+     body       14px
+     sm         14px
+     body-lg    15px
+     h4         16px
+     base       16px
+     h3         18px
+     lg         18px
+     xl         20px
+     h2         22px
+     2xl        24px
+     h1         30px
+     3xl        30px
+     display    38px
+[env] web 登录失败 ⇒ 整端跳过
+[env] lawyer 登录失败 ⇒ 整端跳过
+[env] admin 登录失败 ⇒ 整端跳过
+[env] im 登录失败 ⇒ 整端跳过
+
+   [note] [T4] `cjk-gap` 定义在 `styles.css:60-62`；**调用点 0 处**
+   [note] [T4] ⇒ §3.3 规则 3 只有 CSS 钩子、**无任何调用点**（规范声明了 0.25em 间隙，产品没落地）
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/billing/page.tsx:467  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/billing/page.tsx:487  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/compliance/page.tsx:517  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/compliance/page.tsx:537  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/compliance/page.tsx:556  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/admin/app/(app)/compliance/page.tsx:669
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/admin/app/(app)/compliance/page.tsx:678
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/admin/app/(app)/compliance/page.tsx:720
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/dispatches/page.tsx:378  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/dispatches/page.tsx:398  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/admin/app/(app)/dispatches/page.tsx:488
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/reviews/page.tsx:528  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/admin/app/(app)/reviews/page.tsx:548  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/im/app/(app)/cases/[id]/page.tsx:154
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/im/app/(app)/cases/[id]/page.tsx:164
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:436  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-caption` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:540  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:666  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:706  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:771  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:780  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:876  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-h4` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:908  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:990  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/im/app/(app)/chat/page.tsx:1154  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/archives/page.tsx:272  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-h3` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:997  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1087  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-caption` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1288  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1302  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1389
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1551
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1572
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1576
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1828
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:2009
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:2027
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/cases/page.tsx:264  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/dispatches/page.tsx:273  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/notifications/page.tsx:235  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/notifications/page.tsx:251  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/notifications/page.tsx:346  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/notifications/page.tsx:377  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/page.tsx:176  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/lawyer/app/(app)/page.tsx:240
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/lawyer/app/(app)/reviews/page.tsx:295  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/billing/page.tsx:246  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/compliance/page.tsx:236  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/compliance/page.tsx:294
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/compliance/page.tsx:323
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/contract-review/page.tsx:542
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/contract-review/page.tsx:574
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/contract-review/ResultView.tsx:165
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/contract-review/ResultView.tsx:227
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/contract-review/ResultView.tsx:438  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/contract-review/ResultView.tsx:453  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2] 正文档 `text-body` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/contract-review/ResultView.tsx:483
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/contract-review/ResultView.tsx:581
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/contract-review/ResultView.tsx:731
+   ✗ [T2] 正文档 `text-body-sm` 被 `leading-relaxed` 压到 **1.625** < 1.65（`leading-relaxed` = `1.625`）—— frontend/apps/web/app/(app)/documents/page.tsx:451
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/knowledge/page.tsx:200  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/qa/page.tsx:343  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/qa/page.tsx:409  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/qa/page.tsx:538  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-caption` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/apps/web/app/(app)/qa/page.tsx:564  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-caption` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/AppShell.tsx:319  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/AppShell.tsx:540  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/AppSwitcher.tsx:143  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-h4` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/Card.tsx:66  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/Card.tsx:76  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-caption` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/CountBadge.tsx:49  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-label` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/DataTable.tsx:372  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/DataTable.tsx:393  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-label` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/DataTable.tsx:453  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/DataTable.tsx:516  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/DataTable.tsx:628  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-label` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/KpiCard.tsx:77  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/LoginShell.tsx:297  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/LoginShell.tsx:367  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/mobile/CameraCapture.tsx:262  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/mobile/CameraCapture.tsx:280  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/mobile/CollapsePanel.tsx:125  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/NotificationCenter.tsx:261  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/Pagination.tsx:81  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-label` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/Table.tsx:88  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/Table.tsx:116  ⇒ 字号回落继承值，行高按继承字号算
+   ✗ [T2b] `text-body-sm` 被 `cn()` 吞掉（输入有、合并后无）—— frontend/packages/ui/src/components/Timeline.tsx:41  ⇒ 字号回落继承值，行高按继承字号算
+   [env] web 登录失败 ⇒ 整端未测
+   [env] lawyer 登录失败 ⇒ 整端未测
+   [env] admin 登录失败 ⇒ 整端未测
+   [env] im 登录失败 ⇒ 整端未测
+
+── 判对数 源码层 28 + 渲染行高 0 + 渲染字号 0 = 28；缺陷 87 条

@@ -1,0 +1,29 @@
+{
+  "//": "跨包类型检查配置。apps 各自有 tsconfig.json 会被 `pnpm -r typecheck` 覆盖；本文件负责 packages/* 的根级检查，避免每个 package 都建一份重复配置。",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["dom", "dom.iterable", "ES2020"],
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "types": ["node", "react", "react-dom"],
+    "baseUrl": ".",
+    "paths": {
+      "@nlaw/ui": ["packages/ui/src"],
+      "@nlaw/sdk": ["packages/sdk/src"],
+      "@nlaw/types": ["packages/types/src"]
+    }
+  },
+  "include": [
+    "packages/sdk/src/**/*.ts",
+    "packages/types/src/**/*.ts",
+    "packages/ui/src/**/*.ts",
+    "packages/ui/src/**/*.tsx"
+  ]
+}

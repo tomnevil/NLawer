@@ -1,0 +1,8 @@
+  · 规范 §4.3 现读阴影 `--s1` = 0 1px 2px rgba(16,24,40,.06) · `--s2` = 0 4px 12px -2px rgba(16,24,40,.10) · `--s3` = 0 16px 40px -8px rgba(16,24,40,.18)
+  · preset 的 `boxShadow` 段实测 7 个键：brand-glow / brand-md / brand-sm / focus / s1 / s2 / s3
+  · R2 存量**未令牌化**阴影键：brand-sm / brand-md / brand-glow —— 三个都是**硬编码 rgba**（preset 注释说「保留，改为墨蓝色调、降低强度」）⇒ 不在 §4.3 表里，只报
+  · R1 「优先用 1px 边框而非阴影」是**取向声明**（规范原话「阴影轻飘，边框稳定」）⇒ 不可判；只报使用点：`shadow-s2` **7** 处 · `shadow-s3` **9** 处（用得多说明偏离那条取向，由人判断）
+  · R3 归属：**链**归本门禁判；`verify_radius_scale.py` 的 R6 是它的**只报**历史形态 ⇒ 不重复判。**圆角**那半仍归 `verify_radius_scale.py`。
+  · R4 §4.3 的**边框**半：「Card `default` = 1px 边框 + `--s1`」由 `verify_component_refactor.py` **J6** 判 ⇒ 不重复；「优先边框而非阴影」见 R1
+
+✅ §4.3 阴影：**0 欠账**

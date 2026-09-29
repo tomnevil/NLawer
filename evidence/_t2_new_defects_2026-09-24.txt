@@ -1,0 +1,42 @@
+T2 集合：库默认（修前）24 条 / 项目配置（修后）28 条
+判对数：28 → 34
+
+★ 修后才出现（= 此前被 cn() 吞掉而不可见）4 条：
+   frontend/apps/im/app/(app)/chat/page.tsx:876
+   frontend/apps/web/app/(app)/billing/page.tsx:246
+   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:438
+   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:453
+
+修前有、修后没有的 0 条（应为 0；非 0 说明修法改变了判定）：
+
+修后 T2 按端： {'admin': 4, 'im': 3, 'lawyer': 8, 'web': 13}
+
+修后 T2 逐条的 leading 实测比值：
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/admin/app/(app)/compliance/page.tsx:669
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/admin/app/(app)/compliance/page.tsx:678
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/admin/app/(app)/compliance/page.tsx:720
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/admin/app/(app)/dispatches/page.tsx:488
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/im/app/(app)/cases/[id]/page.tsx:154
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/im/app/(app)/cases/[id]/page.tsx:164
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/im/app/(app)/chat/page.tsx:876
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1389
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1551
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1572
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1576
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:1828
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:2009
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/cases/[id]/page.tsx:2027
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/lawyer/app/(app)/page.tsx:240
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/billing/page.tsx:246
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/compliance/page.tsx:294
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/compliance/page.tsx:323
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:165
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:227
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:438
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:453
+   text-body      + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:483
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:581
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/ResultView.tsx:731
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/page.tsx:552
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/contract-review/page.tsx:584
+   text-body-sm   + leading-relaxed      → 1.625   frontend/apps/web/app/(app)/documents/page.tsx:451

@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>概念图 08 · 移动端（客户端）— 律小智设计系统 v2「墨与纸」</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+--ink-50:#F7F8F9;--ink-100:#EFF1F3;--ink-200:#E2E5E9;--ink-300:#CBD1D8;--ink-400:#9AA3AE;
+--ink-500:#6B7480;--ink-600:#4A525C;--ink-700:#343B44;--ink-800:#21262D;--ink-900:#14181D;--ink-950:#0B0E12;
+--brand-50:#EEF3FB;--brand-100:#D9E4F7;--brand-200:#B6C9EE;--brand-300:#8AA8E0;--brand-400:#5A80CB;
+--brand-500:#3660B0;--brand-600:#274C93;--brand-700:#1E3C77;--brand-800:#16305F;--brand-900:#102547;--brand-950:#0A1830;
+--gold-100:#F4EAD6;--gold-400:#C6A469;--gold-500:#B08A4F;--gold-600:#8F6E3C;
+--ai-50:#F4F2FD;--ai-100:#E8E4FA;--ai-200:#D2CAF4;--ai-500:#6E56CF;--ai-600:#5B45B5;
+--verified-50:#EDF8F4;--verified-100:#D6EFE6;--verified-500:#1E8E6E;--verified-600:#167055;
+--pending-50:#FDF6E9;--pending-100:#F8EAD1;--pending-500:#B4791F;--pending-600:#8F5F14;
+--danger-50:#FDF0EE;--danger-500:#C0392B;--danger-600:#9C2C20;
+--s1:0 1px 2px rgba(16,24,40,.06);--s2:0 4px 12px -2px rgba(16,24,40,.10);--s3:0 16px 40px -8px rgba(16,24,40,.18);
+--r1:4px;--r2:6px;--r3:8px;--r4:12px;
+--font-ui:"Inter","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+--font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--tap:48px;
+}
+html,body{margin:0;background:#1A1D21;font-family:var(--font-ui);-webkit-font-smoothing:antialiased}
+.page{padding:40px 0 60px}
+.page-hd{padding:0 48px 32px;color:#fff}
+.page-hd .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-400);font-weight:600;margin-bottom:12px}
+.page-hd h1{margin:0 0 10px;font-size:26px;font-weight:600;letter-spacing:-.01em}
+.page-hd p{margin:0;font-size:13.5px;color:#9AA3AE;max-width:62em;line-height:1.8}
+.page-hd .keys{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.page-hd .keys span{font-size:11.5px;border:1px solid rgba(198,164,105,.45);color:var(--gold-400);border-radius:99px;padding:3px 11px}
+.strip{display:flex;gap:34px;padding:0 48px 30px;overflow-x:auto;align-items:flex-start}
+.slot{flex:0 0 auto;width:375px}
+.slot .cap{margin-top:14px;text-align:center}
+.slot .cap b{display:block;font-size:13px;color:#fff;font-weight:600}
+.slot .cap span{display:block;font-size:11.5px;color:#8B939E;margin-top:3px;line-height:1.6}
+
+/* ============ 手机外壳 ============ */
+.phone{width:375px;height:812px;background:#fff;border-radius:40px;overflow:hidden;position:relative;
+box-shadow:0 0 0 10px #2A2E34,0 0 0 11px #3A3F47,0 30px 70px -20px rgba(0,0,0,.7)}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:26px;background:#2A2E34;
+border-radius:0 0 18px 18px;z-index:60}
+.status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 26px;
+font-size:12.5px;font-weight:600;color:var(--ink-900);position:relative;z-index:50;flex:0 0 44px}
+.status .r{display:flex;gap:5px;align-items:center}
+.status svg{width:15px;height:11px;fill:currentColor}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--ink-50)}
+.screen > .body{flex:1;overflow-y:auto;overflow-x:hidden}
+
+/* AppBar */
+.appbar{flex:0 0 52px;height:52px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#fff;
+border-bottom:1px solid var(--ink-200);position:relative;z-index:20}
+.appbar.plain{border-bottom:0;background:transparent}
+.appbar h1{margin:0;font-size:16px;font-weight:600;color:var(--ink-900);letter-spacing:-.01em}
+.appbar .sub{font-size:11px;color:var(--ink-400);margin-top:1px}
+.appbar .ic{width:var(--tap);height:var(--tap);display:grid;place-items:center;flex:0 0 var(--tap);margin:-8px 0;
+border:0;background:transparent;cursor:pointer}
+.appbar .ic svg{width:20px;height:20px;stroke:var(--ink-700);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.appbar .sp{flex:1}
+
+/* Tab Bar */
+.tabbar{flex:0 0 auto;height:56px;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);
+border-top:1px solid var(--ink-200);padding-bottom:env(safe-area-inset-bottom);position:relative;z-index:20}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+text-decoration:none;color:var(--ink-400);font-size:10.5px;font-weight:500;min-height:var(--tap)}
+.tabbar a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a.on{color:var(--brand-600);font-weight:600}
+.tabbar a .dot{position:absolute;top:8px;margin-left:16px;width:7px;height:7px;border-radius:50%;background:var(--danger-500);border:1.5px solid #fff}
+.homebar{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:99px;background:var(--ink-800);opacity:.25;z-index:70}
+
+/* 通用 */
+.pad{padding:0 16px}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:var(--r1);
+border:1px solid;font-weight:500;line-height:1.7;white-space:nowrap}
+.tag.ai{color:var(--ai-600);border-color:var(--ai-200);background:var(--ai-50)}
+.tag.ok{color:var(--verified-600);border-color:#BFE4D7;background:var(--verified-50)}
+.tag.wait{color:var(--pending-600);border-color:#EED9B4;background:var(--pending-50)}
+.tag.risk{color:var(--danger-600);border-color:#F1C8C1;background:var(--danger-50)}
+.tag.n{color:var(--ink-500);border-color:var(--ink-200);background:var(--ink-50)}
+.card{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r4);box-shadow:var(--s1)}
+.mono{font-family:var(--mono)}
+
+/* ---- 1 登录 ---- */
+.login{background:radial-gradient(130% 70% at 0% 0%,#16305F 0%,#102547 45%,#0A1830 100%);color:#fff;
+flex:1;display:flex;flex-direction:column;padding:0 24px 28px}
+.login .brand{display:flex;align-items:center;gap:11px;padding:26px 0 0}
+.login .mark{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+background:linear-gradient(150deg,#274C93,#0F2A4A);border:1px solid rgba(198,164,105,.45)}
+.login .mark svg{width:21px;height:21px;stroke:var(--gold-400);fill:none;stroke-width:1.7}
+.login .brand b{font-size:16px;font-weight:600;display:block}
+.login .brand span{font-size:10px;color:#7E97BC;letter-spacing:.14em}
+.login h1{font-size:26px;line-height:1.35;font-weight:600;margin:44px 0 10px;letter-spacing:-.01em}
+.login h1 em{font-style:normal;color:var(--gold-400)}
+.login p.lead{margin:0 0 30px;font-size:13px;line-height:1.8;color:#A9BEDD}
+.sheet{background:#fff;border-radius:20px 20px 0 0;margin:auto -24px -28px;padding:22px 24px 24px;color:var(--ink-800);
+box-shadow:0 -12px 40px rgba(0,0,0,.3)}
+.seg{display:flex;gap:2px;padding:3px;background:var(--ink-100);border-radius:var(--r3);margin-bottom:18px}
+.seg button{flex:1;border:0;background:transparent;padding:8px 0;font:inherit;font-size:12.5px;font-weight:500;
+color:var(--ink-500);border-radius:var(--r2);cursor:pointer}
+.seg button.on{background:#fff;color:var(--brand-700);box-shadow:var(--s1)}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:12.5px;font-weight:500;color:var(--ink-700);margin-bottom:6px}
+.inp{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);
+padding:0 13px;height:var(--tap)}
+.inp svg{width:17px;height:17px;stroke:var(--ink-400);fill:none;stroke-width:1.8;flex:0 0 17px}
+.inp input{flex:1;border:0;outline:0;font:inherit;font-size:15px;background:transparent;color:var(--ink-900)}
+.btn{width:100%;height:var(--tap);border:0;border-radius:var(--r3);background:var(--brand-600);color:#fff;
+font:inherit;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+.btn.gho{background:var(--ink-50);color:var(--ink-700);border:1px solid var(--ink-200)}
+.btn.wx{background:#07C160}
+.foot-note{text-align:center;font-size:11px;color:var(--ink-400);line-height:1.7;margin-top:16px}
+.agree{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:var(--ink-500);margin:4px 0 16px;line-height:1.6}
+.agree i{width:16px;height:16px;flex:0 0 16px;border-radius:4px;background:var(--brand-600);display:grid;place-items:center;margin-top:1px}
+.agree i::after{content:"";width:7px;height:4px;border-left:1.8px solid #fff;border-bottom:1.8px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+
+/* ---- 2 首页 ---- */
+.hero-card{margin:12px 16px 0;padding:18px;border-radius:var(--r4);color:#fff;
+background:radial-gradient(120% 120% at 100% 0%,#274C93 0%,#1E3C77 50%,#102547 100%);box-shadow:var(--s2)}
+.hero-card .t{font-size:12px;color:#B6C9EE}
+.hero-card h2{margin:6px 0 0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+.hero-card .row{display:flex;gap:20px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)}
+.hero-card .row div b{display:block;font-size:19px;font-weight:600}
+.hero-card .row div span{font-size:10.5px;color:#B6C9EE}
+.ask{margin:14px 16px 0;background:#fff;border:1px solid var(--brand-200);border-radius:var(--r4);padding:14px 16px;
+display:flex;align-items:center;gap:12px;box-shadow:var(--s1)}
+.ask .ic{width:38px;height:38px;flex:0 0 38px;border-radius:11px;background:linear-gradient(140deg,#6E56CF,#5B45B5);display:grid;place-items:center}
+.ask .ic svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2}
+.ask .t{font-size:14px;font-weight:600;color:var(--ink-800)}
+.ask .d{font-size:11.5px;color:var(--ink-400);margin-top:2px}
+.sec-hd{display:flex;align-items:center;padding:22px 16px 10px}
+.sec-hd b{font-size:14.5px;font-weight:600;color:var(--ink-900)}
+.sec-hd .n{font-size:11.5px;color:var(--ink-400);margin-left:8px}
+.sec-hd .r{margin-left:auto;font-size:12.5px;color:var(--brand-600);font-weight:500}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.qgrid .qi{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);padding:13px;box-shadow:var(--s1)}
+.qgrid .qi .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--brand-50);border:1px solid var(--brand-100);margin-bottom:9px}
+.qgrid .qi .ic svg{width:16px;height:16px;stroke:var(--brand-600);fill:none;stroke-width:1.9}
+.qgrid .qi .t{font-size:13px;font-weight:600;color:var(--ink-800)}
+.qgrid .qi .d{font-size:11px;color:var(--ink-400);margin-top:3px;line-height:1.55}
+.list{margin:0 16px;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r4);overflow:hidden;box-shadow:var(--s1)}
+.li{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--ink-100);min-height:var(--tap)}
+.li:last-child{border-bottom:0}
+.li .bd{flex:1;min-width:0}
+.li .t{font-size:13.5px;font-weight:500;color:var(--ink-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .m{font-size:11px;color:var(--ink-400);margin-top:3px;display:flex;gap:8px;align-items:center}
+.li .go{width:16px;height:16px;stroke:var(--ink-300);fill:none;stroke-width:2.2;flex:0 0 16px}
+.li .pr{width:3px;height:34px;border-radius:2px;flex:0 0 3px;background:var(--ink-300)}
+.li .pr.hi{background:var(--danger-500)}.li .pr.md{background:var(--pending-500)}.li .pr.lo{background:var(--brand-300)}
+
+/* ---- 3 IM ---- */
+.imhd{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:6px 12px 12px;background:#fff;border-bottom:1px solid var(--ink-200)}
+.imhd .av{width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:linear-gradient(140deg,#6E56CF,#5B45B5);display:grid;place-items:center}
+.imhd .av svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:1.9}
+.imhd b{font-size:14px;font-weight:600;color:var(--ink-900);display:block}
+.imhd span{font-size:11px;color:var(--verified-500);display:flex;align-items:center;gap:4px}
+.imhd span::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--verified-500)}
+.ims{flex:1;overflow-y:auto;padding:16px 14px 8px;background:var(--ink-50)}
+.mrow{display:flex;gap:8px;margin-bottom:14px;max-width:88%}
+.mrow.me{margin-left:auto;flex-direction:row-reverse}
+.mav{width:28px;height:28px;flex:0 0 28px;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:600}
+.mav.a{background:linear-gradient(140deg,#6E56CF,#5B45B5);color:#fff}
+.mav.m{background:var(--ink-200);color:var(--ink-600)}
+.mbub{background:#fff;border:1px solid var(--ink-200);border-radius:12px 12px 12px 4px;padding:11px 13px;
+font-size:13.5px;line-height:1.75;color:var(--ink-700);box-shadow:var(--s1)}
+.mrow.me .mbub{background:var(--brand-600);border-color:var(--brand-600);color:#fff;border-radius:12px 12px 4px 12px}
+.mbub em{font-style:normal;background:var(--gold-100);padding:1px 3px;border-radius:3px}
+.mcard{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);box-shadow:var(--s1);margin-top:8px;overflow:hidden}
+.mcard .h{display:flex;align-items:center;gap:7px;padding:10px 12px;background:var(--ink-50);border-bottom:1px solid var(--ink-100)}
+.mcard .h b{font-size:12.5px;font-weight:600;color:var(--ink-800)}
+.mcard .h .r{margin-left:auto}
+.mcard .b{padding:12px}
+.gbox{display:flex;align-items:center;gap:11px}
+.grade{width:36px;height:36px;flex:0 0 36px;border-radius:10px;display:grid;place-items:center;font-size:16px;
+font-weight:700;color:#fff;background:var(--danger-500)}
+.gbox .t{font-size:13px;font-weight:600;color:var(--ink-800)}
+.gbox .d{font-size:11px;color:var(--ink-400);margin-top:2px;line-height:1.5}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--ink-100);margin-top:11px;padding-top:11px}
+.metrics div{font-size:11px;color:var(--ink-400)}
+.metrics b{display:block;font-size:12.5px;color:var(--ink-800);font-weight:600;margin-top:2px}
+.mcard .ft{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--ink-100);background:var(--ink-50)}
+.mcard .ft .btn{height:40px;font-size:13px;flex:1}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px 36px}
+.chip{border:1px solid var(--brand-200);background:#fff;color:var(--brand-700);border-radius:99px;padding:9px 14px;
+font-size:12.5px;cursor:pointer;font-weight:500;min-height:36px;display:inline-flex;align-items:center}
+.imbottom{flex:0 0 auto;background:#fff;border-top:1px solid var(--ink-200);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.imbottom .bar{display:flex;align-items:center;gap:8px}
+.imbottom .ipt{flex:1;height:42px;border-radius:21px;background:var(--ink-50);border:1px solid var(--ink-200);
+display:flex;align-items:center;padding:0 14px;font-size:13.5px;color:var(--ink-400)}
+.imbottom .send{width:42px;height:42px;flex:0 0 42px;border-radius:50%;background:var(--brand-600);display:grid;place-items:center;border:0}
+.imbottom .send svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2}
+.imbottom .tools{display:flex;gap:4px;margin-top:8px}
+.imbottom .tools button{height:34px;padding:0 12px;border-radius:var(--r2);border:1px solid var(--ink-200);background:#fff;
+font:inherit;font-size:12px;color:var(--ink-600);display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.imbottom .tools svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.9}
+
+/* ---- 4 问答结果 ---- */
+.qhead{padding:14px 16px 12px;background:#fff;border-bottom:1px solid var(--ink-200)}
+.qhead .q{font-size:14.5px;font-weight:600;color:var(--ink-900);line-height:1.55}
+.qhead .m{font-size:11px;color:var(--ink-400);margin-top:6px;display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.legend{display:flex;gap:12px;padding:9px 16px;background:var(--ink-50);border-bottom:1px solid var(--ink-200);font-size:10.5px;color:var(--ink-500)}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:12px;height:3px;border-radius:2px}
+.legend i.ai{background:repeating-linear-gradient(90deg,var(--ai-500) 0 3px,transparent 3px 6px)}
+.legend i.ok{background:var(--verified-500)}.legend i.wa{background:var(--pending-500)}
+.ans{margin:12px 16px 0;background:#fff;border:1px solid var(--ai-200);border-radius:var(--r4);overflow:hidden;box-shadow:var(--s1)}
+.ans .h{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--ai-50);border-bottom:1px dashed var(--ai-200)}
+.ans .h .ic{width:20px;height:20px;border-radius:6px;background:linear-gradient(140deg,#6E56CF,#5B45B5);display:grid;place-items:center}
+.ans .h .ic svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
+.ans .h b{font-size:12px;font-weight:600;color:var(--ai-600)}
+.s4{padding:13px 14px;border-bottom:1px solid var(--ink-100);display:flex;gap:11px}
+.s4:last-child{border-bottom:0}
+.s4 .ix{width:20px;height:20px;flex:0 0 20px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:600;
+background:var(--ink-100);color:var(--ink-600);margin-top:1px}
+.s4.c .ix{background:var(--brand-600);color:#fff}
+.s4.a .ix{background:var(--verified-500);color:#fff}
+.s4.r .ix{background:var(--pending-500);color:#fff}
+.s4.r{background:var(--pending-50)}
+.s4 .lb{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400);margin-bottom:4px}
+.s4 .tx{font-size:13.5px;line-height:1.8;color:var(--ink-700)}
+.s4.r .tx{color:#8A5A12}
+.s4 .tx em{font-style:normal;background:var(--gold-100);padding:1px 3px;border-radius:3px}
+.ref{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;margin:0 2px;
+border-radius:4px;background:var(--brand-50);border:1px solid var(--brand-200);color:var(--brand-700);font-size:10.5px;
+font-weight:600;vertical-align:1px}
+.ansft{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--ink-50);border-top:1px solid var(--ink-100);
+font-size:11px;color:var(--ink-500);flex-wrap:wrap}
+.pill{border:1px solid var(--ink-200);background:#fff;border-radius:99px;padding:8px 14px;font-size:12px;color:var(--ink-600);
+font-weight:500;display:inline-flex;align-items:center;gap:5px;min-height:36px}
+.pill.pri{background:var(--verified-500);border-color:var(--verified-500);color:#fff}
+.pill svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.cites{margin:12px 16px 0}
+.cites .h{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400);margin-bottom:9px;
+display:flex;align-items:center;gap:7px}
+.cite{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r3);padding:13px;margin-bottom:10px;box-shadow:var(--s1)}
+.cite .r1{display:flex;gap:9px;align-items:flex-start}
+.cite .n{width:19px;height:19px;flex:0 0 19px;border-radius:5px;background:var(--brand-600);color:#fff;font-size:10.5px;
+font-weight:600;display:grid;place-items:center;margin-top:1px}
+.cite .ti{font-size:13px;font-weight:600;color:var(--ink-800);line-height:1.5}
+.cite .mt{font-size:10.5px;color:var(--ink-400);margin-top:4px;display:flex;gap:9px;flex-wrap:wrap}
+.cite .quote{margin-top:10px;font-family:var(--font-serif);font-size:12.5px;line-height:1.95;color:var(--ink-700);
+border-left:3px solid var(--gold-400);background:var(--ink-50);padding:10px 12px;border-radius:0 6px 6px 0}
+.cite .quote mark{background:var(--gold-100);box-shadow:inset 0 -1px 0 var(--gold-500);color:var(--ink-900)}
+
+/* ---- 5 案件进度 ---- */
+.tl{padding:16px}
+.tl .it{display:flex;gap:12px;padding-bottom:18px;position:relative}
+.tl .it:last-child{padding-bottom:0}
+.tl .it::before{content:"";position:absolute;left:8px;top:22px;bottom:0;width:1.5px;background:var(--ink-200)}
+.tl .it:last-child::before{display:none}
+.tl .it.done::before{background:var(--verified-500)}
+.tl .d{width:17px;height:17px;flex:0 0 17px;border-radius:50%;border:2px solid var(--ink-300);background:#fff;z-index:1;
+display:grid;place-items:center;margin-top:2px}
+.tl .it.done .d{background:var(--verified-500);border-color:var(--verified-500)}
+.tl .it.done .d::after{content:"";width:7px;height:4px;border-left:1.8px solid #fff;border-bottom:1.8px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+.tl .it.cur .d{border-color:var(--pending-500);box-shadow:0 0 0 4px rgba(180,121,31,.16)}
+.tl .it.cur .d::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--pending-500)}
+.tl .t{font-size:13.5px;font-weight:600;color:var(--ink-800)}
+.tl .m{font-size:11.5px;color:var(--ink-400);margin-top:3px;line-height:1.65}
+.lawyer-row{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.lawyer-row .av{width:46px;height:46px;flex:0 0 46px;border-radius:13px;background:linear-gradient(140deg,#3660B0,#1E3C77);
+color:#fff;display:grid;place-items:center;font-size:17px;font-weight:600}
+.lawyer-row b{font-size:14px;color:var(--ink-800);display:block}
+.lawyer-row span{font-size:11.5px;color:var(--ink-400);display:block;margin-top:3px}
+.callbtn{width:var(--tap);height:var(--tap);flex:0 0 var(--tap);border-radius:var(--r3);background:var(--verified-50);
+border:1px solid #BFE4D7;display:grid;place-items:center}
+.callbtn svg{width:20px;height:20px;stroke:var(--verified-600);fill:none;stroke-width:1.9}
+.fee{display:flex;justify-content:space-between;padding:9px 16px;font-size:13px;color:var(--ink-500)}
+.fee b{color:var(--ink-800);font-weight:600}
+
+/* ---- 6 我的 ---- */
+.me-hd{padding:20px 16px 18px;background:radial-gradient(120% 140% at 100% 0%,#274C93,#102547);color:#fff}
+.me-hd .row{display:flex;align-items:center;gap:14px}
+.me-hd .av{width:58px;height:58px;flex:0 0 58px;border-radius:17px;background:rgba(255,255,255,.14);
+border:1px solid rgba(255,255,255,.22);display:grid;place-items:center;font-size:22px;font-weight:600}
+.me-hd b{font-size:18px;font-weight:600;display:block}
+.me-hd span{font-size:12px;color:#B6C9EE;display:block;margin-top:4px}
+.me-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.12);margin-top:18px;border-radius:var(--r3);overflow:hidden}
+.me-stats div{background:rgba(255,255,255,.06);padding:11px 8px;text-align:center}
+.me-stats b{display:block;font-size:17px;font-weight:600}
+.me-stats span{font-size:10.5px;color:#B6C9EE;display:block;margin-top:2px}
+.group{margin:14px 16px 0;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r4);overflow:hidden;box-shadow:var(--s1)}
+.group .g-hd{padding:11px 16px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+color:var(--ink-400);background:var(--ink-50);border-bottom:1px solid var(--ink-100)}
+.grow{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--ink-100);min-height:var(--tap)}
+.grow:last-child{border-bottom:0}
+.grow .gi{width:32px;height:32px;flex:0 0 32px;border-radius:9px;display:grid;place-items:center;background:var(--brand-50)}
+.grow .gi svg{width:16px;height:16px;stroke:var(--brand-600);fill:none;stroke-width:1.9}
+.grow .t{flex:1;font-size:14px;color:var(--ink-800)}
+.grow .v{font-size:13px;color:var(--ink-400)}
+.grow .go{width:16px;height:16px;stroke:var(--ink-300);fill:none;stroke-width:2.2}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-hd">
+    <div class="eyebrow">Mobile First · Client Side</div>
+    <h1>概念图 08 · 移动端（客户 / 企业法务）</h1>
+    <p>客户咨询、企业法务在会议中查阅条款——这些场景绝大多数发生在手机上。本稿给出移动端的完整形态：
+      底部 4 项 Tab 导航、48px 触控目标、底部 Sheet 替代模态、卡片列表替代宽表格。
+      所有页面同时适配 375–430px 宽度与刘海屏安全区。</p>
+    <div class="keys">
+      <span>触控目标 ≥ 48px</span><span>底部 Tab Bar 4 项</span><span>Sheet 替代 Modal</span>
+      <span>卡片列表替代表格</span><span>安全区适配</span><span>拇指热区优先</span>
+    </div>
+  </div>
+
+  <div class="strip">
+
+    <!-- ============ 1 登录 ============ -->
+    <div class="slot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="status" style="color:#fff"><span>9:41</span><span class="r">
+            <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12"><path d="M8 10.5 1 4a9.5 9.5 0 0 1 14 0L8 10.5Z"/></svg>
+            <svg viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="1.8"/><rect x="23" y="4" width="2.5" height="4" rx="1.2" opacity=".5"/></svg>
+          </span></div>
+          <div class="login">
+            <div class="brand">
+              <div class="mark"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7h6L5 7Zm14 0-3 7h6l-3-7Z"/></svg></div>
+              <div><b>律小智</b><span>NLAWER</span></div>
+            </div>
+            <h1>法律问题<br /><em>随时问，有据可查</em>。</h1>
+            <p class="lead">四段式结构化回答 · 法条级引用溯源 · 复杂纠纷一键委托律师</p>
+
+            <div class="sheet">
+              <div class="seg">
+                <button class="on">企业 / 个人</button>
+                <button>律师</button>
+              </div>
+              <div class="fld">
+                <label>手机号</label>
+                <div class="inp">
+                  <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>
+                  <input value="138 8888 6666" readonly />
+                </div>
+              </div>
+              <div class="fld">
+                <label>验证码</label>
+                <div class="inp">
+                  <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                  <input value="8 2 4 1 _ _" readonly />
+                  <span style="font-size:13px;color:var(--brand-600);font-weight:600;white-space:nowrap">重新获取 52s</span>
+                </div>
+              </div>
+              <div class="agree"><i></i><span>我已阅读并同意《服务条款》与《隐私政策》，知悉 AI 生成内容不构成正式法律意见</span></div>
+              <button class="btn">登录 / 注册</button>
+              <div style="margin-top:12px"><button class="btn gho" style="height:44px;font-size:14px">使用微信一键登录</button></div>
+              <p class="foot-note">未注册手机号将自动创建账号</p>
+            </div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="cap"><b>1. 登录 / 注册</b><span>手机号 + 验证码为主路径，微信一键登录为辅<br />底部 Sheet 上浮，替代传统居中弹窗</span></div>
+    </div>
+
+    <!-- ============ 2 首页 ============ -->
+    <div class="slot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="status"><span>9:41</span><span class="r">
+            <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12"><path d="M8 10.5 1 4a9.5 9.5 0 0 1 14 0L8 10.5Z"/></svg>
+            <svg viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="1.8"/><rect x="23" y="4" width="2.5" height="4" rx="1.2" opacity=".5"/></svg>
+          </span></div>
+          <div class="appbar" style="background:var(--ink-50);border-bottom:0">
+            <div style="flex:1"><h1>早上好，陈晓明</h1><div class="sub">智元科技 · 企业版</div></div>
+            <button class="ic"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+          </div>
+          <div class="body">
+            <div class="hero-card">
+              <div class="t">待处理事项</div>
+              <h2>7 项</h2>
+              <div class="row">
+                <div><b style="color:#F5B7B0">2</b><span>高风险</span></div>
+                <div><b>3</b><span>待确认</span></div>
+                <div><b>2</b><span>待复核</span></div>
+              </div>
+            </div>
+
+            <div class="ask">
+              <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/></svg></div>
+              <div style="flex:1">
+                <div class="t">向 AI 提问</div>
+                <div class="d">文字 / 语音 / 拍照上传合同</div>
+              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA3AE" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+
+            <div class="sec-hd"><b>待我处理</b><span class="n">7</span><span class="r">全部 →</span></div>
+            <div class="list">
+              <div class="li">
+                <span class="pr hi"></span>
+                <div class="bd">
+                  <div class="t">技术外包合同第 7 条违约责任风险</div>
+                  <div class="m"><span class="mono">HT-2026-0412</span><span>合规扫描</span></div>
+                </div>
+                <span class="tag risk">高风险</span>
+              </div>
+              <div class="li">
+                <span class="pr md"></span>
+                <div class="bd">
+                  <div class="t">数据处理协议待确认后发送客户</div>
+                  <div class="m"><span class="mono">WS-2026-0187</span><span>律师已复核</span></div>
+                </div>
+                <span class="tag ok">已确认</span>
+              </div>
+              <div class="li">
+                <span class="pr lo"></span>
+                <div class="bd">
+                  <div class="t">分公司注销法律意见书待审阅</div>
+                  <div class="m"><span class="mono">WS-2026-0186</span><span>AI 生成</span></div>
+                </div>
+                <span class="tag ai">AI</span>
+              </div>
+            </div>
+
+            <div class="sec-hd"><b>快捷服务</b></div>
+            <div class="qgrid">
+              <div class="qi">
+                <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M9 13h6"/></svg></div>
+                <div class="t">起草文书</div><div class="d">128 个模板</div>
+              </div>
+              <div class="qi">
+                <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+                <div class="t">合规扫描</div><div class="d">拍照即扫</div>
+              </div>
+              <div class="qi">
+                <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/></svg></div>
+                <div class="t">知识库</div><div class="d">1,284 份文件</div>
+              </div>
+              <div class="qi">
+                <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/></svg></div>
+                <div class="t">委托律师</div><div class="d">3 位在线</div>
+              </div>
+            </div>
+            <div style="height:20px"></div>
+          </div>
+          <nav class="tabbar">
+            <a class="on" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>工作台</a>
+            <a href="#"><span class="dot"></span><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.3A8.4 8.4 0 1 1 21 11.5Z"/></svg>咨询</a>
+            <a href="#"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>我的案件</a>
+            <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>我的</a>
+          </nav>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="cap"><b>2. 工作台首页</b><span>顶部待办总览卡 + AI 提问入口（拇指热区）<br />待办用卡片列表，不用表格</span></div>
+    </div>
+
+    <!-- ============ 3 IM 咨询 ============ -->
+    <div class="slot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="status"><span>9:41</span><span class="r">
+            <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12"><path d="M8 10.5 1 4a9.5 9.5 0 0 1 14 0L8 10.5Z"/></svg>
+            <svg viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="1.8"/><rect x="23" y="4" width="2.5" height="4" rx="1.2" opacity=".5"/></svg>
+          </span></div>
+          <div class="appbar" style="padding:0 12px;height:56px;flex:0 0 56px">
+            <button class="ic"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+            <div style="flex:1"><h1 style="font-size:15px">律小智 AI 助手</h1><div class="sub" style="color:var(--verified-500)">在线 · 平均响应 1.8 秒</div></div>
+            <button class="ic"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></button>
+          </div>
+          <div class="ims">
+            <div class="mrow">
+              <span class="mav a">AI</span>
+              <div class="mbub">您好，我是律小智 AI 法律助手。请描述您遇到的情况，我会给出结构化法律分析；复杂纠纷可一键委托执业律师。</div>
+            </div>
+            <div class="mrow me">
+              <span class="mav m">我</span>
+              <div class="mbub">公司拖欠我三个月工资，一共 36,000 元，已经离职了还能要回来吗？</div>
+            </div>
+            <div class="mrow">
+              <span class="mav a">AI</span>
+              <div style="flex:1">
+                <div class="mbub">可以主张。拖欠劳动报酬的，您有权要求支付<em>全部欠付工资</em>，并可主张<em>加付赔偿金</em>。离职不影响追索权，但仲裁时效为一年。</div>
+                <div class="mcard">
+                  <div class="h">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B4791F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/></svg>
+                    <b>案件评估结果</b><span class="r tag wait">已派单</span>
+                  </div>
+                  <div class="b">
+                    <div class="gbox">
+                      <div class="grade">B</div>
+                      <div><div class="t">劳动争议 · 追索劳动报酬</div><div class="d">已生成证据清单与仲裁申请书草稿</div></div>
+                    </div>
+                    <div class="metrics">
+                      <div>预估可主张<b class="mono">¥36,000–54,000</b></div>
+                      <div>预估周期<b>45–60 天</b></div>
+                    </div>
+                  </div>
+                  <div class="ft">
+                    <button class="btn gho">查看报告</button>
+                    <button class="btn">确认委托</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="chips">
+              <span class="chip">需要准备哪些证据？</span>
+              <span class="chip">仲裁要花多少钱？</span>
+            </div>
+          </div>
+          <div class="imbottom">
+            <div class="bar">
+              <div class="ipt">继续描述您的情况…</div>
+              <button class="send"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg></button>
+            </div>
+            <div class="tools">
+              <button><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-5-5-9 9"/></svg>拍照</button>
+              <button><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>语音</button>
+              <button><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2 9.2a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg>文件</button>
+            </div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="cap"><b>3. IM 咨询</b><span>拍照 / 语音 / 文件三个入口常驻输入框上方<br />案件评估用卡片消息，可直接确认委托</span></div>
+    </div>
+
+    <!-- ============ 4 问答结果 ============ -->
+    <div class="slot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="status"><span>9:41</span><span class="r">
+            <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12"><path d="M8 10.5 1 4a9.5 9.5 0 0 1 14 0L8 10.5Z"/></svg>
+            <svg viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="1.8"/><rect x="23" y="4" width="2.5" height="4" rx="1.2" opacity=".5"/></svg>
+          </span></div>
+          <div class="appbar" style="height:52px;flex:0 0 52px">
+            <button class="ic"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+            <h1 style="font-size:15px;flex:1">智能问答</h1>
+            <button class="ic"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M12 3v13M8 12l4 4 4-4"/></svg></button>
+          </div>
+          <div class="body">
+            <div class="qhead">
+              <div class="q">供应商逾期交货，合同未约定违约金，如何主张损失？</div>
+              <div class="m"><span>09:24</span><span>耗时 6.2 秒</span><span>检索 14 部法规</span><span>引用 3 条</span></div>
+            </div>
+            <div class="legend">
+              <span><i class="ai"></i>AI 生成</span>
+              <span><i class="ok"></i>律师已确认</span>
+              <span><i class="wa"></i>风险提示</span>
+            </div>
+
+            <div class="ans">
+              <div class="h">
+                <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/></svg></div>
+                <b>四段式结构化回答</b>
+              </div>
+              <div class="s4 c">
+                <span class="ix">1</span>
+                <div><div class="lb">结论</div><div class="tx">合同虽未约定违约金，仍可主张<em>逾期交货造成的实际损失</em>。赔偿范围以实际损失 + 可得利益损失为限，且不超过违约方订立合同时<em>可预见</em>的损失<span class="ref">1</span><span class="ref">2</span>。</div></div>
+              </div>
+              <div class="s4">
+                <span class="ix">2</span>
+                <div><div class="lb">法律依据</div><div class="tx">《民法典》第五百七十七条、第五百八十三条<span class="ref">1</span>；第五百八十四条<span class="ref">2</span>；《买卖合同司法解释》第二十一条<span class="ref">3</span>。</div></div>
+              </div>
+              <div class="s4 a">
+                <span class="ix">3</span>
+                <div><div class="lb">行动建议</div><div class="tx">① 固定证据：合同、催告函 EMS 回执、物流签收单；② 计算损失并逐项附凭证；③ 发律师函固定催告事实；④ 自交付日起 3 年时效内主张。</div></div>
+              </div>
+              <div class="s4 r">
+                <span class="ix">4</span>
+                <div><div class="lb">风险提示</div><div class="tx">⚠ 可得利益损失举证难度高；⚠ 接收货物未及时异议可能被认定接受迟延履行；⚠ 需核查免责条款。</div></div>
+              </div>
+              <div class="ansft">
+                <span>AI 生成 · 未经律师复核</span>
+                <span class="pill pri" style="margin-left:auto"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>转律师复核</span>
+              </div>
+            </div>
+
+            <div class="cites">
+              <div class="h">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#274C93" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Z"/><path d="M8 7h7M8 11h7"/></svg>
+                引用溯源 · 3 条
+              </div>
+              <div class="cite">
+                <div class="r1">
+                  <span class="n">1</span>
+                  <div>
+                    <div class="ti">《民法典》第五百七十七条</div>
+                    <div class="mt"><span>法律</span><span>2021-01-01 生效</span><span style="color:var(--verified-500)">● 现行有效</span></div>
+                  </div>
+                </div>
+                <div class="quote">当事人一方不履行合同义务或者履行合同义务不符合约定的，应当承担<mark>继续履行、采取补救措施或者赔偿损失</mark>等违约责任。</div>
+              </div>
+              <div class="cite">
+                <div class="r1">
+                  <span class="n">2</span>
+                  <div>
+                    <div class="ti">《民法典》第五百八十四条</div>
+                    <div class="mt"><span>法律</span><span>2021-01-01 生效</span><span style="color:var(--verified-500)">● 现行有效</span></div>
+                  </div>
+                </div>
+                <div class="quote">损失赔偿额应当相当于因违约所造成的损失，包括合同履行后可以获得的利益；但<mark>不得超过违约方订立合同时预见到或应当预见到的损失</mark>。</div>
+              </div>
+            </div>
+            <div style="height:16px"></div>
+          </div>
+          <div class="imbottom">
+            <div class="bar">
+              <div class="ipt">继续追问…</div>
+              <button class="send"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="cap"><b>4. 问答结果</b><span>法条原文用衬线体，与界面文本分层<br />移动端引用改为<b>页内展开</b>，不用右侧面板</span></div>
+    </div>
+
+    <!-- ============ 5 案件进度 ============ -->
+    <div class="slot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="status"><span>9:41</span><span class="r">
+            <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12"><path d="M8 10.5 1 4a9.5 9.5 0 0 1 14 0L8 10.5Z"/></svg>
+            <svg viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="1.8"/><rect x="23" y="4" width="2.5" height="4" rx="1.2" opacity=".5"/></svg>
+          </span></div>
+          <div class="appbar" style="height:52px;flex:0 0 52px">
+            <button class="ic"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+            <h1 style="font-size:15px;flex:1">案件详情</h1>
+            <button class="ic"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+          </div>
+          <div class="body">
+            <div style="background:#fff;padding:16px;border-bottom:1px solid var(--ink-200)">
+              <div style="display:flex;gap:12px;align-items:flex-start">
+                <div class="grade" style="background:var(--danger-500);width:42px;height:42px;flex:0 0 42px;border-radius:12px;font-size:18px">A</div>
+                <div style="flex:1">
+                  <div style="font-size:15.5px;font-weight:600;color:var(--ink-900);line-height:1.5">劳动争议 · 追索劳动报酬</div>
+                  <div style="font-size:11.5px;color:var(--ink-400);margin-top:6px;display:flex;gap:10px;flex-wrap:wrap">
+                    <span class="mono">NL-2026-0149</span><span>标的 ¥36,000</span>
+                  </div>
+                  <div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap">
+                    <span class="tag wait">律师办案中</span>
+                    <span class="tag ok">AI 分析已确认</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-hd"><b>案件进度</b></div>
+            <div class="list" style="padding:4px 0">
+              <div class="tl">
+                <div class="it done">
+                  <span class="d"></span>
+                  <div><div class="t">AI 初步评估</div><div class="m">09-16 00:12 · 等级 B · 已生成分析报告</div></div>
+                </div>
+                <div class="it done">
+                  <span class="d"></span>
+                  <div><div class="t">生成案件并派单</div><div class="m">09-16 00:15 · 已推送至 3 位匹配律师</div></div>
+                </div>
+                <div class="it done">
+                  <span class="d"></span>
+                  <div><div class="t">律师接单</div><div class="m">09-16 08:30 · 王振宇律师已接单</div></div>
+                </div>
+                <div class="it cur">
+                  <span class="d"></span>
+                  <div><div class="t">沟通与办案</div><div class="m">进行中 · 预计 09-20 前提交仲裁申请</div></div>
+                </div>
+                <div class="it">
+                  <span class="d"></span>
+                  <div><div class="t">复核与交付</div><div class="m">未开始</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-hd"><b>承办律师</b></div>
+            <div class="list">
+              <div class="lawyer-row">
+                <div class="av">王</div>
+                <div style="flex:1">
+                  <b>王振宇</b>
+                  <span>劳动争议 · 执业 9 年 · 好评率 98%</span>
+                </div>
+                <div class="callbtn"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg></div>
+              </div>
+            </div>
+
+            <div class="sec-hd"><b>费用</b></div>
+            <div class="list" style="padding:6px 0">
+              <div class="fee"><span>律师代理费</span><b>¥ 3,000 起</b></div>
+              <div class="fee"><span>仲裁受理费</span><b>免收</b></div>
+              <div class="fee"><span>风险代理（可选）</span><b>回款的 15%</b></div>
+            </div>
+            <div style="height:20px"></div>
+          </div>
+          <nav class="tabbar">
+            <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>工作台</a>
+            <a href="#"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.3A8.4 8.4 0 1 1 21 11.5Z"/></svg>咨询</a>
+            <a class="on" href="#"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>我的案件</a>
+            <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>我的</a>
+          </nav>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="cap"><b>5. 案件进度</b><span>时间线纵向排布，可滑动查看<br />律师卡片直接拨打，触控目标 48px</span></div>
+    </div>
+
+    <!-- ============ 6 我的 ============ -->
+    <div class="slot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="status" style="color:#fff;position:relative;z-index:60"><span>9:41</span><span class="r">
+            <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12"><path d="M8 10.5 1 4a9.5 9.5 0 0 1 14 0L8 10.5Z"/></svg>
+            <svg viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="1.8"/><rect x="23" y="4" width="2.5" height="4" rx="1.2" opacity=".5"/></svg>
+          </span></div>
+          <div class="body" style="margin-top:-44px">
+            <div class="me-hd" style="padding-top:60px">
+              <div class="row">
+                <div class="av">陈</div>
+                <div style="flex:1">
+                  <b>陈晓明</b>
+                  <span>智元科技 · 企业管理员</span>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+              <div class="me-stats">
+                <div><b>12</b><span>进行中</span></div>
+                <div><b>248</b><span>本月咨询</span></div>
+                <div><b>68%</b><span>额度使用</span></div>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="g-hd">我的服务</div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg></div>
+                <span class="t">我的案件</span><span class="v">12</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/></svg></div>
+                <span class="t">我的文书</span><span class="v">8</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.3A8.4 8.4 0 1 1 21 11.5Z"/></svg></div>
+                <span class="t">咨询记录</span><span class="v">36</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="g-hd">账户</div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+                <span class="t">用量与套餐</span><span class="v" style="color:var(--gold-600);font-weight:600">专业版</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                <span class="t">账单与发票</span><span class="v">2 笔待开</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/></svg></div>
+                <span class="t">企业知识库</span><span class="v">1,284 份</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="g-hd">设置</div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14"/></svg></div>
+                <span class="t">消息通知</span><span class="v">已开启</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+              <div class="grow">
+                <div class="gi"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4M12 17h.01"/></svg></div>
+                <span class="t">帮助与反馈</span>
+                <svg class="go" viewBox="0 0 24 24" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+            </div>
+
+            <p style="text-align:center;font-size:11px;color:var(--ink-400);line-height:1.8;margin:20px 16px 0">
+              律小智 v2.0.0 · AI 生成内容仅供参考<br />不构成正式法律意见
+            </p>
+            <div style="height:20px"></div>
+          </div>
+          <nav class="tabbar">
+            <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>工作台</a>
+            <a href="#"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.3A8.4 8.4 0 1 1 21 11.5Z"/></svg>咨询</a>
+            <a href="#"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>我的案件</a>
+            <a class="on" href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>我的</a>
+          </nav>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="cap"><b>6. 我的</b><span>顶部深色渐变用户区 + 三格数据<br />设置项按组分卡片，行高 ≥ 48px</span></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+className 块 2447 个（其中 cn() 231 个）
+preset 字号档 17 个；产物 leading-* 12 个
+
+库默认（= 修前）
+  判对数=28  缺陷=86  （T2=24 · T2b=62）
+  合法冲突 note=1
+     · [T2b] `text-body-sm` 被同组字号类 ['text-[11px]'] 覆盖（**合法冲突**，字号未回落 ⇒ 不判）—— frontend/packages/ui/src/components/DataTable.tsx:628
+
+项目配置（= 修后）
+  判对数=34  缺陷=28  （T2=28 · T2b=0）
+  合法冲突 note=1
+     · [T2b] `text-body-sm` 被同组字号类 ['text-[11px]'] 覆盖（**合法冲突**，字号未回落 ⇒ 不判）—— frontend/packages/ui/src/components/DataTable.tsx:628
+

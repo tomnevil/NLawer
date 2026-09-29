@@ -1,0 +1,20 @@
+OLD(rglob)   n=  116  耗时= 161.33s
+NEW(os.walk) n=  116  耗时=   0.06s
+提速倍数      2850.5x
+
+SET   相等: True
+ORDER 相等: False
+
+前 5 个（NEW，排序后）:
+    apps\admin\app\(app)\_components\TenantScopeBar.tsx
+    apps\admin\app\(app)\audit\page.tsx
+    apps\admin\app\(app)\billing\page.tsx
+    apps\admin\app\(app)\cases\page.tsx
+    apps\admin\app\(app)\complaints\page.tsx
+后 5 个（NEW，排序后）:
+    packages\ui\src\styles.css
+    packages\ui\src\theme\ThemeProvider.tsx
+    packages\ui\src\theme\colors.ts
+    packages\ui\src\tokens.css
+    tailwind.preset.ts
+EXIT=0

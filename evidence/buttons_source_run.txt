@@ -1,0 +1,58 @@
+── 源码层 ──
+  [B1] `--brand-600` == `--solid-brand` == (39.0, 76.0, 147.0)  ✓
+  [B2] Button 尺寸 {'sm': 28.0, 'md': 34.0, 'lg': 40.0}  ✓
+  [B3] 变体 ['accent', 'danger', 'ghost', 'outline', 'primary', 'secondary', 'verify']  （规范声明 5 个）
+       ⚠ 实现多出 2 个变体 ['accent', 'outline']（规范声明 5 个；`Button.tsx` 自述 `outline`/`accent` 为兼容保留）
+       ⚠ 变体集合大小 7 ≠ 规范 §6.1 声明的 5
+  [B4] 扫描 81 个 .tsx，硬编码 <48px 高度的原生按钮 27 处（其中带文字的 12 处，判红 10 处）
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> **带文字 ⇒ 判红** h-8  '案件'
+       · apps/im/app/(app)/chat/page.tsx  <button> **带文字 ⇒ 判红** h-9  '发送'
+       · apps/lawyer/app/(app)/archives/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/cases/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/dispatches/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/notifications/page.tsx  <button> 带文字但**有补偿**（带 `min-h-tap` ⇒ 移动端由 min-height 撑到 48px，非缺陷） h-9  '刷新'
+       · apps/lawyer/app/(app)/notifications/page.tsx  <button> 带文字但**有补偿**（带 `min-h-tap` ⇒ 移动端由 min-height 撑到 48px，非缺陷） h-9  '全部已读'
+       · apps/lawyer/app/(app)/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/reviews/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/web/app/(app)/knowledge/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/web/app/(app)/knowledge/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · apps/web/app/(app)/qa/page.tsx  <button> **带文字 ⇒ 判红** h-8  '依据'
+       · apps/web/app/(app)/qa/page.tsx  <button> **带文字 ⇒ 判红** h-9  '生成中发送'
+       · packages/ui/src/components/AppLayout.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/AppShell.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/AppShell.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · packages/ui/src/components/CitationPanel.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/DataTable.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/Drawer.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/LoginShell.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/mobile/BottomSheet.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/mobile/SyncQueue.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/Modal.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+      ✗ apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '案件'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/archives/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/cases/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/dispatches/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/reviews/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/web/app/(app)/knowledge/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '依据'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '生成中发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+
+── 源码层：缺陷 10 条 ──
+  ✗ apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '案件'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/lawyer/app/(app)/archives/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/lawyer/app/(app)/cases/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/lawyer/app/(app)/dispatches/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/lawyer/app/(app)/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/lawyer/app/(app)/reviews/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/web/app/(app)/knowledge/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '依据'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  ✗ apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '生成中发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+
+EXIT=1  源码层 10 条

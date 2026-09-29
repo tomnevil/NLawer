@@ -1,0 +1,193 @@
+── 源码层 ──
+  [B1] `--brand-600` == `--solid-brand` == (39.0, 76.0, 147.0)  ✓
+  [B2] Button 尺寸 {'sm': 28.0, 'md': 34.0, 'lg': 40.0}  ✓
+  [B3] 变体 ['accent', 'danger', 'ghost', 'outline', 'primary', 'secondary', 'verify']  （规范声明 5 个）
+       ⚠ 实现多出 2 个变体 ['accent', 'outline']（规范声明 5 个；`Button.tsx` 自述 `outline`/`accent` 为兼容保留）
+       ⚠ 变体集合大小 7 ≠ 规范 §6.1 声明的 5
+  [B4] 扫描 81 个 .tsx，硬编码 <48px 高度的原生按钮 27 处（其中带文字的 12 处，判红 10 处）
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · apps/im/app/(app)/chat/page.tsx  <button> **带文字 ⇒ 判红** h-8  '案件'
+       · apps/im/app/(app)/chat/page.tsx  <button> **带文字 ⇒ 判红** h-9  '发送'
+       · apps/lawyer/app/(app)/archives/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/cases/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/dispatches/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/notifications/page.tsx  <button> 带文字但**有补偿**（带 `min-h-tap` ⇒ 移动端由 min-height 撑到 48px，非缺陷） h-9  '刷新'
+       · apps/lawyer/app/(app)/notifications/page.tsx  <button> 带文字但**有补偿**（带 `min-h-tap` ⇒ 移动端由 min-height 撑到 48px，非缺陷） h-9  '全部已读'
+       · apps/lawyer/app/(app)/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/lawyer/app/(app)/reviews/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/web/app/(app)/knowledge/page.tsx  <button> **带文字 ⇒ 判红** h-9  '刷新'
+       · apps/web/app/(app)/knowledge/page.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · apps/web/app/(app)/qa/page.tsx  <button> **带文字 ⇒ 判红** h-8  '依据'
+       · apps/web/app/(app)/qa/page.tsx  <button> **带文字 ⇒ 判红** h-9  '生成中发送'
+       · packages/ui/src/components/AppLayout.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/AppShell.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/AppShell.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-9  ''
+       · packages/ui/src/components/CitationPanel.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/DataTable.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/Drawer.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/LoginShell.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/mobile/BottomSheet.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/mobile/SyncQueue.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+       · packages/ui/src/components/Modal.tsx  <button> 图标按钮（归 verify_tap_targets.py） h-8  ''
+      ✗ apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '案件'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/archives/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/cases/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/dispatches/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/lawyer/app/(app)/reviews/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/web/app/(app)/knowledge/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '依据'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+      ✗ apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '生成中发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+
+── 源码层：缺陷 10 条 ──
+
+── §6.1 按钮规范 + §8.3 按钮触控目标（390×844）──
+
+[web] /                  可交互  17  主色按钮 2  触控目标 16（1 个量不到，未判定）   ✗
+      [B5] 同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「发起咨询」、button「发起首次咨询」
+      [B6] `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+[web] /qa                可交互  10  主色按钮 1  触控目标 9（1 个量不到，未判定）   ✗
+      [B6] `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「依据」触控目标 高 33px < 48px（盒子 76×32）
+      [B6] `<button>`「发送」触控目标 高 36px < 48px（盒子 82×36）
+[web] /documents         可交互  31  主色按钮 0  触控目标 30（1 个量不到，未判定）   ✗
+      [B6] `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+[web] /contract-review   可交互  10  主色按钮 1  触控目标 9（1 个量不到，未判定）   ✗
+      [B6] `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+[web] /compliance        可交互  13  主色按钮 1  触控目标 12（1 个量不到，未判定）   ✗
+      [B6] `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+[web] /knowledge         可交互  11  主色按钮 2  触控目标 10（1 个量不到，未判定）   ✗
+      [B5] 同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「新增文档」、button「新增文档」
+      [B6] `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「刷新」触控目标 高 37px < 48px（盒子 80×36）
+[web] /billing           可交互   9  主色按钮 1  触控目标 8（1 个量不到，未判定）   ✗
+      [B6] `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+
+[lawyer] /                  可交互  18  主色按钮 0  触控目标 17（1 个量不到，未判定）   ✗
+      [B6] `<button>`「王」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「刷新」触控目标 高 37px < 48px（盒子 80×36）
+[lawyer] /dispatches        可交互  17  主色按钮 3  触控目标 16（1 个量不到，未判定）   ✗
+      [B5] 同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「接单」、button「接单」
+      [B6] `<button>`「王」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「刷新」触控目标 高 37px < 48px（盒子 80×36）
+      [B6] `<button>`「商业秘密保护合规咨询 HLW-DEMO-0010」触控目标 高 43px < 48px（盒子 164×42）
+      [B6] `<button>`「房屋租赁合同纠纷咨询 HLW-DEMO-0004」触控目标 高 43px < 48px（盒子 164×42）
+      [B6] `<button>`「‹」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「1」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「›」触控目标 宽 33px < 48px（盒子 32×48）
+[lawyer] /cases             可交互  18  主色按钮 1  触控目标 17（1 个量不到，未判定）   ✗
+      [B6] `<button>`「王」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「刷新」触控目标 高 37px < 48px（盒子 80×36）
+      [B6] `<button>`「‹」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「1」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「›」触控目标 宽 33px < 48px（盒子 32×48）
+[lawyer] /reviews           可交互  14  主色按钮 1  触控目标 13（1 个量不到，未判定）   ✗
+      [B6] `<button>`「王」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「刷新」触控目标 高 37px < 48px（盒子 80×36）
+      [B6] `<button>`「‹」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「1」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「›」触控目标 宽 33px < 48px（盒子 32×48）
+[lawyer] /archives          可交互  17  主色按钮 1  触控目标 16（1 个量不到，未判定）   ✗
+      [B6] `<button>`「王」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「刷新」触控目标 高 36px < 48px（盒子 80×36）
+      [B6] `<button>`「交通事故人身损害赔偿 HLW-DEMO-0007」触控目标 高 43px < 48px（盒子 164×42）
+      [B6] `<button>`「‹」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「1」触控目标 宽 33px < 48px（盒子 32×48）
+      [B6] `<button>`「›」触控目标 宽 33px < 48px（盒子 32×48）
+[lawyer] /notifications     可交互  12  主色按钮 0  触控目标 11（1 个量不到，未判定）   ✗
+      [B6] `<button>`「王」触控目标 宽 40px < 48px（盒子 40×48）
+
+[admin] /                  可交互   7  主色按钮 0  触控目标 7   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+[admin] /reviews           可交互  10  主色按钮 1  触控目标 10   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「‹」触控目标 宽 32px < 48px（盒子 32×48）
+      [B6] `<button>`「1」触控目标 宽 32px < 48px（盒子 32×48）
+      [B6] `<button>`「›」触控目标 宽 32px < 48px（盒子 32×48）
+[admin] /cases             可交互  12  主色按钮 1  触控目标 12   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+      [B6] `<button>`「‹」触控目标 宽 32px < 48px（盒子 32×48）
+      [B6] `<button>`「1」触控目标 宽 32px < 48px（盒子 32×48）
+      [B6] `<button>`「›」触控目标 宽 32px < 48px（盒子 32×48）
+[admin] /dispatches        可交互   5  主色按钮 0  触控目标 5   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+[admin] /compliance        可交互   7  主色按钮 0  触控目标 7   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+[admin] /billing           可交互  11  主色按钮 0  触控目标 11   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+[admin] /complaints        可交互   5  主色按钮 0  触控目标 5   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+[admin] /audit             可交互   7  主色按钮 0  触控目标 7   ✗
+      [B6] `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+
+[im] /                  可交互  13  主色按钮 0  触控目标 12（1 个量不到，未判定）   ✓
+[im] /chat              可交互   9  主色按钮 2  触控目标 8（1 个量不到，未判定）   ✗
+      [B5] 同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「(无文字)」、button「开始新咨询」
+      [B6] `<button>`「开始新咨询」触控目标 高 34px < 48px（盒子 89×33）
+[im] /cases             可交互  17  主色按钮 0  触控目标 16（1 个量不到，未判定）   ✓
+[im] /cases/@first-case 可交互   6  主色按钮 1  触控目标 5（1 个量不到，未判定）   ✓
+[im] /me                可交互   9  主色按钮 0  触控目标 8（1 个量不到，未判定）   ✓
+
+── 汇总 ──
+  扫描 26 个页面
+  ✗ 渲染层缺陷 55 条，聚为 21 条根因：
+      [B6] ×8   `<button>`「平」触控目标 宽 40px < 48px（盒子 40×48）
+              出现于：[admin] /、[admin] /reviews、[admin] /cases、[admin] /dispatches、[admin] /compliance、[admin] /billing 等 8 处
+      [B6] ×7   `<button>`「刘」触控目标 宽 40px < 48px（盒子 40×48）
+              出现于：[web] /、[web] /qa、[web] /documents、[web] /contract-review、[web] /compliance、[web] /knowledge 等 7 处
+      [B6] ×6   `<button>`「王」触控目标 宽 40px < 48px（盒子 40×48）
+              出现于：[lawyer] /、[lawyer] /dispatches、[lawyer] /cases、[lawyer] /reviews、[lawyer] /archives、[lawyer] /notifications
+      [B6] ×5   `<button>`「刷新」触控目标 高 37px < 48px（盒子 80×36）
+              出现于：[web] /knowledge、[lawyer] /、[lawyer] /dispatches、[lawyer] /cases、[lawyer] /reviews
+      [B6] ×4   `<button>`「‹」触控目标 宽 33px < 48px（盒子 32×48）
+              出现于：[lawyer] /dispatches、[lawyer] /cases、[lawyer] /reviews、[lawyer] /archives
+      [B6] ×4   `<button>`「1」触控目标 宽 33px < 48px（盒子 32×48）
+              出现于：[lawyer] /dispatches、[lawyer] /cases、[lawyer] /reviews、[lawyer] /archives
+      [B6] ×4   `<button>`「›」触控目标 宽 33px < 48px（盒子 32×48）
+              出现于：[lawyer] /dispatches、[lawyer] /cases、[lawyer] /reviews、[lawyer] /archives
+      [B6] ×2   `<button>`「‹」触控目标 宽 32px < 48px（盒子 32×48）
+              出现于：[admin] /reviews、[admin] /cases
+      [B6] ×2   `<button>`「1」触控目标 宽 32px < 48px（盒子 32×48）
+              出现于：[admin] /reviews、[admin] /cases
+      [B6] ×2   `<button>`「›」触控目标 宽 32px < 48px（盒子 32×48）
+              出现于：[admin] /reviews、[admin] /cases
+      [B5] ×1   同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「发起咨询」、button「发起首次咨询」
+              出现于：[web] /
+      [B6] ×1   `<button>`「依据」触控目标 高 33px < 48px（盒子 76×32）
+              出现于：[web] /qa
+      [B6] ×1   `<button>`「发送」触控目标 高 36px < 48px（盒子 82×36）
+              出现于：[web] /qa
+      [B5] ×1   同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「新增文档」、button「新增文档」
+              出现于：[web] /knowledge
+      [B5] ×1   同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「接单」、button「接单」
+              出现于：[lawyer] /dispatches
+      [B6] ×1   `<button>`「商业秘密保护合规咨询 HLW-DEMO-0010」触控目标 高 43px < 48px（盒子 164×42）
+              出现于：[lawyer] /dispatches
+      [B6] ×1   `<button>`「房屋租赁合同纠纷咨询 HLW-DEMO-0004」触控目标 高 43px < 48px（盒子 164×42）
+              出现于：[lawyer] /dispatches
+      [B6] ×1   `<button>`「刷新」触控目标 高 36px < 48px（盒子 80×36）
+              出现于：[lawyer] /archives
+      [B6] ×1   `<button>`「交通事故人身损害赔偿 HLW-DEMO-0007」触控目标 高 43px < 48px（盒子 164×42）
+              出现于：[lawyer] /archives
+      [B5] ×1   同屏 2 个主色按钮（规范 §6.1「每屏最多一个 `pri`」）：button「(无文字)」、button「开始新咨询」
+              出现于：[im] /chat
+      [B6] ×1   `<button>`「开始新咨询」触控目标 高 34px < 48px（盒子 89×33）
+              出现于：[im] /chat
+
+EXIT=1  产品缺陷 55 条
+
+── 源码层缺陷明细（10 条）──
+  · apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '案件'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/im/app/(app)/chat/page.tsx 的 `<button>`（文字 '发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/lawyer/app/(app)/archives/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/lawyer/app/(app)/cases/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/lawyer/app/(app)/dispatches/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/lawyer/app/(app)/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/lawyer/app/(app)/reviews/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/web/app/(app)/knowledge/page.tsx 的 `<button>`（文字 '刷新'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '依据'）硬编码 h-8 = 32px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件
+  · apps/web/app/(app)/qa/page.tsx 的 `<button>`（文字 '生成中发送'）硬编码 h-9 = 36px ⇒ 移动端不足 48px（§6.1），且绕过了 `Button` 组件

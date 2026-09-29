@@ -1,0 +1,185 @@
+期望值来源：`deliverables\ui-design\design-spec.md` §2.1/2.2/2.3 的对比度列
+T0 推导出的合格线：4.5（规范所有 `✓` 行都 ≥ 它、所有非 `✓` 行都 < 它）
+T1'/T3 断言的是**定性**（标 `✓` ⇒ ≥ 4.5）；声明值偏差 > 0.5 只记**文档问题**
+T4 按字号取门槛：大字号（≥24px 或 ≥18.66px 粗体）3.0、其余 4.5；离门槛 <0.15 报临界不判
+
+  web/ @390/light            ✗  文本元素 35
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`暂无待处理的高风险事项`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **2.16:1** < 4.5（正文尺寸 13px/500 的门槛）：<button> 13px/500 class=`inline-flex items-center justify-center font-medium whitespa` 文字=`发起咨询`  fg=rgb(20,24,29) bg=rgb(39,76,147)
+      [T4] 对比度 **2.16:1** < 4.5（正文尺寸 12px/500 的门槛）：<button> 12px/500 class=`inline-flex items-center justify-center font-medium whitespa` 文字=`发起首次咨询`  fg=rgb(20,24,29) bg=rgb(39,76,147)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num text-caption text-ink-400` 文字=`2026-09`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.40:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`text-center text-caption text-ink-400` 文字=`本内容由 AI 生成，仅供参考，不构成正式法律意`  fg=rgb(154,163,174) bg=rgb(247,248,249)
+  web/ @390/dark             ✓  文本元素 35  区间内 0
+  web/qa @390/light          ✗  文本元素 15
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`mx-auto mt-2 max-w-reading text-center text-caption text-ink` 文字=`AI 生成内容仅供参考，不构成正式法律意见。引用`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  web/qa @390/dark           ✓  文本元素 15  区间内 0
+  lawyer/ @390/light         ✗  文本元素 27
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`接单 → 办案 → 送审 → 归档，全流程留痕`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+  lawyer/ @390/dark          ✓  文本元素 27  区间内 0
+  lawyer/cases @390/light    ✗  文本元素 58
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`默认只显示由你承办的案件 · 点击案号或行进入详`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`text-caption text-ink-500` 文字=`共 条`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`num text-body-sm text-ink-500` 文字=`共 4 件`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`text-caption text-ink-500` 文字=`共 条，当前 –`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<label> 11px/500 class=`flex items-center gap-1.5 text-caption text-ink-500` 文字=`每页条`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+  lawyer/cases @390/dark     ✓  文本元素 58  区间内 0
+  admin/ @390/light          ✗  文本元素 63
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`案件 · 复核 · 计费 · 合规 全链路监控`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **2.40:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num text-caption text-ink-400` 文字=`账期 2026-09`  fg=rgb(154,163,174) bg=rgb(247,248,249)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`mt-0.5 text-caption text-ink-500` 文字=`未办结 0 件（待受理 0 · 处理中 0）；已`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`未确认不可定稿、不可归档——这是本产品的责任边界`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+  admin/ @390/dark           ✗  文本元素 63
+      [T4] 对比度 **2.83:1** < 4.5（正文尺寸 13px/500 的门槛）：<a> 13px/500 class=`inline-flex shrink-0 items-center gap-1 text-body-sm font-me` 文字=`查看投诉举报`  fg=rgb(58,99,176) bg=rgb(26,31,38)
+  admin/audit @390/light     ✗  文本元素 45
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`等保 2.0（三级）要求审计记录留存不少于 6 `  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`border-b border-line bg-surface-subtle px-4 py-2.5 text-capt` 文字=`等保 2.0（三级）：审计记录留存不少于 6 个`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`flex items-start gap-1.5 text-caption text-ink-400` 文字=`每次清理都会写入一条 AUDIT_RETENTI`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  admin/audit @390/dark      ✓  文本元素 45  区间内 0
+  im/ @390/light             ✗  文本元素 29
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block text-caption text-ink-400` 文字=`描述您遇到的情况，AI 先给结构化分析`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`ml-2 text-caption text-ink-400` 文字=`10`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num` 文字=`HLW-DEMO-0010`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`` 文字=`已收案`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num` 文字=`HLW-DEMO-0009`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`` 文字=`已派单`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num` 文字=`HLW-DEMO-0008`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`` 文字=`已结案`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`描述情况，AI 先给分析`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`进度、时间线与材料`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`看还缺哪几项`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`在会话里直接沟通`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  im/ @390/dark              ✗  文本元素 29
+      [T4] 对比度 **3.05:1** < 4.5（正文尺寸 12px/500 的门槛）：<a> 12px/500 class=`ml-auto text-label font-medium text-brand-600` 文字=`全部 →`  fg=rgb(58,99,176) bg=rgb(20,24,29)
+  im/chat @390/light         ✓  文本元素 11  区间内 0
+  im/chat @390/dark          ✓  文本元素 11  区间内 0
+  web/ @1280/light           ✗  文本元素 46
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`个人与企业法务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`工作台`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`文书与合规`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`资料与账务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`企业管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`暂无待处理的高风险事项`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **2.16:1** < 4.5（正文尺寸 13px/500 的门槛）：<button> 13px/500 class=`inline-flex items-center justify-center font-medium whitespa` 文字=`发起咨询`  fg=rgb(20,24,29) bg=rgb(39,76,147)
+      [T4] 对比度 **2.16:1** < 4.5（正文尺寸 12px/500 的门槛）：<button> 12px/500 class=`inline-flex items-center justify-center font-medium whitespa` 文字=`发起首次咨询`  fg=rgb(20,24,29) bg=rgb(39,76,147)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num text-caption text-ink-400` 文字=`2026-09`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.40:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`text-center text-caption text-ink-400` 文字=`本内容由 AI 生成，仅供参考，不构成正式法律意`  fg=rgb(154,163,174) bg=rgb(247,248,249)
+  web/ @1280/dark            ✗  文本元素 46
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`个人与企业法务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`工作台`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`文书与合规`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`资料与账务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`企业管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+  web/qa @1280/light         ✗  文本元素 29
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`个人与企业法务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`工作台`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`文书与合规`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`资料与账务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`企业管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`mx-auto mt-2 max-w-reading text-center text-caption text-ink` 文字=`AI 生成内容仅供参考，不构成正式法律意见。引用`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  web/qa @1280/dark          ✗  文本元素 29
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`个人与企业法务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`工作台`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`文书与合规`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`资料与账务`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`企业管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+  lawyer/ @1280/light        ✗  文本元素 35
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`案件协作与办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`卷宗`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`律师`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`接单 → 办案 → 送审 → 归档，全流程留痕`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+  lawyer/ @1280/dark         ✗  文本元素 35
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`案件协作与办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`卷宗`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`律师`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+  lawyer/cases @1280/light   ✗  文本元素 57
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`案件协作与办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`卷宗`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`律师`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`默认只显示由你承办的案件 · 点击案号或行进入详`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`text-caption text-ink-500` 文字=`共 条`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`案号`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`案件标题`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`争议类型`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`等级`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`阶段`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`争议标的`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`num text-body-sm text-ink-500` 文字=`共 4 件`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`text-caption text-ink-500` 文字=`共 条，当前 –`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<label> 11px/500 class=`flex items-center gap-1.5 text-caption text-ink-500` 文字=`每页条`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+  lawyer/cases @1280/dark    ✗  文本元素 57
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`案件协作与办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`办案`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`卷宗`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`律师`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+  admin/ @1280/light         ✗  文本元素 91
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`商业`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`案件 · 复核 · 计费 · 合规 全链路监控`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **2.40:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num text-caption text-ink-400` 文字=`账期 2026-09`  fg=rgb(154,163,174) bg=rgb(247,248,249)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`mt-0.5 text-caption text-ink-500` 文字=`未办结 0 件（待受理 0 · 处理中 0）；已`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`未确认不可定稿、不可归档——这是本产品的责任边界`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`复核任务`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<th> 16px/500 class=`border-b border-line font-medium text-ink-500 px-4 py-2.5 te` 文字=`对象`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<th> 16px/500 class=`border-b border-line font-medium text-ink-500 px-4 py-2.5 te` 文字=`状态`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`要求等级`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<th> 16px/500 class=`border-b border-line font-medium text-ink-500 px-4 py-2.5 te` 文字=`已满足`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<button> 16px/500 class=`inline-flex items-center gap-1 transition-colors duration-fa` 文字=`关联案件`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<th> 16px/500 class=`border-b border-line font-medium text-ink-500 px-4 py-2.5 te` 文字=`强制复核`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 16px/500 的门槛）：<th> 16px/500 class=`border-b border-line font-medium text-ink-500 px-4 py-2.5 te` 文字=`结论`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 16px/400 的门槛）：<span> 16px/400 class=`text-ink-400` 文字=`待处理`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 16px/400 的门槛）：<span> 16px/400 class=`text-ink-400` 文字=`待处理`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  admin/ @1280/dark          ✗  文本元素 91
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`商业`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **2.83:1** < 4.5（正文尺寸 13px/500 的门槛）：<a> 13px/500 class=`inline-flex shrink-0 items-center gap-1 text-body-sm font-me` 文字=`查看投诉举报`  fg=rgb(58,99,176) bg=rgb(26,31,38)
+  admin/audit @1280/light    ✗  文本元素 60
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`商业`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 13px/400 的门槛）：<p> 13px/400 class=`mt-1 text-body-sm text-ink-500` 文字=`等保 2.0（三级）要求审计记录留存不少于 6 `  fg=rgb(107,116,128) bg=rgb(247,248,249)
+      [T4] 对比度 **4.18:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`border-b border-line bg-surface-subtle px-4 py-2.5 text-capt` 文字=`等保 2.0（三级）：审计记录留存不少于 6 个`  fg=rgb(107,116,128) bg=rgb(239,241,243)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`flex items-start gap-1.5 text-caption text-ink-400` 文字=`每次清理都会写入一条 AUDIT_RETENTI`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  admin/audit @1280/dark     ✗  文本元素 60
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`平台治理`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<div> 11px/500 class=`px-3 pb-1.5 text-caption uppercase tracking-wider text-sideb` 文字=`商业`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+      [T4] 对比度 **4.43:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block truncate text-caption text-sidebar-dim` 文字=`平台管理员`  fg=rgb(108,128,163) bg=rgb(10,24,48)
+  im/ @1280/light            ✗  文本元素 25
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`block text-caption text-ink-400` 文字=`描述您遇到的情况，AI 先给结构化分析`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`ml-2 text-caption text-ink-400` 文字=`10`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num` 文字=`HLW-DEMO-0010`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`` 文字=`已收案`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num` 文字=`HLW-DEMO-0009`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`` 文字=`已派单`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`num` 文字=`HLW-DEMO-0008`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`` 文字=`已结案`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`描述情况，AI 先给分析`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`进度、时间线与材料`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`看还缺哪几项`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 text-caption leading-[1.55] text-ink-400` 文字=`在会话里直接沟通`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  im/ @1280/dark             ✗  文本元素 25
+      [T4] 对比度 **3.05:1** < 4.5（正文尺寸 12px/500 的门槛）：<a> 12px/500 class=`ml-auto text-label font-medium text-brand-600` 文字=`全部 →`  fg=rgb(58,99,176) bg=rgb(20,24,29)
+  im/chat @1280/light        ✗  文本元素 18
+      [T4] 对比度 **2.55:1** < 4.5（正文尺寸 11px/500 的门槛）：<p> 11px/500 class=`mt-2 text-center text-caption text-ink-400` 文字=`AI 生成内容仅供参考，不构成正式法律意见。涉及`  fg=rgb(154,163,174) bg=rgb(255,255,255)
+  im/chat @1280/dark         ✓  文本元素 18  区间内 0
+
+==========================================================================
+[T1–T3 令牌层] T1a **实际核对 9/9 行**（覆盖率缺口：无）
+                规范表 9 行 + 深色 4 对 + 状态对 3 对 ⇒ 缺陷 0 条
+  ⚠️ 另有**文档问题** 5 条（规范表数值是近似值，**不算产品缺陷**）：
+     · --ink-700              规范  10.4:1  实算 11.32:1  （Δ+0.92）
+     · --ink-800              规范  13.9:1  实算 15.22:1  （Δ+1.32）
+     · --ink-900              规范  16.8:1  实算 17.82:1  （Δ+1.02）
+     · --brand-400            规范   3.3:1  实算  3.90:1  （Δ+0.60）
+     · danger-500 on danger-50 规范   5.4:1  实算  4.89:1  （Δ-0.51）
+
+[T4 渲染层] 测量 32 组；**不合格 24 组 / 缺陷 135 条**。
+EXIT=1
