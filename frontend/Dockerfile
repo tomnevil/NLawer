@@ -31,10 +31,12 @@ ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
 RUN pnpm -C apps/$APP build
 
 FROM node:20-alpine AS runner
+ARG APP
+ENV APP=$APP
 WORKDIR /app
 ENV NODE_ENV=production
 # standalone ???server.js + ?????? node_modules?? monorepo ?????
 COPY --from=builder /repo/apps/$APP/.next/standalone ./
-COPY --from=builder /repo/apps/$APP/.next/static ./.next/static
+COPY --from=builder /repo/apps/$APP/.next/static ./apps/$APP/.next/static
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "node apps/$APP/server.js"]
