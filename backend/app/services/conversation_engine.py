@@ -64,9 +64,19 @@ class ConversationEngine:
                 "status": conv.status.value,
             }
 
-        # 咨询直答（四段式结构化卡片）
+        # 咨询直答（客户侧自然对话；四段式转后台草稿，并自动入复核）
         answer = await self._consult_answer(text, dispute_type)
         await self._add_message(conv.id, MessageSender.AI, answer["reply"], card=answer.get("card"))
+        if answer.get("draft"):
+            review_id = await self._save_consult_report(
+                conv, text, answer["reply"], answer["draft"], answer.get("citations", [])
+            )
+            if review_id is not None:
+                await self._add_message(
+                    conv.id,
+                    MessageSender.AI,
+                    "（我已把要点整理成草稿，正请律师复核确认，确认后会给您更稳妥的版本。）",
+                )
         conv.last_message_at = _now()
         return {"reply": answer["reply"], "card": answer.get("card"), "status": conv.status.value}
 
@@ -118,36 +128,35 @@ class ConversationEngine:
 
     # ---------------- 咨询直答 ----------------
     async def _consult_answer(self, text: str, dispute_type: Optional[str]) -> dict:
-        """四段式结构化回答：结论 / 法律依据 / 行动建议 / 风险提示。"""
+        """客户侧自然对话回复；四段式作为 ConsultReport 草稿落库（不直接展示）。"""
         articles = await self._retrieve_laws(text, dispute_type)
+
         if not articles:
             reply = (
-                "您好，我是律小智 AI 法律顾问。根据您描述的情况，建议先梳理关键事实与证据，"
-                "如需进一步分析，可点击「转人工律师」获得专业支持。\n\n"
-                "（本内容由 AI 生成，仅供参考，不构成正式法律意见）"
+                "您好，我是律小智 AI 法律顾问。把情况多说一点吧——比如涉及的主体、时间、金额，"
+                "以及您最想解决的是什么，我帮您先梳理思路；需要的话也可以直接转人工律师。"
             )
-            return {"reply": reply, "card": {"kind": "consult", "sections": {}}}
+            return {"reply": reply, "card": None, "draft": None, "citations": []}
 
         top = articles[0]
-        conclusion = f"根据《{top['law_name']}{top['article_no']}》，您所述情形可依法主张相应权利，建议尽快固定证据。"
-        legal = "\n".join(f"- 《{a['law_name']}{a['article_no']}》：{a['content']}" for a in articles[:3])
-        advice = "1. 收集并保全相关证据材料（合同、聊天记录、支付凭证等）；\n2. 明确诉求与对方主体信息；\n3. 必要时委托律师发函或提起诉讼。"
-        risk = "注意时效：劳动争议仲裁时效一般为一年；人身损害赔偿诉讼时效三年。逾期可能丧失胜诉权。"
-        sections = {
-            "conclusion": conclusion,
-            "legal_basis": legal,
-            "advice": advice,
-            "risk": risk,
+        # 客户侧：自然对话，不堆四段式
+        reply = (
+            f"您好，就您说的情况，初步可以参考《{top['law_name']}{top['article_no']}》相关规定来处理。"
+            "简单说，您这边是有相应权利可以主张的，建议先把证据固定好"
+            "（合同、聊天记录、支付凭证等），再明确诉求和对方信息。"
+            "具体到您的细节，我还可以帮您进一步分析，或为您转接律师做专业确认。"
+        )
+        # 后台草稿：四段式（律师复核对象）
+        draft = {
+            "conclusion": f"根据《{top['law_name']}{top['article_no']}》，您所述情形可依法主张相应权利，建议尽快固定证据。",
+            "legal_basis": "\n".join(f"- 《{a['law_name']}{a['article_no']}》：{a['content']}" for a in articles[:3]),
+            "advice": "1. 收集并保全相关证据材料（合同、聊天记录、支付凭证等）；\n2. 明确诉求与对方主体信息；\n3. 必要时委托律师发函或提起诉讼。",
+            "risk": "注意时效：劳动争议仲裁时效一般为一年；人身损害赔偿诉讼时效三年。逾期可能丧失胜诉权。",
         }
-        card = {
-            "kind": "consult",
-            "sections": sections,
-            "citations": [
-                {"law_name": a["law_name"], "article_no": a["article_no"], "id": a["id"]} for a in articles[:3]
-            ],
-        }
-        reply = f"{conclusion}\n\n【法律依据】\n{legal}\n\n【行动建议】\n{advice}\n\n【风险提示】\n{risk}\n\n（本内容由 AI 生成，仅供参考，不构成正式法律意见）"
-        return {"reply": reply, "card": card}
+        citations = [
+            {"law_name": a["law_name"], "article_no": a["article_no"], "id": a["id"]} for a in articles[:3]
+        ]
+        return {"reply": reply, "card": None, "draft": draft, "citations": citations}
 
     async def _retrieve_laws(self, text: str, dispute_type: Optional[str]) -> list[dict]:
         """从法规库检索相关条款（BM25 风格关键词匹配，演示规模足够快）。"""
@@ -180,6 +189,32 @@ class ConversationEngine:
         ]
 
     # ---------------- 收尾 ----------------
+    async def _save_consult_report(
+        self, conv: Conversation, question: str, answer: str, draft: dict, citations: list
+    ) -> Optional[int]:
+        """best-effort：草稿入 ConsultReport 并自动建 Review 派单；返回 review_id（失败/无律师为 None）。"""
+        try:
+            from app.models.consult_report import ConsultReport, ConsultReportStatus
+            from app.services.consult_review import dispatch_consult_report_review
+
+            report = ConsultReport(
+                tenant_id=conv.tenant_id,
+                conversation_id=conv.id,
+                user_id=conv.client_user_id,
+                question=question,
+                answer=answer,
+                draft_sections=draft,
+                citations=citations,
+                status=ConsultReportStatus.DRAFT,
+            )
+            self.db.add(report)
+            await self.db.flush()
+            review_id = await dispatch_consult_report_review(self.db, report, conv.tenant_id)
+            await self.db.commit()
+            return review_id
+        except Exception:
+            return None
+
     async def _add_message(self, conversation_id: int, sender: MessageSender, content: str, *, card: Optional[dict] = None) -> None:
         self.db.add(
             Message(

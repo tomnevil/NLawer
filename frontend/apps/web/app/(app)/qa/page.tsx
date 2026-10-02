@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { BookOpen, Send, ShieldAlert, Sparkles } from "lucide-react";
+import { BookOpen, RotateCcw, Send, ShieldAlert, Sparkles } from "lucide-react";
 import { streamSSE } from "@nlaw/sdk";
 import {
   Badge,
@@ -59,6 +59,10 @@ interface Turn {
   /** 流式累积正文 */
   text?: string;
   streaming?: boolean;
+  /** 生成进度（后端 status 事件），如「正在为您分析…」 */
+  status?: string;
+  /** 是否四段式结构化；false 表示简单回复（如寒暄），前端渲染单段纯文本 */
+  structured?: boolean;
   sections?: Sections;
   citations?: BackendCitation[];
   disclaimer?: string;
@@ -214,7 +218,8 @@ function QAWorkspace() {
     setTurns((t) => [
       ...t,
       { key: nextKey(), role: "user", question: q },
-      { key: nextKey(), role: "ai", streaming: true, text: "" },
+      // AI 轮次也带上原始问题，便于失败时「重新生成」
+      { key: nextKey(), role: "ai", streaming: true, text: "", question: q },
     ]);
     setStreaming(true);
     setActiveCitationId(null);
@@ -236,9 +241,19 @@ function QAWorkspace() {
               key: copy[copy.length - 1].key,
               role: "ai",
               sections: ev.sections as Sections,
+              structured: ev.structured !== false,
               citations: (ev.citations ?? []) as BackendCitation[],
               disclaimer: ev.disclaimer as string | undefined,
             };
+            return copy;
+          });
+        } else if (ev?.type === "status") {
+          // 进度提示：模型耗时较长时，让用户看到「在干活」而不是空转
+          setTurns((t) => {
+            const copy = [...t];
+            const last = copy[copy.length - 1];
+            if (last.role !== "ai") return copy;
+            copy[copy.length - 1] = { ...last, streaming: true, status: String(ev.message ?? "") };
             return copy;
           });
         } else if (ev?.type === "blocked") {
@@ -253,22 +268,24 @@ function QAWorkspace() {
             return copy;
           });
         } else if (ev?.type === "error") {
+          // 服务端技术异常不上屏，统一给一句人话；原始信息留到控制台便于定位
+          console.error("[qa] 服务端流错误", ev.message);
           setTurns((t) => {
             const copy = [...t];
-            copy[copy.length - 1] = {
-              key: copy[copy.length - 1].key,
-              role: "ai",
-              error: String(ev.message ?? "生成中断"),
-            };
+            const last = copy[copy.length - 1];
+            copy[copy.length - 1] = { key: last.key, role: "ai", question: last.question, error: "服务暂时不可用，请稍后重试。" };
             return copy;
           });
         }
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "请求失败";
+      // 网络中断 / 连接被代理断开：不把 "network error" 之类原始报文甩给用户
+      console.error("[qa] 流式请求失败", e);
+      const msg = e instanceof Error && e.name === "AbortError" ? "请求已取消。" : "网络连接中断，请检查网络后重试。";
       setTurns((t) => {
         const copy = [...t];
-        copy[copy.length - 1] = { key: copy[copy.length - 1].key, role: "ai", error: msg };
+        const last = copy[copy.length - 1];
+        copy[copy.length - 1] = { key: last.key, role: "ai", question: last.question, error: msg };
         return copy;
       });
     } finally {
@@ -329,7 +346,7 @@ function QAWorkspace() {
             <Sparkles className="h-4 w-4 shrink-0 text-ai-500" />
             <h1 className="text-body font-semibold text-ink-900">智能问答</h1>
             <Badge variant="neutral" size="sm">
-              四段式
+              AI 对话
             </Badge>
           </div>
 
@@ -358,8 +375,8 @@ function QAWorkspace() {
             <div className="mx-auto max-w-reading pt-10">
               <EmptyState
                 icon={<Sparkles className="h-5 w-5" />}
-                title="输入法律问题，AI 结构化作答"
-                description="输出结论 / 法律依据 / 行动建议 / 风险提示四段，并在右侧列出全部引用法条，可逐条核对原文。"
+                title="输入法律问题，AI 即时作答"
+                description="我会用自然语言为您分析，并在右侧列出引用的法条与类案，可逐条核对原文。"
               />
             </div>
           ) : (
@@ -377,6 +394,9 @@ function QAWorkspace() {
                     turn={t}
                     activeCitationId={activeCitationId}
                     onCite={handleCite}
+                    onRetry={() => {
+                      if (t.question) void ask(t.question);
+                    }}
                   />
                 )
               )}
@@ -464,10 +484,12 @@ function AiTurn({
   turn,
   activeCitationId,
   onCite,
+  onRetry,
 }: {
   turn: Turn;
   activeCitationId: string | null;
   onCite: (id: string) => void;
+  onRetry: () => void;
 }) {
   /* 内容安全拦截 */
   if (turn.blocked) {
@@ -488,6 +510,16 @@ function AiTurn({
       <div className="rounded-r3 border border-danger-500/30 bg-danger-500/10 p-4">
         <p className="text-body-sm font-medium text-danger-600">生成中断</p>
         <p className="mt-1 text-body-sm text-ink-600">{turn.error}</p>
+        {turn.question && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-r2 border border-danger-500/40 bg-surface px-3 text-body-sm font-medium text-danger-600 transition-colors duration-fast hover:bg-danger-500/10"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            重新生成
+          </button>
+        )}
       </div>
     );
   }
@@ -498,7 +530,9 @@ function AiTurn({
       <div className="ai-content rounded-r3 border border-ai-500/25 bg-ai-500/[0.05] p-4">
         <div className="mb-2 flex items-center gap-2">
           <ProvenanceBadge state="ai" size="sm" />
-          <span className="text-caption text-ink-500">正在生成…</span>
+          <span className="text-caption text-ink-500">
+            {turn.text ? "正在生成…" : turn.status || "正在生成…"}
+          </span>
         </div>
         <p className="whitespace-pre-wrap font-serif text-body leading-[1.85] text-ink-700">
           {turn.text}
@@ -509,6 +543,26 @@ function AiTurn({
   }
 
   const citations = turn.citations ?? [];
+
+  /* 简单回复（如寒暄）：单段纯文本，不渲染四段式骨架 */
+  if (turn.structured === false) {
+    return (
+      <article className="rounded-r3 border border-line bg-surface shadow-s1">
+        <header className="flex items-center gap-2 border-b border-line bg-ai-500/[0.05] px-4 py-2.5">
+          <ProvenanceBadge state="ai" size="sm" />
+          <span className="text-caption text-ink-500">AI 助手 · 未经律师确认</span>
+        </header>
+        <div className="space-y-4 p-4">
+          <p className="whitespace-pre-wrap text-body leading-[1.75] text-ink-700">
+            {turn.sections?.conclusion}
+          </p>
+          {turn.disclaimer && (
+            <p className="border-t border-line pt-3 text-caption text-ink-400">{turn.disclaimer}</p>
+          )}
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article className="rounded-r3 border border-line bg-surface shadow-s1">

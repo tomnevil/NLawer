@@ -262,7 +262,15 @@ export default function ReviewsPage() {
         width: "104px",
         mobile: "hidden",
         render: (_v: number, row) =>
-          row.case_id ? (
+          row.target_type === "CONSULT_REPORT" ? (
+            <Button
+              size="sm"
+              variant={OPEN_STATUSES.includes(row.status) ? "primary" : "outline"}
+              onClick={() => router.push(`/reviews/${row.id}`)}
+            >
+              {OPEN_STATUSES.includes(row.status) ? "去处理" : "查看"}
+            </Button>
+          ) : row.case_id ? (
             <Button
               size="sm"
               variant={OPEN_STATUSES.includes(row.status) ? "primary" : "outline"}
@@ -411,7 +419,8 @@ export default function ReviewsPage() {
             data={rows}
             rowKey={(r) => String(r.id)}
             onRowClick={(r) => {
-              if (r.case_id) router.push(`/cases/${r.case_id}`);
+              if (r.target_type === "CONSULT_REPORT") router.push(`/reviews/${r.id}`);
+              else if (r.case_id) router.push(`/cases/${r.case_id}`);
             }}
             columnSettings
             caption="复核任务列表"

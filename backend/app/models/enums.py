@@ -172,6 +172,7 @@ class ReviewTargetType(str, Enum):
     EVIDENCE_LIST = "EVIDENCE_LIST"
     COMPLIANCE_REPORT = "COMPLIANCE_REPORT"
     LEGAL_OPINION = "LEGAL_OPINION"
+    CONSULT_REPORT = "CONSULT_REPORT"
 
 
 # ---------------- 引用溯源 ----------------

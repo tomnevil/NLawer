@@ -300,7 +300,11 @@ class ReviewService:
         )
 
     async def _on_confirmed(self, r: Review) -> None:
-        """定稿后回写业务对象（当前支持案件分析），并推进案件状态。"""
+        """定稿后回写业务对象，并推进关联状态。
+
+        - CASE_ANALYSIS：分析定稿，案件进入「已确认定稿」。
+        - CONSULT_REPORT：咨询报告定稿（律师署名/时间戳），并**推回客户 IM 会话**。
+        """
         if r.target_type == ReviewTargetType.CASE_ANALYSIS:
             a = await self.db.get(CaseAnalysis, r.target_id)
             if a is not None:
@@ -311,6 +315,80 @@ class ReviewService:
                 case = await self.db.get(Case, a.case_id)
                 if case is not None:
                     case.status = CaseStatus.CONFIRMED
+        elif r.target_type == ReviewTargetType.CONSULT_REPORT:
+            await self._finalize_consult_report(r)
+
+    async def _finalize_consult_report(self, r: Review) -> None:
+        """律师确认 → 定稿 ConsultReport（署名/时间戳/定稿四段式），并回流客户会话。
+
+        合规约束（设计 §3.6）：`Review` 未 APPROVE 前报告不得定稿、不得推回客户；
+        此处仅在 CONFIRMED 分支被调用，保证「律师已确认」才会出现在客户侧。
+        """
+        import re as _re
+
+        from app.models.consult_report import ConsultReport, ConsultReportStatus
+        from app.models.conversation import Message, MessageSender, MessageType
+
+        cr = await self.db.get(ConsultReport, r.target_id)
+        if cr is None:
+            return
+
+        cr.status = ConsultReportStatus.APPROVED
+        cr.signed_by = r.decided_by
+        cr.signed_at = r.decided_at
+        cr.final_report = cr.draft_sections or {}
+
+        lawyer = await self.db.get(User, r.decided_by) if r.decided_by else None
+        lawyer_name = (lawyer.full_name or lawyer.username) if lawyer is not None else None
+
+        # 引用转 IM 卡片形状（{ id, law_name, article_no }）
+        citations: list[dict] = []
+        for c in cr.citations or []:
+            if not isinstance(c, dict):
+                continue
+            title = c.get("title", "") or ""
+            article_no = ""
+            law_name = title
+            if c.get("type") == "LAW":
+                m = _re.match(r"^《?([^》]+)》?(第[^》]*)?$", title)
+                if m:
+                    law_name = m.group(1)
+                    article_no = (m.group(2) or "").strip()
+            citations.append({"id": c.get("id"), "law_name": law_name, "article_no": article_no})
+
+        # 推回客户会话（IM 场景：conversation_id 存在才回流，否则仅定稿留库）
+        if cr.conversation_id is not None:
+            self.db.add(
+                Message(
+                    tenant_id=cr.tenant_id,
+                    conversation_id=cr.conversation_id,
+                    sender=MessageSender.LAWYER,
+                    msg_type=MessageType.CARD,
+                    content="您的咨询报告已由律师确认。",
+                    card_payload={
+                        "kind": "consult_report",
+                        "report_id": cr.id,
+                        "review_id": r.id,
+                        "question": cr.question,
+                        "sections": cr.final_report,
+                        "citations": citations,
+                        "lawyer_name": lawyer_name,
+                        "signed_at": cr.signed_at,
+                    },
+                    citation_ids=[c["id"] for c in citations if c.get("id")],
+                    sender_user_id=r.decided_by,
+                )
+            )
+            if cr.user_id is not None:
+                await notify(
+                    self.db,
+                    tenant_id=cr.tenant_id,
+                    user_id=cr.user_id,
+                    type=NotificationType.REVIEW_DECIDED,
+                    content="您咨询的法律问题已有律师确认并出具正式报告，请到会话中查收。",
+                    ref_type=ReviewTargetType.CONSULT_REPORT.value,
+                    ref_id=cr.id,
+                )
 
     async def _record(
         self,

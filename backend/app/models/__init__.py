@@ -25,6 +25,7 @@ from app.models.complaint import (  # noqa: F401
     ComplaintStatus,
     ComplaintType,
 )
+from app.models.consult_report import ConsultReport, ConsultReportStatus  # noqa: F401
 from app.models.conversation import Conversation, Message  # noqa: F401
 from app.models.document import (  # noqa: F401
     ContractReview,
@@ -53,6 +54,8 @@ __all__ = [
     "User",
     "Conversation",
     "Message",
+    "ConsultReport",
+    "ConsultReportStatus",
     "Case",
     "CaseEvent",
     "Dispatch",

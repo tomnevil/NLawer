@@ -80,6 +80,11 @@ interface EngineCard {
     risk?: string;
   };
   citations?: { law_name: string; article_no: string; id: number }[];
+  /* kind === "consult_report"（律师已确认的正式报告） */
+  report_id?: number;
+  review_id?: number;
+  question?: string;
+  signed_at?: string | null;
 }
 
 interface ChatMessage {
@@ -966,6 +971,51 @@ function CardBlock({ card }: { card: EngineCard }) {
                 ))}
               </ul>
             </div>
+          )}
+        </div>
+      </article>
+    );
+  }
+
+  /* 律师已确认的正式咨询报告：带署名 + 时间戳，与客户可见的 AI 草稿在视觉上
+     明确区分（绿/verified 色系 + 「律师已确认」徽标），呼应责任边界规范。 */
+  if (card.kind === "consult_report" && card.sections) {
+    const { conclusion, legal_basis: legal, advice, risk } = card.sections;
+    return (
+      <article className="mt-2 w-full overflow-hidden rounded-r3 border border-verified-500/40 bg-verified-500/[0.06]">
+        <header className="flex items-center gap-2 border-b border-verified-500/30 px-3 py-2">
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-verified-500" />
+          <Badge variant="verified" size="sm">
+            律师已确认
+          </Badge>
+          <span className="text-caption text-ink-500">正式咨询报告</span>
+          {card.lawyer_name && (
+            <span className="ml-auto truncate text-caption text-ink-500">执业律师 {card.lawyer_name}</span>
+          )}
+        </header>
+        <div className="space-y-3 p-3">
+          {conclusion && <Section title="结论" body={conclusion} />}
+          {legal && <Section title="法律依据" body={legal} mono />}
+          {advice && <Section title="行动建议" body={advice} />}
+          {risk && <Section title="风险提示" body={risk} />}
+          {card.citations && card.citations.length > 0 && (
+            <div className="border-t border-verified-500/30 pt-2.5">
+              <p className="mb-1.5 text-caption text-ink-500">引用依据（{card.citations.length}）</p>
+              <ul className="flex flex-wrap gap-1.5">
+                {card.citations.map((c) => (
+                  <li key={c.id}>
+                    <Badge variant="neutral" size="sm">
+                      《{c.law_name}》{c.article_no}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {card.signed_at && (
+            <p className="border-t border-verified-500/30 pt-2 text-caption text-ink-400">
+              由执业律师 {card.lawyer_name ?? "本所律师"} 于 {card.signed_at} 确认出具
+            </p>
           )}
         </div>
       </article>

@@ -108,8 +108,29 @@ class Settings(BaseSettings):
     LLM_LOCAL_API_KEY: Optional[str] = None
     LLM_LOCAL_BASE_URL: str = "http://localhost:11434/v1"
     LLM_LOCAL_MODEL: str = "qwen2.5:32b"
-    # 调用超时（秒）
-    LLM_TIMEOUT_SECONDS: int = 60
+    # 调用超时（秒）；长合同/长文书场景放宽到 90s 以容忍大模型首字延迟
+    LLM_TIMEOUT_SECONDS: int = 90
+
+    # ---- 模型网关（CME Cloud tokenplan，OpenAI Chat Completions 兼容）----
+    # 接入地址：{LLM_GATEWAY_BASE_URL}/chat/completions
+    # 一个 Key 覆盖网关全部可用模型；配置后三档（CHEAP/STRONG/LOCAL）统一走网关，
+    # 并由 router.py 按法务任务挑选合适模型（见 ai/router.py DEFAULT_TASK_MODEL）。
+    LLM_GATEWAY_API_KEY: Optional[str] = None
+    LLM_GATEWAY_BASE_URL: str = "https://zhenze-huhehaote.cmecloud.cn/tokenplan/v1"
+    # 网关全部可用模型（逗号分隔），用于 /health 自检与可选模型清单。
+    # 注：模型 ID 大小写敏感（qwen/、minimax/ 前缀为小写；ZHIPU/Kimi/DeepSeek 保持原样）。
+    LLM_GATEWAY_MODELS: str = (
+        "MiniMax-M2.5,"
+        "qwen/qwen3.6-plus,qwen/qwen3.7-max,"
+        "DeepSeek-V4-Flash,qwen/deepseek-v4-pro,"
+        "ZHIPU/GLM-5.1,ZHIPU/GLM-5.2,"
+        "minimax/MiniMax-M3,minimax/MiniMax-M2.7,"
+        "Kimi/Kimi-K2.7-code,Kimi/Kimi-K2.6,"
+        "qwen/glm-5.2"
+    )
+    # 法务任务 -> 模型覆盖映射（JSON，如 {"qa":"MiniMax-M2.5","contract_review":"ZHIPU/GLM-5.2"}）；
+    # 留空则用 router.py 内 DEFAULT_TASK_MODEL 默认映射。
+    LLM_TASK_MODEL: str = ""
 
     # ---- 合同审查（P0-16）----
     # 合同通常含商业秘密（客户名单、报价、结算方式），默认按「敏感数据不出域」

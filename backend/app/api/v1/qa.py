@@ -62,7 +62,7 @@ async def ask(
         if verdict.blocked:
             raise ContentBlockedError(verdict)
 
-    result = await QAService(db).build(payload.question, ctx.tenant_id)
+    result = await QAService(db).build(payload.question, ctx.tenant_id, user_id=ctx.user_id)
 
     # —— 输出审核：命中即「停止传输」，不把违规内容返回给用户
     if settings.MODERATION_CHECK_OUTPUT:
@@ -141,7 +141,7 @@ async def ask_stream(
                 return
 
         try:
-            async for chunk in svc.stream(payload.question, ctx.tenant_id):
+            async for chunk in svc.stream(payload.question, ctx.tenant_id, user_id=ctx.user_id):
                 # 从 SSE 包里取出实际内容做跨片段校验
                 content = _extract_sse_content(chunk)
                 if stream_mod is not None and content:

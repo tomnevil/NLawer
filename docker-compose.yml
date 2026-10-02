@@ -59,7 +59,7 @@ services:
       DATABASE_URL_SYNC: postgresql+psycopg2://nlawer:${POSTGRES_PASSWORD}@db:5432/nlawer
       # 生产必须显式提供强密钥（缺失则 compose 启动失败，避免弱密钥上线）
       SECRET_KEY: ${SECRET_KEY:?请先设置 SECRET_KEY 环境变量（或写入 .env）}
-      CORS_ORIGINS: ${CORS_ORIGINS:-"http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003"}
+      CORS_ORIGINS: ${CORS_ORIGINS:-"http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005"}
       # 限流默认开启；配了 REDIS_URL 则多副本共享计数
       RATE_LIMIT_ENABLED: "true"
       RATE_LIMIT_LOGIN_MAX: "20"
@@ -67,6 +67,12 @@ services:
       RATE_LIMIT_GENERATE_MAX: "15"
       RATE_LIMIT_WINDOW_SECONDS: "60"
       REDIS_URL: "redis://redis:6379/0"
+      # ---- 模型网关（CME Cloud tokenplan，OpenAI 兼容）----
+      # 一个 Key 覆盖网关全部可用模型；配置后三档统一走网关，按法务任务选模型。
+      LLM_GATEWAY_API_KEY: ${LLM_GATEWAY_API_KEY}
+      LLM_GATEWAY_BASE_URL: ${LLM_GATEWAY_BASE_URL:-https://zhenze-huhehaote.cmecloud.cn/tokenplan/v1}
+      # 可选：JSON 覆盖法务任务 -> 模型映射，留空用代码默认（见 ai/router.py）
+      LLM_TASK_MODEL: ${LLM_TASK_MODEL:-}
       # 异步任务：并发消费者数 / 僵尸任务回收
       JOB_MAX_CONCURRENCY: "4"
       JOB_STALE_TIMEOUT_SECONDS: "300"
@@ -108,7 +114,8 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3002:3000"
+      # 3005：宿主 3002 已被服务器上另一项目（/root/bbwhaiyang）占用
+      - "127.0.0.1:3005:3000"
 
   web:
     build:
@@ -153,7 +160,8 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3003:3000"
+      # 3004：宿主 3003 已被服务器上另一项目（/opt/visitor-chat，systemd 自启）占用
+      - "127.0.0.1:3004:3000"
 
 volumes:
   nlawer-pgdata:

@@ -1,4 +1,4 @@
-"""模型路由：任务类型 -> 模型档位，三级降级 env -> config -> Mock。
+"""模型路由：任务类型 -> 模型，统一网关 + 三档回退，生产禁止 Mock 降级。
 
 借鉴 zunicorn-agent `ModelRouter` 分档 + YouTubeBoardcast `_resolve_zunicorn_src`
 三级解析：未配置 API Key 时自动落到 MockProvider（**仅限非生产环境**），
@@ -8,6 +8,7 @@
 但无依据的内容。因此**生产环境缺失 Key 时直接拒绝服务**，而非静默降级
 （见 `_provider`）。Mock 输出亦会被标记 `is_mock=True` 供审计追溯。
 """
+import json
 from enum import Enum
 from typing import Optional
 
@@ -34,7 +35,7 @@ class ModelTier(str, Enum):
     LOCAL = "local"  # 敏感数据不出域
 
 
-# 任务 -> 默认档位
+# 任务 -> 默认档位（用于 provider_status 与敏感判定）
 TIER_FOR_TASK: dict[TaskType, ModelTier] = {
     TaskType.QA: ModelTier.CHEAP,
     TaskType.DOCUMENT: ModelTier.CHEAP,
@@ -48,7 +49,54 @@ TIER_FOR_TASK: dict[TaskType, ModelTier] = {
 }
 
 
-def _provider(tier: ModelTier) -> Optional[OpenAIProvider]:
+# 法务任务 -> 默认模型（基于 CME tokenplan 网关可用模型，按任务性质挑选）。
+# 选择依据：
+#   - QA / COPILOT：高频短问答，优先低成本、低延迟、中文好 -> DeepSeek-V4-Flash
+#   - DOCUMENT：常规文书，可能较长 -> qwen/qwen3.6-plus（长上下文，性价比高）
+#   - EVIDENCE / COMPLIANCE / CALCULATION：高强度判定 / 推理 -> qwen/qwen3.7-max（旗舰推理）
+#   - CONTRACT_REVIEW：合同长且需逐条法律风险判定 -> minimax/MiniMax-M3（1M 上下文、低延迟，
+#       适合长合同；ZHIPU/GLM-5.1 实测 >60s 易超时，故不默认）
+# 注：可用模型以 config.LLM_GATEWAY_MODELS 为准；如需微调，用 LLM_TASK_MODEL(JSON) 覆盖。
+DEFAULT_TASK_MODEL: dict[TaskType, str] = {
+    TaskType.QA: "DeepSeek-V4-Flash",
+    TaskType.DOCUMENT: "qwen/qwen3.6-plus",
+    TaskType.COPILOT: "DeepSeek-V4-Flash",
+    TaskType.EVIDENCE: "qwen/qwen3.7-max",
+    TaskType.COMPLIANCE: "qwen/qwen3.7-max",
+    TaskType.CALCULATION: "qwen/qwen3.7-max",
+    TaskType.CONTRACT_REVIEW: "minimax/MiniMax-M3",
+}
+
+
+_task_model_overrides: Optional[dict] = None
+
+
+def _resolve_task_model(task: TaskType) -> str:
+    """解析任务对应的模型名：LLM_TASK_MODEL(JSON) 覆盖 > 代码默认映射。"""
+    global _task_model_overrides
+    if _task_model_overrides is None:
+        raw = (settings.LLM_TASK_MODEL or "").strip()
+        if raw:
+            try:
+                _task_model_overrides = json.loads(raw)
+            except (ValueError, TypeError):
+                _task_model_overrides = {}
+        else:
+            _task_model_overrides = {}
+    override = _task_model_overrides.get(task.value)
+    return override if override else DEFAULT_TASK_MODEL[task]
+
+
+def _provider(tier: ModelTier, model: Optional[str] = None) -> Optional[OpenAIProvider]:
+    # 1) 优先统一网关（CME tokenplan）：一个 Key 覆盖全部可用模型
+    if settings.LLM_GATEWAY_API_KEY:
+        return OpenAIProvider(
+            settings.LLM_GATEWAY_BASE_URL,
+            settings.LLM_GATEWAY_API_KEY,
+            model or settings.LLM_CHEAP_MODEL,
+            tier.value,
+        )
+    # 2) 回退到三档独立配置（向后兼容历史部署）
     if tier == ModelTier.CHEAP and settings.LLM_CHEAP_API_KEY:
         return OpenAIProvider(
             settings.LLM_CHEAP_BASE_URL, settings.LLM_CHEAP_API_KEY, settings.LLM_CHEAP_MODEL, "cheap"
@@ -66,9 +114,9 @@ def _provider(tier: ModelTier) -> Optional[OpenAIProvider]:
 
 # 环境变量名映射，便于错误信息直接告诉运维该配哪一项
 _ENV_KEY_NAME: dict[ModelTier, str] = {
-    ModelTier.CHEAP: "LLM_CHEAP_API_KEY",
-    ModelTier.STRONG: "LLM_STRONG_API_KEY",
-    ModelTier.LOCAL: "LLM_LOCAL_API_KEY",
+    ModelTier.CHEAP: "LLM_GATEWAY_API_KEY / LLM_CHEAP_API_KEY",
+    ModelTier.STRONG: "LLM_GATEWAY_API_KEY / LLM_STRONG_API_KEY",
+    ModelTier.LOCAL: "LLM_GATEWAY_API_KEY / LLM_LOCAL_API_KEY",
 }
 
 
@@ -91,7 +139,8 @@ class ModelRouter:
         max_tokens: int = 2000,
     ) -> LLMResult:
         tier = ModelTier.LOCAL if sensitive else TIER_FOR_TASK[task]
-        provider = _provider(tier)
+        model = _resolve_task_model(task)
+        provider = _provider(tier, model)
 
         if provider is None:
             # 生产环境：拒绝静默降级，避免用占位文本冒充法律分析
@@ -99,7 +148,7 @@ class ModelRouter:
                 raise ConfigurationError(
                     f"生产环境未配置 {tier.value} 档模型（{_ENV_KEY_NAME[tier]} 为空），"
                     "已拒绝以 Mock 结果代替真实模型输出",
-                    details={"tier": tier.value, "env_key": _ENV_KEY_NAME[tier]},
+                    details={"tier": tier.value, "model": model},
                 )
             provider = MockProvider(tier.value)
 

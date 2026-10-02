@@ -5,11 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import AuditAction, record
 from app.core.deps import get_current_user, get_db, get_tenant_context
-from app.core.errors import ErrorCode, NotFoundError, UnprocessableEntityError
+from app.core.errors import (
+    ErrorCode,
+    NotFoundError,
+    PermissionDeniedError,
+    UnprocessableEntityError,
+)
 from app.core.pagination import Page, PaginationParams, count_bounded, ok
 from app.core.rbac import Role
 from app.models.case import Case
 from app.models.enums import ReviewDecision, ReviewTargetType
+from app.models.identity import User
 from app.models.review import Review
 from app.schemas.review import ReviewAction, ReviewOut, ReviewRecordOut
 from app.services.review_service import ReviewService
@@ -17,16 +23,45 @@ from app.services.review_service import ReviewService
 router = APIRouter(prefix="/reviews", tags=["复核工作流"])
 
 
-async def _review_or_404(db: AsyncSession, review_id: int, tenant_id: str) -> Review:
-    """加载复核任务并校验租户归属（写操作必须经此守卫）。
+def _is_admin(ctx) -> bool:
+    """律所/平台管理员可查看与调度本租户全部复核。"""
+    return ctx.role in (Role.PLATFORM_ADMIN, Role.FIRM_ADMIN)
+
+
+def _can_triage(ctx, user) -> bool:
+    """具备调度/分派资格：管理员，或拥有 L3 高级复核资格（可兜底未分配池）。"""
+    return _is_admin(ctx) or bool(getattr(user, "can_l3_review", False))
+
+
+def _assert_review_access(r: Review, ctx, user) -> None:
+    """复核任务可见性门禁（最小权限 + 数据最小化）。
+
+    - 客户（CLIENT）：禁止访问任何复核（咨询内容属敏感，且客户不参内部复核）。
+    - 未分配（待分配池）：仅调度资格者可见（管理员 / L3），用于兜底派单。
+    - 已分配：仅承办人本人可见；管理员可见全部。
+    越权时按 404 处理（不向越权者泄露任务存在），而非 403。
+    """
+    if ctx.role == Role.CLIENT:
+        raise PermissionDeniedError("客户不可访问复核任务", code=ErrorCode.PERMISSION_DENIED)
+    if r.assignee_id == user.id or _is_admin(ctx):
+        return
+    if r.assignee_id is None and _can_triage(ctx, user):
+        return
+    raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
+
+
+async def _review_or_404(db: AsyncSession, review_id: int, ctx, user) -> Review:
+    """加载复核任务并校验租户归属 + 可见性（写操作必须经此守卫）。
 
     历史缺陷：`edit` / `decide` / `archive` / `void` 四个写端点仅依赖
     `get_current_user`，未做租户校验，任何登录用户可凭 review_id 篡改
-    或定稿**他人租户**的复核内容。此处统一收口。
+    或定稿**他人租户**的复核内容。此处统一收口，并叠加可见性门禁，
+    避免同租户非承办律师/客户越权读取或操作他人复核。
     """
     r = await db.get(Review, review_id)
-    if r is None or r.tenant_id != tenant_id:
+    if r is None or r.tenant_id != ctx.tenant_id:
         raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
+    _assert_review_access(r, ctx, user)
     return r
 
 
@@ -50,10 +85,41 @@ async def list_reviews(
     params: PaginationParams = Depends(),
     status: str | None = Query(None),
     target_type: str | None = Query(None),
+    assignee_id: int | None = Query(None, description="按承办律师过滤；不传则按可见范围默认"),
+    scope: str | None = Query(None, description="mine（默认，仅自己承办）| pool（待分配池，仅调度资格）| all（全部，仅管理员）"),
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
+    user=Depends(get_current_user),
 ):
+    # 客户侧一律不可见复核工作流（咨询内容属敏感，合规要求）
+    if ctx.role == Role.CLIENT:
+        raise PermissionDeniedError("客户不可访问复核队列", code=ErrorCode.PERMISSION_DENIED)
+
+    triage = _can_triage(ctx, user)
     base = select(Review).where(Review.tenant_id == ctx.tenant_id)
+
+    if scope == "pool":
+        # 待分配池：仅调度资格者可见，且只列未分配（避免未派单前全员可见）
+        if not triage:
+            raise PermissionDeniedError("无调度权限，无法查看待分配池", code=ErrorCode.PERMISSION_DENIED)
+        base = base.where(Review.assignee_id.is_(None))
+    elif scope == "all":
+        # 全部：仅管理员（L3 也只能看待分配池 + 自己承办，不越权看他人已分配）
+        if not _is_admin(ctx):
+            raise PermissionDeniedError("无权限查看全部复核", code=ErrorCode.PERMISSION_DENIED)
+    else:  # mine（默认）
+        if assignee_id is not None:
+            # 显式指定某承办人：仅当该任务本就属自己，或自己是管理员
+            if assignee_id != user.id and not _is_admin(ctx):
+                raise PermissionDeniedError("无权限查看他人复核", code=ErrorCode.PERMISSION_DENIED)
+            base = base.where(Review.assignee_id == assignee_id)
+        elif _is_admin(ctx):
+            # 管理员默认看全部
+            pass
+        else:
+            # 普通律师/助理/L3：仅看自己承办的
+            base = base.where(Review.assignee_id == user.id)
+
     if status:
         base = base.where(Review.status == status)
     if target_type:
@@ -134,11 +200,39 @@ async def get_review(
     review_id: int,
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
+    user=Depends(get_current_user),
 ):
     r = await db.get(Review, review_id)
     if r is None or r.tenant_id != ctx.tenant_id:
         raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
-    return ok(ReviewOut.model_validate(r).model_dump())
+    _assert_review_access(r, ctx, user)
+    data = ReviewOut.model_validate(r).model_dump()
+    # 咨询报告草稿：随复核任务一并返回四段式 + 引用，供律师复核台展示/编辑
+    if r.target_type == ReviewTargetType.CONSULT_REPORT:
+        from app.models.consult_report import ConsultReport
+
+        cr = await db.get(ConsultReport, r.target_id)
+        if cr is not None:
+            lawyer_name = None
+            if cr.signed_by is not None:
+                su = await db.get(User, cr.signed_by)
+                lawyer_name = (su.full_name or su.username) if su is not None else None
+            data["consult_report"] = {
+                "id": cr.id,
+                "status": cr.status.value if hasattr(cr.status, "value") else cr.status,
+                "question": cr.question,
+                "answer": cr.answer,
+                "draft_sections": cr.draft_sections,
+                "citations": cr.citations,
+                "review_id": cr.review_id,
+                "lawyer_id": cr.lawyer_id,
+                "conversation_id": cr.conversation_id,
+                "final_report": cr.final_report,
+                "signed_by": cr.signed_by,
+                "signed_at": cr.signed_at,
+                "lawyer_name": lawyer_name,
+            }
+    return ok(data)
 
 
 @router.get("/{review_id}/records", response_model=dict, summary="复核留痕")
@@ -146,12 +240,68 @@ async def review_records(
     review_id: int,
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
+    user=Depends(get_current_user),
 ):
     r = await db.get(Review, review_id)
     if r is None or r.tenant_id != ctx.tenant_id:
         raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
+    _assert_review_access(r, ctx, user)
     rows = await ReviewService(db).records(review_id)
     return ok([ReviewRecordOut.model_validate(x).model_dump() for x in rows])
+
+
+@router.get("/{review_id}/transcript", response_model=dict, summary="关联会话原文")
+async def review_transcript(
+    review_id: int,
+    db: AsyncSession = Depends(get_db),
+    ctx=Depends(get_tenant_context),
+    user=Depends(get_current_user),
+):
+    """返回该复核关联的完整聊天记录（仅咨询报告类复核有）。
+
+    可见性同复核详情：仅承办人 / 调度资格者可见（客户不可）。聊天含客户 PII，
+    故严格受复核门禁约束，且按租户二次过滤，避免越权读取他人会话。
+    """
+    from app.models.conversation import Conversation, Message
+    from app.models.consult_report import ConsultReport
+
+    r = await db.get(Review, review_id)
+    if r is None or r.tenant_id != ctx.tenant_id:
+        raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
+    _assert_review_access(r, ctx, user)
+
+    if r.target_type != ReviewTargetType.CONSULT_REPORT:
+        return ok([])
+
+    cr = await db.get(ConsultReport, r.target_id)
+    if cr is None or cr.conversation_id is None:
+        return ok([])
+
+    # 租户校验走 Conversation（会话引擎写入的 Message.tenant_id 可能为 NULL，
+    # 直接按消息租户过滤会把同一会话的消息误杀）；会话归属即消息归属。
+    conv = await db.get(Conversation, cr.conversation_id)
+    if conv is None or conv.tenant_id != ctx.tenant_id:
+        return ok([])
+
+    rows = list(
+        (
+            await db.execute(select(Message).where(Message.conversation_id == conv.id).order_by(Message.id))
+        ).scalars().all()
+    )
+    return ok(
+        [
+            {
+                "id": m.id,
+                "sender": m.sender.value if hasattr(m.sender, "value") else m.sender,
+                "msg_type": m.msg_type.value if hasattr(m.msg_type, "value") else m.msg_type,
+                "content": m.content,
+                "card_payload": m.card_payload,
+                "citation_ids": m.citation_ids,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in rows
+        ]
+    )
 
 
 @router.post("/{review_id}/submit", response_model=dict, summary="提交复核")
@@ -162,7 +312,7 @@ async def submit_review(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    await _review_or_404(db, review_id, ctx.tenant_id)
+    await _review_or_404(db, review_id, ctx, user)
     r = await ReviewService(db).submit(review_id, actor=user, comment=payload.comment)
     await record(
         db,
@@ -185,7 +335,7 @@ async def edit_review(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    await _review_or_404(db, review_id, ctx.tenant_id)
+    await _review_or_404(db, review_id, ctx, user)
     r = await ReviewService(db).edit(review_id, actor=user, changes=payload.changes, comment=payload.comment)
     await record(
         db,
@@ -209,7 +359,7 @@ async def decide_review(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    await _review_or_404(db, review_id, ctx.tenant_id)
+    await _review_or_404(db, review_id, ctx, user)
     try:
         decision = ReviewDecision(payload.decision or "APPROVED")
     except ValueError:
@@ -242,7 +392,7 @@ async def archive_review(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    await _review_or_404(db, review_id, ctx.tenant_id)
+    await _review_or_404(db, review_id, ctx, user)
     r = await ReviewService(db).archive(review_id, actor=user)
     await record(
         db,
@@ -265,7 +415,7 @@ async def void_review(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    await _review_or_404(db, review_id, ctx.tenant_id)
+    await _review_or_404(db, review_id, ctx, user)
     r = await ReviewService(db).void(review_id, actor=user, comment=payload.comment)
     await record(
         db,
