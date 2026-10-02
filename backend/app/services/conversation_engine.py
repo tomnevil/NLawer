@@ -130,6 +130,14 @@ class ConversationEngine:
     # ---------------- 咨询直答 ----------------
     async def _consult_answer(self, text: str, dispute_type: Optional[str]) -> dict:
         """客户侧自然对话回复；四段式作为 ConsultReport 草稿落库（不直接展示）。"""
+        # 寒暄/应答式输入（「好的」「嗯嗯」「谢谢」）直接自然回应：
+        # 不调模型、不检索法条，更不生成咨询报告+复核任务——否则客户每回一句
+        # 「好的」都会烧一次几十秒的 LLM 调用，并往律师队列里灌垃圾单。
+        from app.services.qa_service import _is_small_talk, _smalltalk_reply
+
+        if _is_small_talk(text):
+            return {"reply": _smalltalk_reply(text), "card": None, "draft": None, "citations": []}
+
         articles = await self._retrieve_laws(text, dispute_type)
 
         if not articles:
