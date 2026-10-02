@@ -106,7 +106,7 @@ def mock_stream(monkeypatch):
 
     rec = {"tenant": None}
 
-    def _make_stream(self, question, tenant_id):
+    def _make_stream(self, question, tenant_id, user_id=None):
         rec["tenant"] = tenant_id
 
         async def _gen():

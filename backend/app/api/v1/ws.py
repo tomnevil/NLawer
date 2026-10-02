@@ -325,6 +325,7 @@ async def conversation_ws(
 
                 db.add(
                     Message(
+                        tenant_id=conv.tenant_id,
                         conversation_id=conversation_id,
                         sender=sender,
                         msg_type=msg_type,

@@ -132,6 +132,7 @@ async def send_message(
 
     db.add(
         Message(
+            tenant_id=conv.tenant_id,
             conversation_id=conversation_id,
             sender=sender,
             msg_type=payload.msg_type,

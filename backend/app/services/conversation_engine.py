@@ -55,7 +55,7 @@ class ConversationEngine:
             dispatch_info = await self._to_dispatch(conv, text, intent, dispute_type, claim_amount, complexity)
             conv.status = ConversationStatus.WAITING_HUMAN
             reply = f"您的问题需要律师介入，我已为您生成案件并派单（{dispatch_info['mode']}）。请稍候，律师接单后将与您联系。"
-            await self._add_message(conv.id, MessageSender.AI, reply, card=dispatch_info.get("card"))
+            await self._add_message(conv.id, MessageSender.AI, reply, card=dispatch_info.get("card"), tenant_id=conv.tenant_id)
             conv.last_message_at = _now()
             return {
                 "reply": reply,
@@ -66,7 +66,7 @@ class ConversationEngine:
 
         # 咨询直答（客户侧自然对话；四段式转后台草稿，并自动入复核）
         answer = await self._consult_answer(text, dispute_type)
-        await self._add_message(conv.id, MessageSender.AI, answer["reply"], card=answer.get("card"))
+        await self._add_message(conv.id, MessageSender.AI, answer["reply"], card=answer.get("card"), tenant_id=conv.tenant_id)
         if answer.get("draft"):
             review_id = await self._save_consult_report(
                 conv, text, answer["reply"], answer["draft"], answer.get("citations", [])
@@ -76,6 +76,7 @@ class ConversationEngine:
                     conv.id,
                     MessageSender.AI,
                     "（我已把要点整理成草稿，正请律师复核确认，确认后会给您更稳妥的版本。）",
+                    tenant_id=conv.tenant_id,
                 )
         conv.last_message_at = _now()
         return {"reply": answer["reply"], "card": answer.get("card"), "status": conv.status.value}
@@ -215,9 +216,15 @@ class ConversationEngine:
         except Exception:
             return None
 
-    async def _add_message(self, conversation_id: int, sender: MessageSender, content: str, *, card: Optional[dict] = None) -> None:
+    async def _add_message(
+        self, conversation_id: int, sender: MessageSender, content: str, *,
+        card: Optional[dict] = None, tenant_id: Optional[str] = None,
+    ) -> None:
+        # tenant_id 必须显式落库：历史缺陷是缺失时消息租户为 NULL，
+        # 任何按租户过滤消息的查询都会把整段会话误过滤掉（2026-10-01 修）。
         self.db.add(
             Message(
+                tenant_id=tenant_id,
                 conversation_id=conversation_id,
                 sender=sender,
                 msg_type=MessageType.TEXT,
