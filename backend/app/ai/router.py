@@ -58,13 +58,13 @@ TIER_FOR_TASK: dict[TaskType, ModelTier] = {
 #       适合长合同；ZHIPU/GLM-5.1 实测 >60s 易超时，故不默认）
 # 注：可用模型以 config.LLM_GATEWAY_MODELS 为准；如需微调，用 LLM_TASK_MODEL(JSON) 覆盖。
 DEFAULT_TASK_MODEL: dict[TaskType, str] = {
-    TaskType.QA: "DeepSeek-V4-Flash",
-    TaskType.DOCUMENT: "qwen/qwen3.6-plus",
-    TaskType.COPILOT: "DeepSeek-V4-Flash",
-    TaskType.EVIDENCE: "qwen/qwen3.7-max",
-    TaskType.COMPLIANCE: "qwen/qwen3.7-max",
-    TaskType.CALCULATION: "qwen/qwen3.7-max",
-    TaskType.CONTRACT_REVIEW: "minimax/MiniMax-M3",
+    TaskType.QA: "qwen3-30b",
+    TaskType.DOCUMENT: "qwen3-30b",
+    TaskType.COPILOT: "qwen3-30b",
+    TaskType.EVIDENCE: "qwen3-30b",
+    TaskType.COMPLIANCE: "qwen3-30b",
+    TaskType.CALCULATION: "qwen3-30b",
+    TaskType.CONTRACT_REVIEW: "qwen3-30b",
 }
 
 
