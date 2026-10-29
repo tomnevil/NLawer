@@ -214,8 +214,8 @@ jobs:
   #      （`verify_component_wiring.py` 的 `KNOWN_GAPS`），但**不许涨**、**不许赖**。
   #
   # 分四档（都在 `run_ci_probes.py` 里；数字以 `--list` 现读为准，别写死）：
-  #   `GATED`        直接跑的 21 个（阶段 2）
-  #   `GATED_STATIC` **免浏览器半边 + 棘轮**的 7 个（阶段 3，2026-09-22 接入）
+  #   `GATED`        直接跑的 **24** 个（阶段 2；2026-10-16 现读）
+  #   `GATED_STATIC` **免浏览器半边 + 棘轮**的 **8** 个（阶段 3，2026-09-22 接入）
   #                  —— 它们只能靠 CDP 判的那部分仍跑不了，但**源码/令牌层**
   #                     可以用 `--source-only` / `--tokens-only` 跑。
   #                     做法是**冻结条数、只拦增长**（与 `GATE_BASELINE` 同构）：
@@ -223,16 +223,21 @@ jobs:
   #                     ⚠️ 「取不到条数」判**红**（不是绿）—— 否则正则失配 = 永久绿。
   #   `NOT_GATED`    ✅ **2026-09-26 起为 0** —— 拍板 §11.4-③ 落地，
   #                  新增 `browser-all` job（四端生产构建 + 隔离库 + 真后端）后，
-  #                  原本「真需要浏览器/dev server/产物」的 **14 条全部接进 CI**。
+  #                  原本「真需要浏览器/dev server/产物」的 **14 条全部接进 CI**
+  #                  （后陆续增至 **16**：10-13 加 `verify_contrast.py` 的渲染层 T4、
+  #                    10-14 加 `verify_typography.py` 的渲染层 T3/T3b）。
   #                  ⚠️ 这一档的语义是「**`ci.yml` 里没有任何 job 跑它**」，
   #                     不是「不需要跑」—— 一条从不执行的门禁与没有门禁无法区分。
   #                     留空是**结论**（欠账清零），不是「这一块没写」。
-  #   `CI_ELSEWHERE` 19 个**已在 CI、但不在本 job** 的（`frontend` job 的 2 条 +
-  #                  `browser-admin` 的 3 条 + `browser-all` 的 14 条）。
+  #   `CI_ELSEWHERE` **20** 个**已在 CI、但不在本 job** 的（2026-10-14 现读）：
+  #                  `frontend` job 的 2 条 + `browser-admin` 的 3 条 +
+  #                  `browser-all` 的 16 条，**去重 1 条** —— `verify_typography.py`
+  #                  两处都跑（`frontend` 跑 `--source-only`、`browser-all` 跑渲染层），
+  #                  但在「探针 → 在哪跑」表里只占一个键。
   #                  ⚠️ 它们**不能**被「提为 `GATED`」—— 本 job 没有前端产物 / 没有浏览器，
   #                     提进来只会永远 `exit 2`（跳过）⇒ 名册显示接上了、实际一条没跑。
   #                  ⚠️ **「有个 job 会跑它」≠「每个 PR 都会跑它」**：`browser-all` 只在
-  #                     **主干 / 手动**触发（≈22–25 min）⇒ 那 14 条对 PR 而言依然不跑。
+  #                     **主干 / 手动**触发（≈22–30 min）⇒ 那 16 条对 PR 而言依然不跑。
   #
   # ⚠️ 新增探针后必须同步 `run_ci_probes.py` 的 `GATED` / `GATED_STATIC` / `NOT_GATED`
   #    （有 `--self-test` 的还要同步 `SELFTESTABLE` / `SELFTEST_ONLY` / `SELFTEST_*`），
@@ -464,6 +469,7 @@ jobs:
       #    **一个都不会报警**，表现只是「浏览器里点了登录毫无反应」。
       #    ⚠️ 必须在 `Build` **之前** —— 内联发生在构建期，之后再写就没用了。
       - name: Seed build-time env (NEXT_PUBLIC_API_BASE)
+        working-directory: frontend
         run: echo "NEXT_PUBLIC_API_BASE=http://localhost:8001" > apps/admin/.env.local
 
       # 只构建**这一端**：本 job 只跑 admin 的判据，`pnpm build`（四端）是纯浪费。
@@ -562,6 +568,7 @@ jobs:
       #    ⚠️ **四端都要播种**（少一端 ⇒ 那一端点了没反应，只有控制台有 CORS 报错）。
       #    ⚠️ 必须在 `Build` **之前** —— 内联发生在构建期，之后再写就没用了。
       - name: Seed build-time env (NEXT_PUBLIC_API_BASE · 4 apps)
+        working-directory: frontend
         run: |
           for a in web lawyer admin im; do
             echo "NEXT_PUBLIC_API_BASE=http://localhost:8001" > "apps/$a/.env.local"
