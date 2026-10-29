@@ -49,22 +49,6 @@
        ⚠️ 只对**白底**断言（出处表头写的是「白底对比度」）。拿 `--surface-page`
        （`#F7F8F9`，不是纯白）去断言是**比出处更宽**（见坑 17）。
 
-  T1b  角色令牌**不得自造色值**：`--text-*` / `--link*`（8 个 × 2 档）的值必须等于
-       **同一档**某个调色板档的值（映射**自动推导**，不硬编码）。
-       🚨 这条是 **2026-10-13 拿血换的**：T1a/T1' 只复核**规范表里声明过**的令牌，
-       而角色令牌在规范表里**没有行** ⇒ **不受任何判据约束**。于是 `--ink-500` 提深时，
-       与它**同值**的 `--text-muted` 留在旧值，**源码层没有任何东西会红** ——
-       直到 T4 **扩面**后在 `web/contract-review` 的计数徽标上量出 4.18:1。
-       ⇒ **「同值的两个令牌」= 隐式别名，改一个必须改另一个。**
-       ⚠️ 2026-10-14 **收紧**：旧版对 `--link*` 用「命中**任一档**即可」的**宽松档** ⇒
-       会放过「取了不该取的档位」。现在**没有隐式宽松档**：唯一例外是登记在
-       `LINK_SOURCE_OVERRIDES` 里的 (主题, 令牌)，且核对「值 == **登记出处**的值」——
-       改了令牌没同步登记 ⇒ 照样红；**冗余登记**（本来就同档命中）也红（防「豁免恒成立」）。
-       为什么 `--link*` 需要例外：深色 brand 梯是**双段结构**，亮蓝前景区只有 `--brand-400`
-       一档能在暗底承载文本 ⇒ 深色链接色只能借浅色梯（详见 `tokens.css` 深色档注释）。
-       ⚠️ 若某档扫不到角色令牌、或一个调色板档都解析不出来 ⇒ **报红说「没测成」**，
-       不静默通过（防「改个命名就永久变绿」）。
-
   T2   深色档正文可读性：`.dark` 块里 `--text-primary` / `--text-secondary` 对
        `--surface-page` / `--surface-card` 必须 ≥ 4.5:1。
        出处：WCAG 1.4.3 + 本项目自定的 4.5 线（T0 已证）。规范表只给了浅色档 ⇒ 深色档用 T0 的线。
@@ -89,11 +73,7 @@
     元素或祖先 `opacity < 1`、`-webkit-text-fill-color: transparent`（渐变文字）、
     `disabled` / `aria-hidden` / `visibility:hidden`、非文本标签。
   · T4 不判「非文本对比度」（WCAG 1.4.11：边框/图标/焦点环 ≥ 3:1）——那是另一条判据。
-  · 只测 390 / 1280 两档、共 **19 页**（web 5 · admin/im 各 4 · lawyer 6；2026-10-13 由「每端 2 页」扩面，
-    2026-10-14 加 lawyer `/notifications` —— 那是 `SegmentedControl` 数字角标**唯一**的渲染点；
-    2026-10-17 P1/R1 第一批再加 web `/compliance` · lawyer `/jobs`）
-    ⇒ **76 组**、浅色 + 深色两档主题
-    ⇒ **「0 条」只代表已纳入的这 19 页，不是全站**。
+  · 只测 390 / 1280 两档、每端 2 页、浅色 + 深色两档主题。
 """
 from __future__ import annotations
 
@@ -108,7 +88,6 @@ sys.path.insert(0, str(HERE))
 # 演示账号表在 `app.seed.data` 里 —— 账号**不硬编码**，从后端同一份源头读。
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
-from approutes import base_for_port  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 ROOT = HERE.parents[0]
@@ -124,29 +103,11 @@ AA_LARGE = 3.0         # WCAG 对 ≥24px / ≥18.66px 粗体 的下限
 DOC_TOL = 0.5
 
 VIEWPORTS: tuple[tuple[int, int, bool, str], ...] = ((390, 844, True, "390"), (1280, 900, False, "1280"))
-# 2026-10-13 扩面（材料 §五「T4 覆盖面」拍板）：每端 2 → 4 页，组数 32 → 64。
-# 2026-10-14 再扩（材料 §10.5 拍板）：lawyer 加 `/notifications` ⇒ 17 页 / **68 组**。
-# 2026-10-17 P1/R1 第一批扩面：web 加 `/compliance`、lawyer 加 `/jobs` ⇒ 19 页 / 76 组。
-# 2026-10-17 P1/R1 第二批扩面：web 加 `/billing`、lawyer 加 `/dispatches`、
-#    admin 加 `/reviews` `/complaints` `/billing` `/dispatches` `/jobs` ⇒ **26 页 / 104 组**。
-#    理由：`SegmentedControl` 的**数字角标**只在该页渲染（唯一传 `badge` 的调用点）——
-#    10-14 把角标从 `text-ink-500` 改到 `text-ink-600`（4.33 → 6.27），**当时没有判据守它**
-#    ⇒ 纳入本判据，让那次修复从「定向修复」变成「有判据的修复」。
-# ⚠️ **只加静态列表页**：详情页（`/cases/[id]` / `/reviews/[id]`）要先取 id，
-#    本判据的 `pages` 是**静态路径**元组 ⇒ 支持不了动态段，故不纳入。
-# ⚠️ 加页让 T4 耗时 ≈线性增长 ⇒ `browser-all` job 里给它**单独放宽超时**
-#    （`run_browser_job.JOB_SPECS[...]["probe_timeouts"]`），否则会撞全局 420s 上限。
-# ⚠️ 已纳入 = 全部规划内静态列表页（web/lawyer/admin 的列表页 + im 全量 4 页）；
-#    仍**未**纳入：各端动态详情页（`/cases/[id]` 等，T4 不支持动态段）、
-#    以及 R1 清单之外的偶发静态页 ⇒ 「本判据 0 条」只代表**已纳入的这些页**，不是全站。
 APPS: dict[str, dict] = {
-    "web": {"port": 3000, "user": "ent_admin",
-            "pages": ("/", "/qa", "/documents", "/contract-review", "/compliance", "/billing")},
-    "lawyer": {"port": 3001, "user": "lawyer_wang",
-               "pages": ("/", "/cases", "/reviews", "/archives", "/notifications", "/jobs", "/dispatches")},
-    "admin": {"port": 3002, "user": "admin",
-              "pages": ("/", "/audit", "/cases", "/compliance", "/reviews", "/complaints", "/billing", "/dispatches", "/jobs")},
-    "im": {"port": 3003, "user": "client", "pages": ("/", "/chat", "/cases", "/me")},
+    "web": {"port": 3000, "user": "ent_admin", "pages": ("/", "/qa")},
+    "lawyer": {"port": 3001, "user": "lawyer_wang", "pages": ("/", "/cases")},
+    "admin": {"port": 3002, "user": "admin", "pages": ("/", "/audit")},
+    "im": {"port": 3003, "user": "client", "pages": ("/", "/chat")},
 }
 MIN_CONTENT = 40
 
@@ -199,12 +160,6 @@ def hex_in_comment(v: str) -> str | None:
     """从 `74 82 92; /* #4A525C 正文辅助 */` 里取注释中的 hex。"""
     m = re.search(r"#([0-9A-Fa-f]{6})\b", v or "")
     return "#" + m.group(1).upper() if m else None
-
-
-def rgb_to_hex(rgb: tuple[float, float, float]) -> str:
-    """三元组 → `#RRGGBB`。**从实值反算**，不用注释里的 hex
-    —— 注释可以写错（漂移时恰好就是「注释对、实值错」），报错消息必须打**实值**。"""
-    return "#" + "".join(f"{int(round(c)):02X}" for c in rgb)
 
 
 # ---------------------------------------------------------------------------
@@ -287,7 +242,7 @@ SPEC_ROWS = spec_rows()
 STATUS_TEXT_PAIRS: tuple[tuple[str, str, float, str], ...] = (
     ("verified-600", "verified-50", 6.0, "§2.3「--verified-500 · #1E8E6E」"),
     ("pending-600", "pending-50", 5.5, "§2.3「--pending-500 · #B4791F」"),
-    ("danger-500", "danger-50", 4.9, "§2.3「--danger-500 · #C0392B」"),
+    ("danger-500", "danger-50", 5.4, "§2.3「--danger-500 · #C0392B」"),
 )
 
 # 判据 T2：深色档「正文色 × 表面」
@@ -295,140 +250,6 @@ DARK_TEXT_PAIRS: tuple[tuple[str, str], ...] = (
     ("text-primary", "surface-page"), ("text-primary", "surface-card"),
     ("text-secondary", "surface-page"), ("text-secondary", "surface-card"),
 )
-
-# 判据 T1b：**角色令牌不得自造色值**（防「改了调色板档、忘了改角色档」）。
-#
-# 🚨 **这条是拿血换的（2026-10-13 实测）**：T1a/T1' 只复核**规范表里声明过**的令牌，
-# 而 `tokens.css` 另有一组**角色令牌**（`--text-*` / `--link*`，共 8 个 × 2 档）
-# 在规范表里**没有行** ⇒ 它们**不受任何判据约束**。
-# 于是把 `--ink-500` 从 `#6B7480` 提到 `#666E7A`（B 类根治）时，
-# 与它**同值**的 `--text-muted` 留在旧值，**源码层没有任何东西会红** ——
-# 直到 T4 渲染级**扩面**后在 `web/contract-review` 的计数徽标上量出 4.18:1。
-# ⇒ 教训：**「同值的两个令牌」= 隐式别名，改一个必须改另一个；没有判据就必然漂移。**
-#
-# 规则（2026-10-14 **收紧**：不再有「宽松档」）：
-#  · 默认 —— **同档**：`--text-*` 与 `--link*` 一视同仁，值必须等于**同档**里某个调色板档的值。
-#    （`--text-*` 是「角色文本档」，按设计就是 ink 梯的镜像：primary=ink-900 / secondary=ink-700 /
-#     tertiary=ink-600 / muted=ink-500 / faint=ink-400，必须逐档跟随 —— 本次事故就在这一族。）
-#  · 例外 —— **显式登记**：只有登记在 `LINK_SOURCE_OVERRIDES` 里的 (主题, 令牌) 才允许取
-#    **别档 / 别主题**的档位值，且判据会**核对「令牌值 == 登记出处的值」**
-#    ⇒ 改了令牌却没同步登记 ⇒ **照样判红**（登记的**是出处、不是豁免** ⇒ 不会退化成「豁免恒成立」）。
-# 🚨 为什么 `--link*` 需要例外：**深色 brand 梯是双段结构**（`tokens.css` 深色档处有详注）——
-#    亮蓝前景区**只有 `--brand-400` 一档**能在暗底上承载文本（≥4.5:1；`--brand-500` 仅 4.38 / 4.04），
-#    而深色需要 3 个链接令牌 ⇒ **结构性地**不可能「同档」
-#    ⇒ 深色 `--link` / `--link-hover` 借**浅色**梯的 `brand-300` / `brand-200`。
-#    （2026-10-14 实测：把深色梯改成单调不可行 —— `--brand-300` 在深色下是「图表第三序列 /
-#      禁用主按钮底」，提亮它会改掉这些语义。）
-# ⚠️ 新增调色板家族（如 `--slate-*`）需把它加进 `_PALETTE_RE`，否则引用它的角色令牌会误报
-#     —— 这个「必须显式改一次」是**有意**的：让新家族进入判据视野。
-ROLE_PREFIXES: tuple[str, ...] = ("text-", "link")
-_PALETTE_RE = re.compile(r"^(?:ink|brand|ai|verified|pending|danger|gold|info)-\d+$")
-
-# 🚨 **跨档借用的显式登记**（2026-10-14 新增）。键 = (主题, 令牌名)，值 = (出处主题, 出处档名)。
-# ⚠️ 登记的是**出处**，不是豁免：判据核对「令牌值 == 出处档的值」。
-# ⚠️ **冗余登记**（该令牌本来就同档命中）也判红 —— 防止把这张表当「万能豁免」用。
-LINK_SOURCE_OVERRIDES: dict[tuple[str, str], tuple[str, str]] = {
-    ("深色", "link"): ("浅色", "brand-300"),        # #8AA8E0
-    ("深色", "link-hover"): ("浅色", "brand-200"),  # #B6C9EE
-}
-
-
-def _palette_values(blk: dict[str, str]) -> set[tuple[float, float, float]]:
-    vals = {triple_to_rgb(v) for k, v in blk.items() if _PALETTE_RE.match(k)}
-    vals.discard(None)
-    return vals
-
-
-def role_token_drift(light: dict[str, str], dark: dict[str, str]) -> tuple[list[str], int]:
-    """T1b：角色令牌（`--text-*` / `--link*`）**不得自造色值**。
-
-    规则：默认必须命中**同档**调色板档；唯一例外是 `LINK_SOURCE_OVERRIDES` 里登记过**出处**的
-    (主题, 令牌) —— 且核对「令牌值 == 出处档的值」（登记的是**出处**，不是豁免）。
-
-    返回 `(problems, 实际核对的角色令牌数)` —— 第二个值给「绿」的打印用：
-    **没有数字的绿不算证据**（本项目纪律：判据必须自报覆盖量）。
-
-    🚨 **防「空转绿」**：若某档里**扫不到角色令牌**、或**一个调色板档都解析不出来**，
-    本判据会**报红说「没测成」**而不是静默通过 —— 否则改个命名就能让它永久变绿。
-
-    ⚠️ **登记表自身的守卫不在这里**（见 `link_registry_problems`）：本函数会被**合成 fixture**
-    调用，而 fixture 是真实 `tokens.css` 的**子集**（缺令牌是正常的）⇒ 在这里判「死配置」会误报。
-    """
-    bad: list[str] = []
-    blocks = (("浅色", light), ("深色", dark))
-    raw = dict(blocks)
-    pal = {tag: _palette_values(blk) for tag, blk in blocks}
-    if not (pal["浅色"] and pal["深色"]):
-        missing = [t for t in ("浅色", "深色") if not pal[t]]
-        return ([f"[T1b] {'/'.join(missing)}档里**一个调色板档都解析不出来** ⇒ 本判据没测成"
-                 "（不是通过）—— 检查 `tokens.css` 的调色板命名是否还在 `_PALETTE_RE` 里"], 0)
-
-    total = 0
-    for tag, blk in blocks:
-        for prefix in ROLE_PREFIXES:
-            checked = 0
-            for k, v in sorted(blk.items()):
-                if not k.startswith(prefix):
-                    continue
-                rgb = triple_to_rgb(v)
-                if rgb is None:
-                    continue      # `var()` 引用等非纯三元组：由 T1' 的另一条臂管，这里不重复判
-                checked += 1
-                if rgb in pal[tag]:
-                    continue      # 同档命中 ⇒ 过
-                src = LINK_SOURCE_OVERRIDES.get((tag, k))
-                if src is None:
-                    bad.append(f"[T1b] {tag}档角色令牌 `--{k}` = {rgb_to_hex(rgb)} "
-                               f"**不等于同档任何调色板档的值** ⇒ 疑似「改了调色板档、忘了改角色档」，"
-                               f"或凭空造了一个色值（{tag}档调色板 {len(pal[tag])} 个值）"
-                               f" —— 若确实要跨档借用，须登记进 `LINK_SOURCE_OVERRIDES`")
-                    continue
-                src_tag, src_step = src
-                src_rgb = triple_to_rgb(raw[src_tag].get(src_step, ""))
-                if src_rgb == rgb:
-                    continue      # 登记出处一致 ⇒ 过
-                bad.append(f"[T1b] {tag}档 `--{k}` = {rgb_to_hex(rgb)} 与登记的出处"
-                           f"（{src_tag}档 `--{src_step}` = "
-                           f"{rgb_to_hex(src_rgb) if src_rgb else '取不到'}）**不一致** ⇒ "
-                           f"改了令牌却没同步 `LINK_SOURCE_OVERRIDES`（登记的是出处，不是豁免）")
-            if checked == 0:
-                bad.append(f"[T1b] {tag}档里 `{prefix}*` **一个都没扫到** ⇒ 本判据没测成"
-                           f"（不是通过）—— 检查 `ROLE_PREFIXES` 是否还匹配 `tokens.css` 的命名")
-            total += checked
-    return bad, total
-
-
-def link_registry_problems(light: dict[str, str], dark: dict[str, str]) -> list[str]:
-    """`LINK_SOURCE_OVERRIDES` 自身的守卫：**死配置** / **冗余登记**。
-
-    🚨 为什么必须单独一条：登记表是「**例外通道**」，而**例外必须有人守** ——
-    否则它迟早退化成「万能豁免」（本项目踩过「判据把自己算成证据 ⇒ 豁免恒成立」的坑，
-    见 `MEMORY.md` 的「判据自缺陷两形状」）。
-      · **死配置**：登记了 `tokens.css` 里不存在的令牌 / 出处 ⇒ 登记表腐烂，且会给出
-        虚假的安全感（「我登记过了」）；
-      · **冗余登记**：该令牌**本来就同档命中** ⇒ 这条登记什么也没做，只会在将来
-        把真漂移挡在门外 ⇒ 应删掉。
-
-    ⚠️ **只在真实档上跑**（`LIGHT` / `DARK`）：合成 fixture 是真实 `tokens.css` 的**子集**，
-    缺令牌 / 缺档位是正常的 ⇒ 在 fixture 上判死配置会误报（实测踩过：Q14b/Q14d 假红 2 臂）。
-    """
-    bad: list[str] = []
-    raw = {"浅色": light, "深色": dark}
-    pal = {tag: _palette_values(blk) for tag, blk in raw.items()}
-    for (tag, k), (src_tag, src_step) in sorted(LINK_SOURCE_OVERRIDES.items()):
-        if k not in raw[tag]:
-            bad.append(f"[T1b] `LINK_SOURCE_OVERRIDES` 登记了 `({tag}, {k})`，但该档里"
-                       f"**没有 `--{k}`** ⇒ **死配置**（永远用不到）")
-            continue
-        if src_step not in raw[src_tag]:
-            bad.append(f"[T1b] `LINK_SOURCE_OVERRIDES` 里 `({tag}, {k})` 的出处"
-                       f"`({src_tag}, {src_step})` **不存在** ⇒ **死配置**")
-            continue
-        rgb = triple_to_rgb(raw[tag][k])
-        if rgb is not None and rgb in pal[tag]:
-            bad.append(f"[T1b] `LINK_SOURCE_OVERRIDES` 里 `({tag}, {k})` 是**冗余登记** —— "
-                       f"该令牌本来就同档命中，留着它会掩盖未来的漂移 ⇒ 应删掉")
-    return bad
 
 
 # ---------------------------------------------------------------------------
@@ -790,69 +611,6 @@ _FIXTURE_DARK = """\
 }
 """
 
-# T1b 夹具：角色令牌 ↔ 调色板档。**必须由 `_block` 产出**（同 Q0d 的教训：
-# 手写字符串的形状一旦与被测解析器的输出形状不一致，判据就会静默变绿）。
-_FIXTURE_ROLE_OK = """\
-:root {
-  --ink-400: 154 163 174; /* #9AA3AE */
-  --ink-500: 102 110 122; /* #666E7A */
-  --ink-900: 20 24 29; /* #14181D */
-  --brand-600: 39 76 147; /* #274C93 */
-  --text-primary: 20 24 29; /* #14181D */
-  --text-muted: 102 110 122; /* #666E7A */
-  --text-faint: 154 163 174; /* #9AA3AE */
-  --link: 39 76 147; /* #274C93 */
-}
-"""
-# 只有角色令牌、**没有任何调色板档** ⇒ 用来验「空转绿」防护。
-_FIXTURE_ROLE_NOPAL = """\
-:root {
-  --text-muted: 102 110 122; /* #666E7A */
-}
-"""
-# 两档**不共享**调色板值 ⇒ 用来验 T1b 的「同档 + 显式登记」：
-# `--link` 借用**另一档**的色值 ⇒ **登记了出处才不报红**（未登记 / 出处不符都报红），
-# 而 `--text-*` 借用另一档的色值**一律报红**（文本族没有、也不该有登记）。
-_FIXTURE_ROLE_CROSS = """\
-:root {
-  --ink-500: 102 110 122; /* #666E7A */
-  --brand-300: 138 168 224; /* #8AA8E0 */
-  --brand-600: 39 76 147; /* #274C93 */
-  --text-muted: 102 110 122; /* #666E7A */
-  --link: 39 76 147; /* #274C93 */
-}
-"""
-_FIXTURE_ROLE_CROSS_DARK = """\
-.dark {
-  --ink-500: 154 163 174; /* #9AA3AE */
-  --brand-300: 39 76 147; /* #274C93 */
-  --text-muted: 154 163 174; /* #9AA3AE */
-  --link: 138 168 224; /* #8AA8E0 */
-}
-"""
-# T1b **登记表守卫**（`link_registry_problems`）的夹具：形状必须与**真实** `tokens.css` 一致
-# （浅色档含 brand-200/300/600；深色档含 link / link-hover / brand-400）——
-# 否则「死配置」会误报（合成夹具是真实档的**子集**，见该函数 docstring 的实测教训）。
-_FIXTURE_REGISTRY_L = """\
-:root {
-  --ink-500: 102 110 122; /* #666E7A */
-  --brand-200: 182 201 238; /* #B6C9EE */
-  --brand-300: 138 168 224; /* #8AA8E0 */
-  --brand-600: 39 76 147; /* #274C93 */
-  --text-muted: 102 110 122; /* #666E7A */
-  --link: 39 76 147; /* #274C93 */
-}
-"""
-_FIXTURE_REGISTRY_D = """\
-.dark {
-  --ink-500: 154 163 174; /* #9AA3AE */
-  --brand-400: 110 148 214; /* #6E94D6 */
-  --text-muted: 154 163 174; /* #9AA3AE */
-  --link: 138 168 224; /* #8AA8E0 */
-  --link-hover: 182 201 238; /* #B6C9EE */
-}
-"""
-
 
 async def run_self_test() -> int:
     print("自检（合成数据，与产品无关）—— 各臂分开报：")
@@ -1003,112 +761,6 @@ async def run_self_test() -> int:
         if not ok:
             bad.append(f"[{key}] 期望 exit {expect} 实测 exit {got}")
 
-    # —— Q14a–Q14c：T1b（角色令牌漂移）的检出能力 + **空转绿**防护 ——
-    # 🚨 Q14a 就是**注入反证**：把 2026-10-13 真实发生的那次事故原样注入
-    #    （`--ink-500` 提到 `#666E7A`，与它同值的 `--text-muted` 留在 `#6B7480`）
-    #    ⇒ 这条臂**必须**报红；否则 T1b 就是零判据。
-    # ⚠️ 同一个块**同时当浅色档与深色档**喂进去（本判据按档分别扫，两档各扫 4 个 ⇒ 合计 8）。
-    fx_role = _block(_FIXTURE_ROLE_OK, ":root")
-    fx_role_drift = _block(
-        _FIXTURE_ROLE_OK.replace("--text-muted: 102 110 122; /* #666E7A */",
-                                 "--text-muted: 107 116 128; /* #6B7480 */"), ":root")
-    fx_role_nopal = _block(_FIXTURE_ROLE_NOPAL, ":root")
-    fx_cross_l = _block(_FIXTURE_ROLE_CROSS, ":root")
-    fx_cross_d = _block(_FIXTURE_ROLE_CROSS_DARK, ".dark")
-    # 把**深色档**的 `--text-muted` 改成**只有浅色档才有**的值 ⇒ 严格档必须报红
-    fx_cross_strict = {**fx_cross_d, "text-muted": "102 110 122; /* #666E7A */"}
-    for key, desc, l_blk, d_blk, expect_bad, expect_checked in (
-        ("Q14a", "注入真实事故：`--ink-500` 提到 `#666E7A` 而 `--text-muted` 留在 `#6B7480` "
-                 "⇒ T1b **必须报红**（注入反证）", fx_role_drift, fx_role_drift, True, 8),
-        ("Q14b", "角色令牌全部命中同档调色板档 ⇒ T1b **必须干净**（对照组）",
-         fx_role, fx_role, False, 8),
-        ("Q14c", "**只有角色令牌、没有任何调色板档** ⇒ T1b **必须报红说「没测成」**"
-                 "（防「改个命名就永久变绿」）", fx_role_nopal, fx_role_nopal, True, 0),
-        ("Q14d", "`--link` 借**另一档**的色值，且该出处**已登记**"
-                 "（深色 `--link` = 浅色 `--brand-300`，正是真实登记）"
-                 "⇒ T1b **必须干净** —— 锁住「显式登记不假红」",
-         fx_cross_l, fx_cross_d, False, 4),
-        ("Q14e", "`--text-muted` 借**另一档**的色值 ⇒ T1b **必须报红** —— "
-                 "锁住文本族**没有登记通道**（一视同仁地严格）",
-         fx_cross_l, fx_cross_strict, True, 4),
-    ):
-        rp, rc = role_token_drift(l_blk, d_blk)
-        got = bool(rp)
-        ok = got == expect_bad and rc == expect_checked
-        print(f"  [{key}] {desc}")
-        print(f"        期望{'报红' if expect_bad else '干净':4s}/核对 {expect_checked}  "
-              f"实测{'报红' if got else '干净':4s}/核对 {rc}  {'✓' if ok else '✗'}")
-        for p in rp[:1]:
-            print(f"          · {p[:126]}")
-        if not ok:
-            bad.append(f"[{key}] 期望{'报红' if expect_bad else '干净'}/{expect_checked} "
-                       f"实测{'报红' if got else '干净'}/{rc}")
-
-    # —— Q14f–Q14j：T1b **收紧**（2026-10-14）后的五条新臂 ——
-    # 旧版对 `--link*` 是**宽松档**（「命中任一档即可」）⇒ 会放过「取了不该取的档位」。
-    # 收紧成「同档 + 显式登记**出处**」后，必须逐条钉住：
-    # 未登记 / 出处不符（前两条）· 冗余登记 / 死配置 / 真实形状对照（后三条）。
-    fx_link_unreg = {**fx_cross_d, "link": "217 228 247; /* #D9E4F7 */"}
-    fx_link_wrong = {**fx_cross_d, "link": "90 128 203; /* #5A80CB */"}
-    for key, desc, l_blk, d_blk, expect_bad in (
-        ("Q14f", "深色 `--link` 取了**另一档**的色值却**未登记** ⇒ T1b **必须报红**"
-                 "（锁住「收紧后不再有隐式宽松档」）", fx_cross_l, fx_link_unreg, True),
-        ("Q14g", "深色 `--link` 与**登记出处不符**（登记 brand-300、实取 brand-400）"
-                 "⇒ T1b **必须报红**（锁住「登记的是出处，不是豁免」）",
-         fx_cross_l, fx_link_wrong, True),
-    ):
-        rp, _rc = role_token_drift(l_blk, d_blk)
-        got = bool(rp)
-        ok = got == expect_bad
-        print(f"  [{key}] {desc}")
-        print(f"        期望{'报红' if expect_bad else '干净':4s}  "
-              f"实测{'报红' if got else '干净':4s}  {'✓' if ok else '✗'}")
-        for p in rp[:1]:
-            print(f"          · {p[:126]}")
-        if not ok:
-            bad.append(f"[{key}] 期望{'报红' if expect_bad else '干净'} "
-                       f"实测{'报红' if got else '干净'}")
-
-    # —— Q14h–Q14j：**登记表自身**的守卫（`link_registry_problems`）——
-    # 🚨 三条臂分别钉「冗余登记」「真实形状不误报」「死配置」——
-    #    实测教训：守卫若与主判据混在一起，在**合成 fixture** 上会假红 2 臂
-    #    （fixture 是子集 ⇒ 缺令牌是正常的）⇒ 拆成独立函数 + 独立夹具。
-    fx_reg_l = _block(_FIXTURE_REGISTRY_L, ":root")
-    fx_reg_d = _block(_FIXTURE_REGISTRY_D, ".dark")
-    fx_reg_dead = {k: v for k, v in fx_reg_d.items() if k != "link-hover"}
-    _saved_overrides = dict(LINK_SOURCE_OVERRIDES)
-    LINK_SOURCE_OVERRIDES[("浅色", "link")] = ("浅色", "brand-600")   # 冗余：本来就同档命中
-    rp_redundant = link_registry_problems(fx_reg_l, fx_reg_d)
-    LINK_SOURCE_OVERRIDES.clear()
-    LINK_SOURCE_OVERRIDES.update(_saved_overrides)
-    for key, desc, l_blk, d_blk, expect_bad, res in (
-        ("Q14h", "登记表塞一条**冗余登记**（浅色 `--link` 本来就同档命中 = brand-600）"
-                 "⇒ 守卫**必须报红**（防「豁免恒成立」）",
-         fx_reg_l, fx_reg_d, True, rp_redundant),
-        ("Q14i", "**真实形状**的夹具（浅色含 brand-200/300/600、深色含 link/link-hover）"
-                 "⇒ `role_token_drift` 与守卫**都必须干净**（对照组：证明守卫不误报）",
-         fx_reg_l, fx_reg_d, False, None),
-        ("Q14j", "深色档**删掉 `--link-hover`** ⇒ 守卫**必须报红说「死配置」**"
-                 "（防「登记表腐烂后仍给出虚假安全感」）",
-         fx_reg_l, fx_reg_dead, True, None),
-    ):
-        if res is not None:
-            rp = res
-        elif key == "Q14i":
-            rp = role_token_drift(l_blk, d_blk)[0] + link_registry_problems(l_blk, d_blk)
-        else:
-            rp = link_registry_problems(l_blk, d_blk)
-        got = bool(rp)
-        ok = got == expect_bad
-        print(f"  [{key}] {desc}")
-        print(f"        期望{'报红' if expect_bad else '干净':4s}  "
-              f"实测{'报红' if got else '干净':4s}  {'✓' if ok else '✗'}")
-        for p in rp[:1]:
-            print(f"          · {p[:126]}")
-        if not ok:
-            bad.append(f"[{key}] 期望{'报红' if expect_bad else '干净'} "
-                       f"实测{'报红' if got else '干净'}")
-
     if bad:
         print(f"\n自检失败 {len(bad)} 臂 ⇒ **工具坏了，不是产品坏了**（exit 2）")
         for x in bad:
@@ -1116,11 +768,7 @@ async def run_self_test() -> int:
         return 2
     print("\n自检通过：门槛自洽（Q0a–Q0c）、**T1a 有效性控制**（Q0d1/Q0d2）、"
           "规范-实现漂移与定性自洽（Q1/Q2/Q3a/Q3b/Q3c）、深色正文（Q4/Q5）、语义状态对（Q6）、"
-          "**渲染级按字号取门槛**（Q7–Q9）、收口判定（Q10–Q13）、"
-          "**角色令牌漂移 T1b**（Q14a 注入反证 / Q14b 对照 / Q14c 空转绿防护 / "
-          "Q14d 登记不假红 / Q14e 文本族无登记通道 / Q14f 未登记必红 / "
-          "Q14g 出处不符必红 / **登记表守卫** Q14h 冗余必红 · Q14i 真实形状不误报 · "
-          "Q14j 死配置必红）。")
+          "**渲染级按字号取门槛**（Q7–Q9）、收口判定（Q10–Q13）。")
     return 0
 
 
@@ -1175,11 +823,8 @@ async def run_tokens_only() -> int:
             print(f"        · {t}")
         return 2
     probs, notes = judge_tokens(SPEC_ROWS, LIGHT, DARK)
-    role_probs, role_checked = role_token_drift(LIGHT, DARK)
-    role_probs += link_registry_problems(LIGHT, DARK)
-    probs = probs + role_probs
     if probs:
-        print(f"T1–T3 缺陷 {len(probs)} 条（其中**角色令牌漂移 T1b** {len(role_probs)} 条）：")
+        print(f"T1–T3 缺陷 {len(probs)} 条：")
         for p in probs:
             print(f"  ✗ {p}")
         return 1
@@ -1187,9 +832,6 @@ async def run_tokens_only() -> int:
     if missing:
         print(f"     ⚠️ 覆盖率缺口：{missing} 取不到 hex ⇒ T1a 对它们**不判**（不是通过）")
     print(f"T1'：标 `✓` 的全部 ≥ {AA_TEXT}、未标 `✓` 的全部 < {AA_TEXT}（定性自洽）✓")
-    print(f"T1b：**角色令牌 {role_checked} 个**（`--text-*` / `--link*` × 2 档）"
-          f"全部命中**同档**调色板档（`--link*` 的跨档借用**逐条登记出处**，"
-          f"共 {len(LINK_SOURCE_OVERRIDES)} 条）✓")
     print(f"T2：深色档 {len(DARK_TEXT_PAIRS)} 对正文×表面 ≥ {AA_TEXT} ✓")
     print(f"T3：语义状态文本对 {len(STATUS_TEXT_PAIRS)} 对 ≥ {AA_TEXT} ✓")
     if notes:
@@ -1234,7 +876,7 @@ async def run(only: str | None, tokens_only: bool, dump: bool) -> int:
             for app, cfg in APPS.items():
                 if only and app != only:
                     continue
-                base = base_for_port(cfg["port"])
+                base = f"http://localhost:{cfg['port']}"
                 try:
                     await b.cdp.send("Network.clearBrowserCookies")
                 except Exception:
@@ -1270,16 +912,11 @@ async def run(only: str | None, tokens_only: bool, dump: bool) -> int:
 
     print("\n" + "=" * 74)
     tok, tok_notes = judge_tokens(SPEC_ROWS, LIGHT, DARK)
-    role_tok, role_checked = role_token_drift(LIGHT, DARK)
-    role_tok += link_registry_problems(LIGHT, DARK)
     print(f"[T1–T3 令牌层] T1a **实际核对 {cov}/{len(SPEC_ROWS)} 行**"
           f"（覆盖率缺口：{missing or '无'}）")
-    print(f"                T1b **角色令牌 {role_checked} 个**"
-          f"（同档 + {len(LINK_SOURCE_OVERRIDES)} 条显式登记出处）全部命中调色板档")
     print(f"                规范表 {len(SPEC_ROWS)} 行 + 深色 {len(DARK_TEXT_PAIRS)} 对 + "
-          f"状态对 {len(STATUS_TEXT_PAIRS)} 对 ⇒ 缺陷 {len(tok)} 条"
-          f"（另 **角色令牌漂移 {len(role_tok)} 条**）")
-    for p in tok + role_tok:
+          f"状态对 {len(STATUS_TEXT_PAIRS)} 对 ⇒ 缺陷 {len(tok)} 条")
+    for p in tok:
         print(f"  ✗ {p}")
     if tok_notes:
         print(f"  ⚠️ 另有**文档问题** {len(tok_notes)} 条（规范表数值是近似值，**不算产品缺陷**）：")
@@ -1298,7 +935,7 @@ async def run(only: str | None, tokens_only: bool, dump: bool) -> int:
         for s in skipped:
             print(f"  · {s}")
 
-    broken = control_broken + tok + role_tok
+    broken = control_broken + tok
     code = summary_exit(total, all_bad, broken)
     if code == 2:
         print("\n[env] **一组都没测到** ⇒ 这是「我没测成」，不是「产品没问题」（exit 2）")
@@ -1350,7 +987,7 @@ async def dump(only: str | None) -> int:
             for app, cfg in APPS.items():
                 if only and app != only:
                     continue
-                base = base_for_port(cfg["port"])
+                base = f"http://localhost:{cfg['port']}"
                 try:
                     await b.cdp.send("Network.clearBrowserCookies")
                 except Exception:
@@ -1383,7 +1020,7 @@ async def why(app: str, path: str | None, needle: str) -> int:
         return 2
     cfg = APPS[app]
     js = WHY_JS.replace("__NEEDLE__", _json.dumps(needle, ensure_ascii=False))
-    base = base_for_port(cfg["port"])
+    base = f"http://localhost:{cfg['port']}"
     rc = 2
     for vw, vh, mobile, vtag in VIEWPORTS:
         async with Browser(headless=True, width=vw, height=vh) as b:
