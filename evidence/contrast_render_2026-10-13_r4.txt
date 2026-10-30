@@ -1,0 +1,69 @@
+隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-contrast2-6ieens68\contrast.db
+→ 灌种子（seed_demo.py --reset，库：contrast.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  OK 后端就绪
+→ 起前端 next start（web → http://localhost:3000）
+  OK web 就绪
+→ 起前端 next start（lawyer → http://localhost:3001）
+  OK lawyer 就绪
+→ 起前端 next start（admin → http://localhost:3002）
+  OK admin 就绪
+→ 起前端 next start（im → http://localhost:3003）
+  OK im 就绪
+-> 跑 verify_contrast.py
+期望值来源：`deliverables\ui-design\design-spec.md` §2.1/2.2/2.3 的对比度列
+T0 推导出的合格线：4.5（规范所有 `✓` 行都 ≥ 它、所有非 `✓` 行都 < 它）
+T1'/T3 断言的是**定性**（标 `✓` ⇒ ≥ 4.5）；声明值偏差 > 0.5 只记**文档问题**
+T4 按字号取门槛：大字号（≥24px 或 ≥18.66px 粗体）3.0、其余 4.5；离门槛 <0.15 报临界不判
+
+  web/ @390/light            ✓  文本元素 35  区间内 0
+  web/ @390/dark             ✓  文本元素 35  区间内 0
+  web/qa @390/light          ✓  文本元素 15  区间内 0
+  web/qa @390/dark           ✓  文本元素 15  区间内 0
+  lawyer/ @390/light         ✓  文本元素 27  区间内 0
+  lawyer/ @390/dark          ✓  文本元素 27  区间内 0
+  lawyer/cases @390/light    ✗  文本元素 48
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`text-caption text-ink-500` 文字=`共 条`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+  lawyer/cases @390/dark     ✓  文本元素 48  区间内 0
+  admin/ @390/light          ✓  文本元素 63  区间内 0
+  admin/ @390/dark           ✓  文本元素 63  区间内 0
+  admin/audit @390/light     ✓  文本元素 44  区间内 0
+  admin/audit @390/dark      ✓  文本元素 44  区间内 0
+  im/ @390/light             ✓  文本元素 31  区间内 0
+  im/ @390/dark              ✓  文本元素 31  区间内 0
+  im/chat @390/light         ✓  文本元素 11  区间内 0
+  im/chat @390/dark          ✓  文本元素 11  区间内 0
+  web/ @1280/light           ✓  文本元素 46  区间内 0
+  web/ @1280/dark            ✓  文本元素 46  区间内 0
+  web/qa @1280/light         ✓  文本元素 29  区间内 0
+  web/qa @1280/dark          ✓  文本元素 29  区间内 0
+  lawyer/ @1280/light        ✓  文本元素 37  区间内 0
+  lawyer/ @1280/dark         ✓  文本元素 37  区间内 0
+  lawyer/cases @1280/light   ✗  文本元素 53
+      [T4] 对比度 **4.45:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`text-caption text-ink-500` 文字=`共 条`  fg=rgb(107,116,128) bg=rgb(247,248,249)
+  lawyer/cases @1280/dark    ✓  文本元素 53  区间内 0
+  admin/ @1280/light         ✓  文本元素 92  区间内 0
+  admin/ @1280/dark          ✓  文本元素 92  区间内 0
+  admin/audit @1280/light    ✓  文本元素 60  区间内 0
+  admin/audit @1280/dark     ✓  文本元素 60  区间内 0
+  im/ @1280/light            ✓  文本元素 27  区间内 0
+  im/ @1280/dark             ✓  文本元素 27  区间内 0
+  im/chat @1280/light        ✓  文本元素 18  区间内 0
+  im/chat @1280/dark         ✓  文本元素 18  区间内 0
+
+==========================================================================
+[T1–T3 令牌层] T1a **实际核对 9/9 行**（覆盖率缺口：无）
+                规范表 9 行 + 深色 4 对 + 状态对 3 对 ⇒ 缺陷 0 条
+  ⚠️ 另有**文档问题** 5 条（规范表数值是近似值，**不算产品缺陷**）：
+     · --ink-700              规范  10.4:1  实算 11.32:1  （Δ+0.92）
+     · --ink-800              规范  13.9:1  实算 15.22:1  （Δ+1.32）
+     · --ink-900              规范  16.8:1  实算 17.82:1  （Δ+1.02）
+     · --brand-400            规范   3.3:1  实算  3.90:1  （Δ+0.60）
+     · danger-500 on danger-50 规范   5.4:1  实算  4.89:1  （Δ-0.51）
+
+[T4 渲染层] 测量 32 组；**不合格 2 组 / 缺陷 2 条**。
+临时目录（保留取证）：C:\Users\RS\AppData\Local\Temp\nlawer-contrast2-6ieens68
+CONTRAST_EXIT=1

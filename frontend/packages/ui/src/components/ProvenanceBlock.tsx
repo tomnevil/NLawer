@@ -15,6 +15,17 @@ export interface ProvenanceBlockProps {
   hideBadge?: boolean;
   /** 徽章右对齐（默认）或左对齐 */
   badgeAlign?: "left" | "right";
+  /**
+   * 根元素标签，默认 `"div"`。
+   *
+   * **契约：不传 = 与加本参数之前逐字相同**（与 `PullToRefresh.scrollTarget`
+   * 的形态一致）。需要保留语义标签的调用方传 `"article"` / `"section"` ——
+   * 例如 im 的咨询卡片、web 问答页的回答卡片，它们本来就是 `<article>`。
+   *
+   * 只开这三档，**不是** `keyof JSX.IntrinsicElements`：本组件承载的是
+   * 「内容段」，能当内容段用的标签就这几个；放开全部会让人把它当万能容器。
+   */
+  as?: "div" | "article" | "section";
   children: React.ReactNode;
   className?: string;
 }
@@ -44,11 +55,12 @@ export const ProvenanceBlock: React.FC<ProvenanceBlockProps> = ({
   onOpenHistory,
   hideBadge = false,
   badgeAlign = "right",
+  as: Tag = "div",
   children,
   className,
 }) => {
   return (
-    <div className={cn("rounded-r2 p-4", stateClass[state], className)}>
+    <Tag className={cn("rounded-r2 p-4", stateClass[state], className)}>
       {!hideBadge && (
         <div
           className={cn(
@@ -60,7 +72,7 @@ export const ProvenanceBlock: React.FC<ProvenanceBlockProps> = ({
         </div>
       )}
       <div className="text-body text-ink-800">{children}</div>
-    </div>
+    </Tag>
   );
 };
 

@@ -46,10 +46,16 @@
 
 1. **组件自己的定义文件必须排除**，否则每个组件都会「自己命中自己」⇒ 恒为 `USED`。（自检 **Q5**）
 2. **`preview` 不得计入 `USED`**，否则预览页会让所有组件恒绿 ⇒ **一条只会绿的防线**。（自检 **Q2**）
-3. **「组件没被用」≠「能力没做」**——实测 `ProvenanceBlock` 未被任何产品页使用，
+3. **「组件没被用」≠「能力没做」**——2026-09-20 实测 `ProvenanceBlock` 未被任何产品页使用，
    但 §5 的三态视觉由页面**内联**承担（`ai-content` 别名、`border-ai-500/30 bg-ai-500/[0.06]` 等）。
    若不做等价判定，本判据会稳定误报「责任边界三态系统没做」——而三态在产品页有 74 处语义色 + 8 处徽章。
    ⇒ **凡要判「组件未被用」，先确认它承载的能力没有在别处实现。**（自检 **Q7 / Q8**）
+   📌 **2026-10-10（`design-audit.md` 第 9 项）：`ProvenanceBlock` 已接入 4 处产品页** ⇒
+   该等价豁免**当前不生效**（判 `USED`）。条目**仍保留**，因为「§5 要求的是视觉、不是这个组件」
+   这条语义判断依然成立：将来若有人移除全部接入，它应退化为 `INLINE`（不判缺陷）而不是 `NEW`。
+   ⚠️ 与之配套修掉了一处**假绿**：`count_equivalent` 此前**没排除组件自己的定义文件**
+   ⇒ `ProvenanceBlock.tsx` 的 `stateClass` 三个类名被算成「等价实现 3 处」⇒ 豁免恒成立。
+   自检 **Q14** 钉住这条。
 4. **P2 与「落点已被取代」的组件不判缺陷**——那是**设计上就该那样**。（见 `OBSERVE`）
 5. ⚠️ **`<Name` 是在「原始文本」上匹配的 ⇒ 注释 / docstring 里的用法示例也会被计入。**
    实测（2026-09-26）：`BottomSheet.tsx` 的 JSDoc 里写了一句
@@ -59,6 +65,14 @@
      它**仍然判 `USED`**。
    ⇒ 纪律：**别在 docstring / 注释里写带尖括号的用法示例**（写 `PullToRefresh` + 反引号即可）。
    ⇒ 并且**别把本判据当成接入质量的证明** —— 它本来就只能证伪。
+
+## ⑤ 组件 API 契约（源码级子串断言）
+
+`COMPONENT_CONTRACTS` 只收**「调用方不传就等于默认行为」**这一类参数：默认值一翻，
+所有**不传**的调用点会静默改变渲染结果，而 `tsc` 与类名门禁**都不会红**
+（类型没变、类名没变）。出处：`ProvenanceBlock.as`（2026-10-10 Q3 拍板 A1）。
+⚠️ 它**只证伪**：字面量还在 ≠ 默认行为一定没变（可能有人在别处覆盖）。
+⚠️ 与 `probe_ptr_scroll_target.py` 的**渲染级**三臂探针**能力不同，别互相冒充**。
 
 ## 退出码
 
@@ -130,15 +144,19 @@ INLINE_OK: dict[str, tuple[str, str, str]] = {
     "ProvenanceBlock": (
         "责任边界**内容段**容器（§5 的边框 + 底色）",
         r"provenance-(?:ai|verified|pending)|ai-content|lawyer-confirmed",
-        "§5 要求的是「三态视觉」，不是「必须用这个组件」。"
-        "实测产品页把该视觉**内联**实现了："
-        "`web/qa/page.tsx:498` 用旧别名 `ai-content`（走同一套 `styles.css` 装饰类），"
-        "`im/chat/page.tsx:951` 用 `border-ai-500/30 bg-ai-500/[0.06]`，"
-        "`:1110` 用 `border-pending-500/30 bg-pending-500/10`；"
-        "三态语义色在产品页共 **74** 处、徽章 **8** 处。"
-        "⇒ 判定为**一致性 / 重构机会**（页面各写一份），**不是功能缺口**。"
-        "⚠️ 但存在**视觉分歧**：§5 规定 AI 态是「紫色**虚线上边框**」，"
-        "内联版用的是**四边实线**；只有走 `ai-content` 的那一处符合规范。",
+        "§5 要求的是「三态视觉」，不是「必须用这个组件」⇒ 允许由内联等价实现承担。"
+        "📌 **2026-10-10（第 9 项）已把 4 处「责任边界内容段」接到本组件**，"
+        "**视觉分歧同时消解**（此前内联版是**四边实线**，§5 规定 AI 态是「紫色**虚线上边框**」"
+        "——分歧只活在那个未被采用的组件里）："
+        "`web/qa` 流式生成块（原 `ai-content` + 四边实线）、"
+        "`im/chat` 的「AI 结构化分析」与「律师已确认报告」两张卡片、"
+        "`lawyer/cases/[id]` 的六段式分析横幅（原四边**虚线**）。"
+        "⚠️ 产品页余下的三态着色点（`im/chat` 派单提示、`web` 首页/账单提示、"
+        "`admin` 审计/投诉提示、`lawyer` 首页/材料缺口/复核署名等 ~10 处）"
+        "是**状态提示条**（错误 / 待办 / 配额 / 缺口），**不是 §5 的「法律内容」**"
+        "⇒ 不适用本组件，**故意不接**（§5 规则 1 的「穷尽性」只覆盖法律内容）。"
+        "⚠️ 另有 2 处走「中性卡片 + AI 页眉」模式（`web/qa` 简单回复 / 四段式卡片）"
+        "——那是**另一种刻意的模式**，改不改属设计决策，见第 9 项施工记录的待拍板项。",
     ),
 }
 
@@ -186,6 +204,40 @@ KNOWN_GAPS: dict[str, str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# ⑤ 组件 API 契约（静态，不启浏览器）
+#
+# 只收**「调用方不传就等于默认行为」**这一类：默认值一翻，所有**不传**的调用点会
+# 静默改变渲染结果，而 `tsc` 与其它静态门禁**都不会红**（类型没变、类名没变）。
+#
+# 出处：`ProvenanceBlock.as`（2026-10-10 Q3 拍板 A1）——形态参照
+# `PullToRefresh.scrollTarget`（`evidence/probe_ptr_scroll_target.py` 臂 D：
+# 「不传 ⇒ 默认行为逐字不变」）。⚠️ 那条是**渲染级**三臂探针（要真滚动才判得出），
+# 本表是**源码级**子串断言 —— **能力不同，别互相冒充**。
+# ---------------------------------------------------------------------------
+COMPONENT_CONTRACTS: tuple[tuple[str, str, str, str], ...] = (
+    # (组件, 说明, 源文件相对 `frontend/` 的路径, 必须原样出现的字面量)
+    (
+        "ProvenanceBlock",
+        "`as` 不传 ⇒ 根元素仍是 `div`（不传 = 逐字不变）",
+        "packages/ui/src/components/ProvenanceBlock.tsx",
+        'as: Tag = "div"',
+    ),
+)
+
+
+def check_contract(needle: str, text: str) -> bool:
+    """组件 API 契约的静态判据：`needle` 必须**原样**出现在 `text` 里。
+
+    纯函数 ⇒ 可进自检（**Q15 / Q16**）。
+    🚨 **刻意只做子串断言**：契约是「默认值写着什么」，不是「语义等价」——
+    改写成别的等价形式（如 `const Tag = props.as ?? "div"`）**应当红**，
+    逼作者回到本表来更新它，而不是让门禁去猜语义。
+    ⚠️ 因此它**只能证伪**：字面量还在 ≠ 默认行为一定没变（可能有人在别处覆盖）。
+    """
+    return needle in text
+
+
 def tree_of(rel: str) -> str | None:
     """把仓库相对路径归到三棵树之一；不属任何一棵 ⇒ None。"""
     p = rel.replace("\\", "/")
@@ -223,13 +275,23 @@ def count_hits(name: str, files: list[tuple[str, str]]) -> dict[str, int]:
     return out
 
 
-def count_equivalent(pattern: str, files: list[tuple[str, str]]) -> int:
-    """统计等价实现在三棵树（产品页 + 组件库内部，**不含预览页**）的命中数。"""
+def count_equivalent(name: str, pattern: str, files: list[tuple[str, str]]) -> int:
+    """统计等价实现在三棵树（产品页 + 组件库内部，**不含预览页**）的命中数。
+
+    🚨 **必须排除组件自己的定义文件**（2026-10-10 修，自检 **Q14**）：
+    `ProvenanceBlock.tsx` 的 `stateClass` 映射里就写着 `provenance-ai` /
+    `provenance-verified` / `provenance-pending` ⇒ 旧版把它们算成「等价实现 3 处」
+    ⇒ 即使**产品页一处都没接**，`eq` 也永远 ≥ 3 ⇒ **这条豁免恒成立、永远不会红**（假绿）。
+    这与 `count_hits` 排除定义文件是同一条纪律（纪律 1），此前只在 `count_hits` 里落实了。
+    """
     rx = re.compile(pattern)
     n = 0
     for rel, text in files:
         if tree_of(rel) == TREE_PREVIEW:
             continue
+        stem = pathlib.PurePosixPath(rel.replace("\\", "/")).stem
+        if stem == name:
+            continue  # 定义文件，不算「等价实现」
         n += len(rx.findall(text))
     return n
 
@@ -238,7 +300,7 @@ def verdict_of(name: str, files: list[tuple[str, str]]) -> tuple[str, dict[str, 
     counts = count_hits(name, files)
     eq = 0
     if name in INLINE_OK:
-        eq = count_equivalent(INLINE_OK[name][1], files)
+        eq = count_equivalent(name, INLINE_OK[name][1], files)
     if counts[TREE_PRODUCT] or counts[TREE_INTERNAL]:
         return USED, counts, eq
     if eq:
@@ -307,6 +369,8 @@ SELFTEST: tuple[tuple[str, str, list[tuple[str, str]], str], ...] = (
      PREVIEW_ONLY),
     ("Q13", "**泛型用法** `<Widget<Row> … />` 必须算命中（前瞻里漏了 `<` ⇒ 真实接入被判 PREVIEW_ONLY，假阴性）",
      [("apps/web/app/(app)/page.tsx", "const A = () => <Widget<Row> items={xs} />;")], USED),
+    ("Q14", "等价实现**只出现在组件自己的定义文件**里 ⇒ **不得算等价**（否则 `eq` 恒 ≥ 1、豁免恒成立 ⇒ 假绿）",
+     [("packages/ui/src/components/Widget.tsx", "<div className='widget-legacy-deco' />")], MISSING),
 )
 
 SELFTEST_INLINE = {"Widget": ("合成夹具", r"widget-legacy-deco", "自检用")}
@@ -362,16 +426,33 @@ def run_self_test() -> int:
     finally:
         INLINE_OK = real_inline
 
+    # —— 组件 API 契约（纯函数 `check_contract`，合成夹具）——
+    # 契约字面量取自**本表真实条目**（不许另抄一份，否则改表不改夹具 ⇒ 自检骗人）。
+    needle = COMPONENT_CONTRACTS[0][3]
+    for key, desc, text, expect in (
+        ("Q15", "契约字面量原样存在 ⇒ 通过", f"  {needle},\n", True),
+        ("Q16", "契约字面量被改掉 ⇒ **必须红**（默认值一翻，不传的调用点会静默变样）",
+         '  as: Tag = "section",\n', False),
+    ):
+        got = check_contract(needle, text)
+        ok = got == expect
+        print(f"  [{key}] {desc}")
+        print(f"        期望 {str(expect):18s} 实测 {str(got):18s} {'✓' if ok else '✗'}")
+        if not ok:
+            bad.append(f"[{key}] 期望 {expect} 实测 {got}")
+
     if bad:
         print(f"\n自检失败 {len(bad)} 臂 ⇒ **工具坏了，不是产品坏了**（exit 2）")
         for b in bad:
             print(f"  - {b}")
         return 2
     print("\n自检通过。四条前提都成立：")
-    print("  · 检出能力：Q1（产品页）/ Q3（组件库内部）")
-    print("  · 对照组干净：Q4（全无）/ Q5（不自计）/ Q6（不吃前缀更长的名字）")
+    print("  · 检出能力：Q1（产品页）/ Q3（组件库内部）/ Q13（泛型写法）")
+    print("  · 对照组干净：Q4（全无）/ Q5（不自计）/ Q6（不吃前缀更长的名字）/ "
+          "Q14（等价实现也不自计）")
     print("  · 预览页不算被用：Q2 / Q8")
     print("  · 等价实现可免除误报：Q7，且等价实现**只在预览页时不算数**：Q8")
+    print("  · 组件 API 契约可被破坏检出：Q15 / Q16")
     return 0
 
 
@@ -400,6 +481,7 @@ def main() -> int:
     inline_notes: list[str] = []
     known_open: list[str] = []
     healed: list[str] = []
+    contract_fail: list[str] = []
     for name, note in REQUIRED.items():
         v, c, _ = verdict_of(name, files)
         mark = "✓" if v == USED else "✗"
@@ -433,6 +515,23 @@ def main() -> int:
         if args.verbose:
             print(f"      {why}")
 
+    print("\n【组件 API 契约（源码级子串断言，**只证伪**）】")
+    src_by_rel = dict(files)
+    for name, note, rel, needle in COMPONENT_CONTRACTS:
+        text = src_by_rel.get(rel)
+        if text is None:
+            contract_fail.append(
+                f"{name}：源文件读不到 `{rel}` ⇒ 契约判据**根本没执行**"
+                f"（不许静默通过 —— 读不到就是红的理由）")
+            print(f"  {name:<18} ⚠️  源文件读不到：{rel}")
+            continue
+        ok = check_contract(needle, text)
+        print(f"  {name:<18} {'✓' if ok else '✗'}  {note}")
+        if not ok:
+            contract_fail.append(
+                f"{name}：契约「{note}」不成立 —— `{rel}` 里找不到 `{needle}`。"
+                f"若确实要改默认值，请**同时**改本表、组件 JSDoc 与所有不传该参数的调用点。")
+
     if inline_notes:
         print("\n【等价实现说明（避免误读成缺口）】")
         for n in inline_notes:
@@ -443,7 +542,7 @@ def main() -> int:
         for n in known_open:
             print(f"  🚨 {n}：{KNOWN_GAPS[n]}")
 
-    if gaps or healed:
+    if gaps or healed or contract_fail:
         if gaps:
             print(f"\n发现 **{len(gaps)} 个**接入缺口（P0/P1 组件未被使用，且无等价实现，"
                   f"**且不在 `KNOWN_GAPS` 已知清单内** ⇒ 新掉线）：")
@@ -456,6 +555,11 @@ def main() -> int:
                   "请删除对应条目（豁免必须跟着事实走，否则这道防线会静默失效）：")
             for n in healed:
                 print(f"  · {n}")
+        if contract_fail:
+            print(f"\n🚨 **组件 API 契约**被破坏（{len(contract_fail)} 条）—— 这类改动"
+                  f"`tsc` 与其它静态门禁**都不会红**：")
+            for g in contract_fail:
+                print(f"  ✗ {g}")
         return 1
 
     print("\n除已知缺口外，全部必判组件均已接线（产品页 / 组件库内部 / 等价实现，三者至少其一）。")

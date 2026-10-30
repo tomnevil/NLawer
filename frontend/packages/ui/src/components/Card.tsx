@@ -73,6 +73,8 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
+  // ink-600 而非 ink-500：卡片描述也常直接落在页面底 #F7F8F9 上（不总是白卡内），
+  // ink-500 在那里只有 4.45:1（渲染级实测）；ink-600 三处背景都 ≥ 4.5。
   <p className={cn("mt-1 text-body-sm text-ink-500", className)} {...props}>
     {children}
   </p>

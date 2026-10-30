@@ -1,4 +1,4 @@
-﻿"""认证服务：注册、登录、令牌刷新（含 refresh 会话吊销与轮换，P1-1）。"""
+"""认证服务：注册、登录、令牌刷新（含 refresh 会话吊销与轮换，P1-1）。"""
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional

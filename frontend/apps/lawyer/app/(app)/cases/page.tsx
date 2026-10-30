@@ -6,6 +6,7 @@ import { AlertTriangle, FolderOpen, RefreshCw } from "lucide-react";
 import { ApiError, authed } from "@nlaw/sdk";
 import {
   Badge,
+  Button,
   DataTable,
   EmptyState,
   FilterBar,
@@ -14,6 +15,7 @@ import {
   Skeleton,
   Spinner,
   cn,
+  GRADE_TONE,
   type BadgeProps,
   type DataTableColumn,
   type FilterChip,
@@ -62,13 +64,6 @@ const STATUS_LABEL: Record<string, string> = {
   VOIDED: "已作废",
 };
 
-const GRADE_TONE: Record<string, BadgeProps["variant"]> = {
-  S: "danger",
-  A: "pending",
-  B: "info",
-  C: "neutral",
-};
-
 const STATUS_TONE: Record<string, BadgeProps["variant"]> = {
   INTAKE: "neutral",
   PENDING_DISPATCH: "pending",
@@ -98,7 +93,7 @@ function errText(e: unknown): string {
 
 const SELECT_CLS = cn(
   "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus"
 );
 
 export default function CasesPage() {
@@ -284,19 +279,10 @@ export default function CasesPage() {
               默认只显示由你承办的案件 · 点击案号或行进入详情
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className={cn(
-              "flex h-9 items-center gap-1.5 rounded-r2 border border-line px-3",
-              "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-              "disabled:opacity-50"
-            )}
-          >
+          <Button variant="outline" type="button" onClick={() => void load()} disabled={loading}>
             {loading ? <Spinner size="sm" label={null} /> : <RefreshCw className="h-4 w-4" />}
             刷新
-          </button>
+          </Button>
         </header>
 
         <FilterBar

@@ -119,7 +119,7 @@ function errText(e: unknown): string {
 const FIELD_CLS = cn(
   "w-full rounded-r2 border border-line bg-surface px-3 py-2 text-body-sm text-ink-800",
   "placeholder:text-ink-400",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus"
 );
 
 export default function DocumentsPage() {
@@ -289,7 +289,7 @@ export default function DocumentsPage() {
                       className={cn(
                         "flex flex-col rounded-r3 border border-line bg-surface p-4 text-left",
                         "transition-colors duration-fast hover:border-brand-300 hover:bg-surface-hover",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30",
+                        "focus-visible:outline-none focus-visible:shadow-focus",
                         "disabled:opacity-60"
                       )}
                     >
@@ -317,7 +317,7 @@ export default function DocumentsPage() {
                           <Badge variant="pending" size="sm">待律师审</Badge>
                         )}
                         {t.usage_count > 0 && (
-                          <span className="num ml-auto text-caption text-ink-400">
+                          <span className="num ml-auto text-caption text-ink-600">
                             用过 {t.usage_count} 次
                           </span>
                         )}
@@ -454,7 +454,7 @@ export default function DocumentsPage() {
                         </p>
                       )}
                       {f.clause && (
-                        <p className="mt-1.5 truncate font-serif text-caption text-ink-400" title={f.clause}>
+                        <p className="mt-1.5 truncate font-serif text-caption text-ink-600" title={f.clause}>
                           …{f.clause}…
                         </p>
                       )}

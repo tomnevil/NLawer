@@ -54,6 +54,9 @@ class AuditAction:
     # 归档
     ARCHIVE_CREATE = "ARCHIVE_CREATE"
     HEARING_PACK_EXPORT = "HEARING_PACK_EXPORT"
+    # 团队案件可见授权（跨律师读取客户案情 ⇒ 敏感授权事件，必须可还原）
+    CASE_ACCESS_REQUEST = "CASE_ACCESS_REQUEST"  # 律师申请查看团队案件
+    CASE_ACCESS_DECIDE = "CASE_ACCESS_DECIDE"    # 管理员审批（批准 / 驳回）
     # 文件下载（卷宗原文获取，等保要求必须留痕）
     FILE_DOWNLOAD = "FILE_DOWNLOAD"
     # 知识库（企业私有资产）

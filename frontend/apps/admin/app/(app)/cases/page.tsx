@@ -18,6 +18,7 @@ import {
   Spinner,
   Timeline,
   cn,
+  GRADE_TONE,
   type BadgeProps,
   type DataTableColumn,
   type FilterChip,
@@ -101,13 +102,6 @@ const STATUS_TONE: Record<string, BadgeProps["variant"]> = {
   VOIDED: "danger",
 };
 
-const GRADE_TONE: Record<string, BadgeProps["variant"]> = {
-  S: "danger",
-  A: "pending",
-  B: "info",
-  C: "neutral",
-};
-
 /** 派单模式（`app/models/enums.py::DispatchMode`）。 */
 const DISPATCH_MODES = {
   AUTO: { label: "自动派单", hint: "按系统评分选律师，无需人工指定" },
@@ -121,7 +115,7 @@ const PAGE_SIZE = 20;
 
 const SELECT_CLS = cn(
   "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
 );
 
 /* ────────────────────────── 工具 ────────────────────────── */
@@ -546,7 +540,7 @@ export default function AdminCasesPage() {
         {total > 0 && (
           <div className="border-t border-line px-4 py-3">
             {lowerBound && (
-              <p className="mb-2 text-caption text-ink-400">
+              <p className="mb-2 text-caption text-ink-600">
                 匹配案件超过计数上限，总数显示为 <span className="num">{total}+</span>（下界）。
               </p>
             )}
@@ -694,7 +688,7 @@ export default function AdminCasesPage() {
                     </Button>
                   ))}
                 </div>
-                <p className="mt-2 text-caption text-ink-400">
+                <p className="mt-2 text-caption text-ink-600">
                   「客户指定律师」模式需要指定具体律师，而后端未提供律师候选列表接口，故不在此提供。
                 </p>
               </div>

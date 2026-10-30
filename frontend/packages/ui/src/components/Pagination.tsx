@@ -40,7 +40,7 @@ function pageList(current: number, totalPages: number): (number | "gap")[] {
    定稿记录：`deliverables/ui-design/design-spec-addendum-8.3-tap-targets.md`（方案 ①）。 */
 const btn =
   "num inline-flex h-10 min-h-tap sm:min-h-0 min-w-10 items-center justify-center rounded-r2 px-2 text-body-sm " +
-  "transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 " +
+  "transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:shadow-focus " +
   "disabled:cursor-not-allowed disabled:opacity-40";
 
 /**
@@ -88,7 +88,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
               className={cn(
                 "num h-8 min-h-tap sm:min-h-0 rounded-r2 border border-line bg-surface px-1.5 text-body-sm text-ink-800",
-                "focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                "focus:border-brand-400 focus:outline-none focus:shadow-focus"
               )}
             >
               {pageSizeOptions.map((n) => (

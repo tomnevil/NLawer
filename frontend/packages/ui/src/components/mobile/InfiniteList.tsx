@@ -134,7 +134,7 @@ export function InfiniteList<T>({
           // 哨兵：进入视口即加载
           <div ref={sentinelRef} className="h-8" aria-hidden />
         ) : (
-          items.length > 0 && <p className="text-center text-caption text-ink-400">{endMessage}</p>
+          items.length > 0 && <p className="text-center text-caption text-ink-600">{endMessage}</p>
         )}
       </div>
 

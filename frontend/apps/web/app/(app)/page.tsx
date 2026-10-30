@@ -282,7 +282,7 @@ export default function WorkbenchHome() {
           <Card hover={false}>
             <div className="flex items-baseline justify-between gap-2 border-b border-line px-4 py-3">
               <h2 className="text-h4 text-ink-900">本月用量</h2>
-              {dashboard?.period && <span className="num text-caption text-ink-400">{dashboard.period}</span>}
+              {dashboard?.period && <span className="num text-caption text-ink-600">{dashboard.period}</span>}
             </div>
 
             {loading ? (
@@ -390,7 +390,7 @@ export default function WorkbenchHome() {
         </Card>
       )}
 
-      <p className="text-center text-caption text-ink-400">
+      <p className="text-center text-caption text-ink-600">
         本内容由 AI 生成，仅供参考，不构成正式法律意见。
       </p>
     </div>

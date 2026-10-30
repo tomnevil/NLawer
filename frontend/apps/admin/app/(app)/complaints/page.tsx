@@ -123,7 +123,7 @@ const ACTIONS: Record<string, HandleAction[]> = {
 
 const SELECT_CLS =
   "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800 " +
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30";
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus";
 
 const PAGE_SIZE = 20;
 
@@ -525,7 +525,7 @@ export default function ComplaintsPage() {
           <div className="border-t border-line px-4 py-3">
             {/* 有界计数：超过 COUNT_CAP 时 total 是下界，不能显示成精确值 */}
             {lowerBound && (
-              <p className="mb-2 text-caption text-ink-400">
+              <p className="mb-2 text-caption text-ink-600">
                 匹配工单超过计数上限，总数显示为 <span className="num">{total}+</span>（下界）。
               </p>
             )}
@@ -648,7 +648,7 @@ export default function ComplaintsPage() {
                         {action.needsNote ? (
                           <span className="ml-1 text-danger-600">（必填，不少于 {MIN_NOTE} 字）</span>
                         ) : (
-                          <span className="ml-1 text-ink-400">（选填）</span>
+                          <span className="ml-1 text-ink-600">（选填）</span>
                         )}
                       </label>
                       <textarea
@@ -664,10 +664,10 @@ export default function ComplaintsPage() {
                             ? "写明核实过程与结论——这段文字会作为反馈内容发给投诉人"
                             : "可记录受理人、预计处理方式"
                         }
-                        className="w-full rounded-r2 border border-line bg-surface px-3 py-2 text-body-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                        className="w-full rounded-r2 border border-line bg-surface px-3 py-2 text-body-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:shadow-focus"
                       />
                       {action.needsNote && (
-                        <p className="mt-1 text-caption text-ink-400">
+                        <p className="mt-1 text-caption text-ink-600">
                           已输入 <span className="num">{note.trim().length}</span> / {MIN_NOTE} 字
                         </p>
                       )}
@@ -687,7 +687,7 @@ export default function ComplaintsPage() {
                       <Button variant="ghost" onClick={closeModal} disabled={submitting}>
                         取消
                       </Button>
-                      <p className="ml-auto text-caption text-ink-400">
+                      <p className="ml-auto text-caption text-ink-600">
                         处理动作会写入审计日志
                       </p>
                     </div>

@@ -1,0 +1,355 @@
+✅ 编排器自检通过（`--self-test`，纯函数、不碰服务）—— 各臂分开报：
+  [L1] 隔离库契约（编排器设 `DATABASE_URL` ⇒ 探针 `resolve_live_db()` 认它）
+        期望：解析结果 == 注入的临时库   实测：✓
+  [J1] 登记表一致性（`JOB_SPECS` / `CI_JOB_PROBES` / `JOB_ENTRYPOINTS` /
+        `probe_args` / `apps` 形态 / **同 job 内**端口冲突）
+        期望：零不一致   实测：✓
+  本编排器负责 2 个 job（其余 job 的入口见 `run_ci_probes.JOB_ENTRYPOINTS`）：
+  · [browser-admin] 前端 admin@3002 · 后端 @8001 · 3 条真判据
+      - evidence/verify_reduced_motion.py --app admin
+      - evidence/verify_dark_mode.py --app admin
+      - evidence/verify_admin_413_toast_e2e.py
+  · [browser-all] 前端 web@3000 · lawyer@3001 · admin@3002 · im@3003 · 后端 @8001 · 14 条真判据
+      - evidence/verify_ws_msg_type_bypass.py
+      - evidence/verify_im_safe_area.py
+      - evidence/verify_im_e2e.py
+      - evidence/verify_contract_review_gate_e2e.py
+      - evidence/verify_mobile_actionbar.py
+      - evidence/verify_im_tabs.py
+      - evidence/verify_mobile_safe_area.py
+      - evidence/verify_tap_targets.py
+      - evidence/verify_render_e2e.py
+      - evidence/verify_runtime_health.py
+      - evidence/verify_mobile_375.py
+      - evidence/verify_task_center_e2e.py
+      - evidence/verify_adjacent_targets.py
+      - evidence/verify_breakpoints.py
+  · `CI_JOB_PROBES` 合计 3 个 job / 19 条探针（清单来自 `run_ci_probes.CI_JOB_PROBES`，**不在这里重抄**）
+════════════════════════════════════════════════════════════════════════════
+浏览器 job 编排：browser-all（前端 web@3000、lawyer@3001、admin@3002、im@3003 · 后端 @8001）
+  隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\browser_job.db
+  日志：C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\logs
+════════════════════════════════════════════════════════════════════════════
+→ 灌种子（seed_demo.py --reset，库：browser_job.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  ✓ 后端就绪（readyz 200）
+→ 起前端 next start（web → http://localhost:3000）
+  ✓ web 就绪（http://localhost:3000 200）
+→ 起前端 next start（lawyer → http://localhost:3001）
+  ✓ lawyer 就绪（http://localhost:3001/lawyer 200）
+→ 起前端 next start（admin → http://localhost:3002）
+  ✓ admin 就绪（http://localhost:3002/admin 200）
+→ 起前端 next start（im → http://localhost:3003）
+  ✓ im 就绪（http://localhost:3003/im 200）
+
+============================================================================
+跑 14 条真判据（job = browser-all）
+============================================================================
+
+▸ python evidence/verify_ws_msg_type_bypass.py
+  ✅ rc=0 · 通过 · 13.0s
+  ── stdout 尾部 ──
+      ── WS `msg_type` 越界写入复现 ──
+      
+        运行库：C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\browser_job.db
+        会话已建：id=1（租户 firm_hlw）
+        ① 注入前  GET /conversations/1  →  HTTP 200
+        ② 已发 WS 帧：{"text": "ws-probe-msg-type-bypass", "msg_type": "BOGUS"}
+           服务端回帧：'{"type":"error","message":"未知消息类型：BOGUS"}'
+        ③ 落库的消息：[]
+      
+      => 退出码 0：**已加固** —— WS 帧被显式拒绝（回帧含「未知消息类型」），
+         越界值未落库。
+  ────────────
+
+▸ python evidence/verify_im_safe_area.py
+  ✅ rc=0 · 通过 · 44.8s
+  ── stdout 尾部 ──
+        off  --safe-bottom 实际 = '0px'   期望 0.0px   ✓
+        on   --safe-bottom 实际 = '34px'   期望 34.0px   ✓
+        ⇒ 前提成立：off 臂真的没有安全区、on 臂真的有 34px ⇒ 断言有意义
+      
+      ── 判据 ──
+        ✓ ① 成因：根容器 padding-bottom 两臂均为 0px —— 底部安全区只由 TabBar 自己加一次
+        ✓ ② 后果：缝隙 gap  off=0px  on=0px —— 内容正好铺到按钮区顶边
+        ✓ ③ TabBar 高  off=57px  on=91px  （= tabbar-h 56 + safe-bottom + border-top 1）
+        ✓ ④ 内容区让位随安全区增长：56px → 90px
+        ✓ ⑤ TabBar 两臂都贴住视口底边；⑥ 触控目标 56px ≥ 48px
+      
+      EXIT=0  通过：底部安全区未被双算，且断言在安全区真正生效时依然成立
+  ────────────
+
+▸ python evidence/verify_im_e2e.py
+  ✅ rc=0 · 通过 · 49.2s
+  ── stdout 尾部 ──
+      ✅ I1 im 端登录
+        ✅ I2 工作台渲染  (品牌署名缺失 ⇒ 页面可能未挂载)
+        ✅ I3 点「向 AI 提问」跳转到 /chat  (http://localhost:3003/chat)
+      
+      通过 3 / 失败 0
+  ────────────
+
+▸ python evidence/verify_contract_review_gate_e2e.py
+  ✅ rc=0 · 通过 · 58.3s
+  ── stdout 尾部 ──
+      ✅ C1 登录  (http://localhost:3000/qa)
+        ✅ C2 输入表单渲染
+        ✅ C3 CountBadge 显示超限  (长度=25000，计数含 '/ 20000')
+        ✅ C4 提交后仍停留在输入态  (命中失败结果页 ⇒ 413 被当成审查失败)
+        ✅ C5 决策门两个出口都在
+        ✅ C6 超限不清空原文  (提交后长度=25000)
+        ✅ C7 轮询拿到结论页
+      
+      通过 7 / 失败 0
+  ────────────
+
+▸ python evidence/verify_mobile_actionbar.py
+  ✅ rc=0 · 通过 · 61.3s
+  ── stdout 尾部 ──
+         [D2] 正文最后可见元素 bottom=661 (p.px-4)  条顶=694  ⇒ 未被盖住 ✓
+         [D3] 顶部分隔线已渲染 ✓  backgroundImage=linear-gradient(rgb(226, 229, 233) 0px, rgb(226, 229, 233) 1px, rgba(0, 0, 0, 0) 1px)
+         [G] 条内触控目标 1 个，全部 ≥48px ✓
+      
+      ── [desktop 1280] 臂 ──
+         视口 innerWidth=1280（`lg:` 断点 1024 ⇒ 前提 innerWidth ≥ 1024）
+         操作条 display='none'（`lg:hidden` ⇒ 期望 'none'）
+      
+      ── 汇总 ──
+        ✓ 操作条正叠在底栏之上（gap=0）；安全区只应用一次；占位等高；桌面端已隐藏
+      
+      EXIT=0  通过
+  ────────────
+
+▸ python evidence/verify_im_tabs.py
+  ✅ rc=0 · 通过 · 114.4s
+  ── stdout 尾部 ──
+        三栏实测（期望 rail=288 panel=320，>1400 常规档）：
+              288px  w-full shrink-0 flex-col
+              832px  min-w-0 flex-1 flex-col
+              320px  hidden w-panel shrink-0
+        ⇒ 正文栏 ≈ 832px（判据 ≥ 432px，来自 §2.3：带 240 侧栏时的宽度）
+      
+      
+      ── 汇总 ──
+        ✓ 4 个 Tab 全部可点、路径正确、高亮正确、内容区非空壳、非 404、无框架错误
+        ✓ 桌面端 1280/1440 两档 TabBar 均消失；三栏宽度符合断点；正文栏 ≥ 432px
+      
+      EXIT=0  通过
+  ────────────
+
+▸ python evidence/verify_mobile_safe_area.py
+  ✅ rc=0 · 通过 · 155.2s
+  ── stdout 尾部 ──
+                （本臂 --safe-bottom=0，该扫描为空真 ⇒ 不作为判据）
+         [on] padding-bottom≈safe-bottom 的元素：底栏内 1 个、底栏外 0 个
+         触控目标：共 4 个，全部 ≥48px ✓
+         [off] 固定高度型  scrollY=0
+               内容区 padding-bottom='56px'  内容底=788  底栏按钮区顶=788  ⇒ gap=0px（期望 0）
+         [on] 固定高度型  scrollY=0
+               内容区 padding-bottom='90px'  内容底=754  底栏按钮区顶=754  ⇒ gap=0px（期望 0）
+      
+      ── 汇总 ──
+        ✓ 底栏贴底；--safe-bottom 只应用一次；触控目标 ≥48px；内容让位与设计值一致
+      
+      EXIT=0  通过
+  ────────────
+
+▸ python evidence/verify_tap_targets.py
+  ✅ rc=0 · 通过 · 88.9s
+  ── stdout 尾部 ──
+      [im] /        图标按钮  0 个  ⇒ 全部 ≥48px ✓
+      [im] /chat    图标按钮  3 个  ⇒ 全部 ≥48px ✓
+            · button.tap-ghost flex h-9 w-9             盒子 36×36  热区 48×49  '新建咨询'  （热区大于盒子 ⇒ 用了伪元素/覆盖层，量盒子会误报）
+            · button.tap-ghost flex h-8 w-8             盒子 32×32  热区 48×49  '切换到深色模式'  （热区大于盒子 ⇒ 用了伪元素/覆盖层，量盒子会误报）
+            · button.tap-ghost flex h-8 w-8             盒子 32×32  热区 48×49  '退出登录'  （热区大于盒子 ⇒ 用了伪元素/覆盖层，量盒子会误报）
+      [im] /cases   图标按钮  0 个  ⇒ 全部 ≥48px ✓
+      
+      ── 汇总 ──
+        扫描 9 个页面
+        ✓ 所有图标按钮的实际可点范围都 ≥48×48px（规范 §8.3）
+      
+      EXIT=0  通过
+  ────────────
+
+▸ python evidence/verify_render_e2e.py
+  ✅ rc=0 · 通过 · 99.5s
+  ── stdout 尾部 ──
+        [PASS] I.3 详情含「被复核对象」区块
+        [PASS] I.4 🚨 「关键法条」渲染出**真实法条**（`law_name`/`article_no` 键名正确的渲染级证明）  -> 匹配=《中华人民共和国民法典》第577条：当事人一方不履行合同义务或者
+        [PASS] I.5 详情含「类案」列表  -> 类案（1/1 可溯源） (2021)桂05民初567号 买卖合同逾期付款违约金纠纷（北海市中级人民法院） 路径：协商解决 ·
+        [PASS] I.6 详情含「n/m 可溯源」计数（本轮新增的监督信号）  -> （2/2 可溯源）
+        [PASS] I.7 详情含「复核留痕」区块  -> 复核留痕（2 条） 创建复核 LAWYER · 用户 #4 · L2 — → AI 初稿 · AI 初稿生成
+      
+      并排对比图：evidence/shot_safe_area_compare.png（左=无刘海 / 右=有刘海）
+      
+      ====================================================================
+      结果：21/21 通过，全部通过
+      ====================================================================
+      => 退出码 0：全部通过
+  ────────────
+
+▸ python evidence/verify_runtime_health.py
+  ❌ rc=1 · **产品缺陷** · 212.4s
+  ── stdout 尾部 ──
+      web     :3000  7 页  →  0 个问题
+      lawyer  :3001  6 页  →  1 个问题（白名单放过 1）
+      admin   :3002  8 页  →  0 个问题
+      im      :3003  5 页  →  0 个问题
+      ========================================================================
+      
+      运行时错误（**产品缺陷**）：1 条
+      
+        [失败请求] lawyer/dispatches
+                 404 Fetch http://localhost:8001/api/v1/cases/10
+      ========================================================================
+      => 退出码 1：存在未捕获异常 / 控制台报错 / 失败请求
+  ────────────
+
+▸ python evidence/verify_mobile_375.py
+  ✅ rc=0 · 通过 · 234.3s
+  ── stdout 尾部 ──
+      
+      [im] :3003  账号 client
+         /                         390:✓  375:✓  320:✓
+         /chat                     390:✓  375:✓  320:✓
+         /cases                    390:✓  375:✓  320:✓
+         /cases/10                 390:✓  375:✓  320:✓
+         /me                       390:✓  375:✓  320:✓
+      
+      ── 汇总 ──
+        ✓ 所有页面在全部宽度下都无横向溢出
+      
+      EXIT=0  通过（78 组测量）
+  ────────────
+
+▸ python evidence/verify_task_center_e2e.py
+  ✅ rc=0 · 通过 · 84.9s
+  ── stdout 尾部 ──
+      ✅ W1 web 合同审查页渲染
+        ✅ W2 抽屉打开并加载任务  (jobs/empty=True)
+        ✅ W3 抽屉刷新后仍打开
+        ✅ W4 失败任务重试已调端点  (clicked=clicked, gone=no-btn)
+        ✅ L1 律师端 /jobs 渲染  (jobs/empty=True)
+        ✅ L2 律师端 /jobs 刷新后仍渲染
+        ✅ A1 管理端 /jobs 渲染  (jobs/empty=True)
+        ✅ A2 管理端 /jobs 刷新后仍渲染
+      
+      通过 8 / 失败 0
+  ────────────
+
+▸ python evidence/verify_adjacent_targets.py
+  ✅ rc=0 · 通过 · 140.5s
+  ── stdout 尾部 ──
+        扫描可点元素 350 个（其中处于固定/粘性层 150 个）
+        ── 每页覆盖（可点元素数 / **内容区**可点元素数；内容区 0 = 该页没渲染出来）──
+          web: / 17/9 · /qa 11/3 · /documents 31/23 · /contract-review 13/5 · /compliance 15/7 · /knowledge 13/5 · /billing 13/5
+          lawyer: / 18/9 · /dispatches 18/9 · /cases 22/13 · /reviews 17/8 · /archives 18/9 · /notifications 12/3
+          admin: / 7/4 · /reviews 12/9 · /cases 16/13 · /dispatches 7/4 · /compliance 10/7 · /billing 13/10 · /complaints 8/5 · /audit 7/4
+          im: / 14/10 · /chat 10/6 · /cases 19/15 · /me 9/5
+          [E1·审计] 固定层来自：'nav.fixed.inset-x-0.bottom-0' × 81 · 'header.sticky.top-0.z-topbar' × 69
+        [E1] 按「跨固定/滚动层」排除 6 对（恰好一方 pinned ⇒ 间距随滚动而变，无意义；**同层**照常比较）
+        [A1] 并排且 0 < gap < 8px：0 对 ✓
+        [A2] 上下且 0 < gap < 8px：1 对（**只报不判**：上下堆叠是全宽列表/表单的常态）
+        [A3] gap == 0：67 对（其中同父 3 对）（**只报不判**：多是一个复合控件的内部）
+        [E2] 按「列表行」排除 2 对（全宽 + 上下 + ≤2px ⇒ 归 §8.3「列表行高 ≥ 48px」）
+  ────────────
+
+▸ python evidence/verify_breakpoints.py
+  ✅ rc=0 · 通过 · 81.5s
+  ── stdout 尾部 ──
+        expanded 起点（=1024，切换点） @/cases ✓   无常驻左列  无TabBar
+        expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/cases ✓   无常驻左列  无TabBar
+        expanded 起点（=1024，切换点） @/me  ✓   无常驻左列  无TabBar
+        expanded 上段（1440；`wide` 的侧栏要求与此档相同，故此处亦覆盖） @/me ✓   无常驻左列  无TabBar
+      
+      ==========================================================================
+      测量 22 组；不合格 0 组。
+      ⚠️ 其中 2 组走了 B2b 豁免（**不代表它符合 §8.2 的「240px 导航侧栏」**）：
+        · im/chat@1024: 250px 常驻左列，B2b 未断言（豁免）
+        · im/chat@1440: 288px 常驻左列，B2b 未断言（豁免）
+      §8.2 四档断点与 §8.4 导航模式符合规范（限已测到的组）。
+      ⚠️ 注意：im 的 ≥1024 两档是**按豁免通过**的 —— 见上方豁免理由与 §9 待裁决项。
+  ────────────
+
+────────────────────────────────────────────────────────────────────────────
+汇总：13/14 通过
+  ❌ 产品缺陷（1）：verify_runtime_health.py
+  ⚠️ 「产品坏了」与「我没测成」必须分开读 —— 上面每条都标了是哪一类。
+
+── 服务日志尾巴（**取证**：环境问题的痕迹都在这两处）──
+  ▸ 后端(uvicorn)（backend.log）
+      [32m2026-10-10 16:16:29.328[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=2 在线用户=1[0m
+      [32m2026-10-10 16:18:32.079[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=1 在线用户=1[0m
+      [32m2026-10-10 16:18:35.619[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=1 在线用户=1[0m
+      [32m2026-10-10 16:18:39.850[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=2 在线用户=1[0m
+      [32m2026-10-10 16:22:20.913[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=1 在线用户=1[0m
+      [32m2026-10-10 16:22:24.224[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=2 在线用户=1[0m
+      [32m2026-10-10 16:22:27.309[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=3 在线用户=1[0m
+      [32m2026-10-10 16:22:30.582[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=4 在线用户=1[0m
+      [32m2026-10-10 16:22:33.802[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=5 在线用户=1[0m
+      [32m2026-10-10 16:22:37.027[0m | [33m[1mWARNING [0m | [36m-[0m | [33m[1m通知连接被拒（超单用户上限 5）：user_id=3[0m
+      [32m2026-10-10 16:22:40.275[0m | [33m[1mWARNING [0m | [36m-[0m | [33m[1m通知连接被拒（超单用户上限 5）：user_id=3[0m
+      [32m2026-10-10 16:25:58.924[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=1 在线用户=1[0m
+      [32m2026-10-10 16:26:02.050[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=2 在线用户=1[0m
+      [32m2026-10-10 16:26:06.118[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=3 在线用户=1[0m
+      [32m2026-10-10 16:26:10.293[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=4 在线用户=1[0m
+      [32m2026-10-10 16:26:14.374[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=5 在线用户=1[0m
+      [32m2026-10-10 16:26:18.472[0m | [33m[1mWARNING [0m | [36m-[0m | [33m[1m通知连接被拒（超单用户上限 5）：user_id=3[0m
+      [32m2026-10-10 16:26:22.578[0m | [33m[1mWARNING [0m | [36m-[0m | [33m[1m通知连接被拒（超单用户上限 5）：user_id=3[0m
+      [32m2026-10-10 16:29:08.194[0m | [1mINFO    [0m | [36m-[0m | [1mJob 2 执行成功（attempt=1）[0m
+      [32m2026-10-10 16:29:16.781[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=1 在线用户=1[0m
+      [32m2026-10-10 16:29:21.013[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=2 在线用户=1[0m
+      [32m2026-10-10 16:30:48.948[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=1 在线用户=1[0m
+      [32m2026-10-10 16:30:52.172[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=2 在线用户=1[0m
+      [32m2026-10-10 16:30:55.722[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=3 在线用户=1[0m
+      [32m2026-10-10 16:30:59.236[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=4 在线用户=1[0m
+      [32m2026-10-10 16:31:02.743[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=5 在线用户=1[0m
+      [32m2026-10-10 16:31:06.289[0m | [33m[1mWARNING [0m | [36m-[0m | [33m[1m通知连接被拒（超单用户上限 5）：user_id=3[0m
+      [32m2026-10-10 16:31:09.837[0m | [33m[1mWARNING [0m | [36m-[0m | [33m[1m通知连接被拒（超单用户上限 5）：user_id=3[0m
+      [32m2026-10-10 16:32:48.658[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=1 在线用户=1[0m
+      [32m2026-10-10 16:32:52.173[0m | [1mINFO    [0m | [36m-[0m | [1m通知连接建立：user_id=3 该用户连接数=2 在线用户=1[0m
+  ▸ 前端(web)（frontend-web.log）
+         ▲ Next.js 15.5.24
+         - Local:        http://localhost:3000
+         - Network:      http://192.168.0.104:3000
+      
+       ✓ Starting...
+       ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+       ✓ Ready in 1345ms
+  ▸ 前端(lawyer)（frontend-lawyer.log）
+         ▲ Next.js 15.5.24
+         - Local:        http://localhost:3001
+         - Network:      http://192.168.0.104:3001
+      
+       ✓ Starting...
+       ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+       ✓ Ready in 1151ms
+  ▸ 前端(admin)（frontend-admin.log）
+         ▲ Next.js 15.5.24
+         - Local:        http://localhost:3002
+         - Network:      http://192.168.0.104:3002
+      
+       ✓ Starting...
+       ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+       ✓ Ready in 1139ms
+  ▸ 前端(im)（frontend-im.log）
+         ▲ Next.js 15.5.24
+         - Local:        http://localhost:3003
+         - Network:      http://192.168.0.104:3003
+      
+       ✓ Starting...
+       ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+       ✓ Ready in 1025ms
+
+→ 本次未通过 ⇒ 服务已停、日志**保留**：
+   · 后端(uvicorn)  pid=(已停)  日志=C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\logs\backend.log
+   · 前端(web)  pid=(已停)  日志=C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\logs\frontend-web.log
+   · 前端(lawyer)  pid=(已停)  日志=C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\logs\frontend-lawyer.log
+   · 前端(admin)  pid=(已停)  日志=C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\logs\frontend-admin.log
+   · 前端(im)  pid=(已停)  日志=C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\logs\frontend-im.log
+   · 隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-browser-job-a_vdyco6\browser_job.db
+
+❌ 浏览器 job 失败：**产品缺陷**（判据断言不成立）。

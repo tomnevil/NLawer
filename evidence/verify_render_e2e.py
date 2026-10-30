@@ -35,8 +35,9 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import app_url  # noqa: E402
 from cdp import Browser  # noqa: E402
-from envprobe import ADMIN, check_services, fingerprint  # noqa: E402
+from envprobe import check_services, fingerprint  # noqa: E402
 
 OUT = HERE
 
@@ -142,7 +143,7 @@ async def login(b: Browser) -> None:
     from app.seed.data import DEMO_USERS
 
     u = next(x for x in DEMO_USERS if x["username"] == "admin")
-    await b.goto(f"{ADMIN}/login", wait=3)
+    await b.goto(app_url("admin", "/login"), wait=3)
     await b.type_into("#login-username", u["username"])
     await b.type_into("#login-password", u["password"])
     await asyncio.sleep(0.4)
@@ -255,7 +256,7 @@ async def main() -> int:
         # ══════════ H. 租户视角切换（整页重载） ══════════
         group("H. 浏览器端到端：租户视角切换")
 
-        await b.goto(f"{ADMIN}/", wait=4)
+        await b.goto(app_url("admin", "/"), wait=4)
         await guard(b, "H.1 打开驾驶舱后")
         d0 = await b.cdp.evaluate(JS_DASH_NUMS)
         check("H.1 初始视角为「平台本级」", d0.get("scope") == "platform", f"scopeTag={d0.get('scopeTag')}")
@@ -321,7 +322,7 @@ async def main() -> int:
         # ══════════ I. 复核详情「被复核对象」区块 ══════════
         group("I. 浏览器端到端：复核详情「被复核对象」区块")
 
-        await b.goto(f"{ADMIN}/reviews", wait=5)
+        await b.goto(app_url("admin", "/reviews"), wait=5)
         await guard(b, "I.1 打开复核列表后")
         rows = await b.cdp.evaluate("document.querySelectorAll('tbody tr').length")
         check("I.1 复核队列有数据行（firm_hlw 视角）", rows > 0, f"行数={rows}")

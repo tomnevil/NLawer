@@ -69,6 +69,8 @@ FE = ROOT / "frontend"
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "backend"))
 
+from approutes import base_for_port  # noqa: E402
+
 # ─────────────────────────── 出处常量 ───────────────────────────
 
 #: §2.4（§2.4「案件等级」）等级 → 令牌角色。
@@ -85,8 +87,15 @@ SPEC_GRADE_TOKEN: dict[str, str] = {
 #:    吞掉之后 DOM 上根本不存在 `text-info-600` 这个 class（见 G4 说明）。
 BADGE_VARIANT_FG_TOKEN: dict[str, str] = {
     "default": "ink-600",
-    "verified": "verified-600",
-    "pending": "pending-600",
+    # ⚠️ 2026-10-29：`verified` / `pending` 由 `-600` 提到 **`-700`**（同 `primary` 的理由族）。
+    #    这两档的底色是 `bg-*-500/15` **染色底**，而令牌注释的「文本用色（6.0:1 / 5.5:1）」
+    #    是**按白底**标的 ⇒ 压在染色底上只剩 **4.49 / 4.16**（AA 门槛 4.5）。
+    #    实测复现：`surface-subtle` 底上 `-600` = 4.49/4.16、`-700` = 5.91/5.93，
+    #    与渲染探针读数**逐位一致**；深色档 `-700` 更亮（#82D6B8 / #E8C480）⇒ 两模式四底色**全单调改善**。
+    #    裁定材料：`deliverables/ui-design/ruling-token-tier-2026-10-29.md`。
+    #    🚨 改这里必须同步改 `Badge.tsx` 与 `TOKEN_SNAPSHOT`，否则 G4 判「文字色 ≠ 声明的令牌」。
+    "verified": "verified-700",
+    "pending": "pending-700",
     "danger": "danger-600",
     "info": "info-600",
     "primary": "link",          # Badge.tsx:48 用 text-link（≠ brand-600 深色值）
@@ -111,8 +120,8 @@ VARIANT_BY_BG_CLASS: dict[str, str] = {
 TOKEN_SNAPSHOT = (
     "gold-500", "danger-500", "brand-600", "brand-500", "ink-400",
     "ink-500", "ink-600", "ink-700", "info-600", "danger-600",
-    "pending-600", "verified-600", "ai-600", "gold-700", "link",
-    "surface-subtle",
+    "pending-600", "pending-700", "verified-600", "verified-700",
+    "ai-600", "gold-700", "link", "surface-subtle",
 )
 
 #: 徽章的透明度修饰符：`bg-gold-500/15` ⇒ alpha 0.15
@@ -200,8 +209,9 @@ def judge_badge_fg(cls: str, actual_color: str, tokens: dict[str, str]
         return False, f"令牌 --{tok} 读不到"
     if actual_color == want:
         return True, ""
-    return False, (f"`{variant}` 变体徽章文字色 {actual_color} ≠ "
-                   f"Badge.tsx 声明的 --{tok} = {want}")
+    return False, (f"`{variant}` 变体的文字色 {actual_color} ≠ 期望 --{tok} = {want}"
+                   f"（期望值来自变体映射，**镜像** `Badge.tsx`；"
+                   f"实际命中的 class：{cls.strip()[:110]!r}）")
 
 
 def judge_letter(text: str, grade: str) -> tuple[bool, str]:
@@ -393,7 +403,7 @@ async def run_render(dump: bool) -> int:
 
     async with Browser(headless=True, width=1280, height=900, device_scale_factor=1) as b:
         for app, spec in APPS.items():
-            base = f"http://localhost:{spec['port']}"
+            base = base_for_port(spec["port"])
             try:
                 ok = await login(b, base, spec["user"])
             except Exception as e:                                    # noqa: BLE001
@@ -546,6 +556,7 @@ LIGHT_TOKENS: dict[str, str] = {
     "brand-500": "54 96 176", "ink-400": "154 163 174", "ink-500": "107 116 128",
     "ink-600": "74 82 92", "ink-700": "52 59 68", "info-600": "34 92 147",
     "danger-600": "166 47 35", "pending-600": "143 95 20", "verified-600": "22 112 85",
+    "pending-700": "112 74 16", "verified-700": "18 92 70",
     "ai-600": "91 69 176", "gold-700": "112 86 46", "link": "39 76 147",
     "surface-subtle": "239 241 243",
 }
@@ -554,6 +565,7 @@ DARK_TOKENS: dict[str, str] = {
     "brand-500": "78 119 196", "ink-400": "126 135 149", "ink-500": "154 163 174",
     "ink-600": "180 188 198", "ink-700": "205 211 218", "info-600": "132 186 230",
     "danger-600": "232 122 110", "pending-600": "218 168 78", "verified-600": "82 196 160",
+    "pending-700": "232 196 128", "verified-700": "130 214 184",
     "ai-600": "176 160 238", "gold-700": "230 204 160", "link": "138 168 224",
     "surface-subtle": "26 31 38",
 }
@@ -649,6 +661,16 @@ def self_test() -> int:
     # ── G4 gold ──
     ok, _ = judge_badge_fg(cls_gold, expect_color(LIGHT_TOKENS["gold-700"]), LIGHT_TOKENS)
     arm("G4-h gold 变体文字色=gold-700 ⇒ 绿", ok, True)
+    # ── G4 失败文案的可定位性（2026-10-30 修措辞瑕疵时补的臂）──
+    # 为什么要有这两条：同形状的 `bg-*-500/15 + text-*-600` 不只写在 `Badge.tsx` ——
+    # `CitationPanel` / `KpiCard` / `ProvenanceBadge` 各自抄了一份（2026-10-29 实测抓到 8 处）。
+    # 旧文案断言「Badge.tsx 声明的」，于是报错时**指向了错的出处**，人按它去 Badge.tsx 里找，
+    # 那两行明明是对的 ⇒ 白查一轮。⇒ 文案必须带出**实际命中的 class**。
+    ok, msg = judge_badge_fg(cls_pri, expect_color(DARK_TOKENS["brand-600"]), DARK_TOKENS)
+    arm("G4-i 失败文案带出**实际命中的 class**（否则查不到是哪个组件写的同形状）",
+        "bg-brand-500/15" in msg, True)
+    arm("G4-j 失败文案不再断言出处是 `Badge.tsx`（那是错归因）",
+        "Badge.tsx 声明的" not in msg, True)
 
     # ── 源码层：GRADE_TONE 解析 ──
     body = ('const GRADE_TONE: Record<string, BadgeProps["variant"]> = '

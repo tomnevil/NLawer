@@ -77,6 +77,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 TOKENS_CSS = HERE.parents[0] / "frontend" / "packages" / "ui" / "src" / "tokens.css"
@@ -655,7 +656,7 @@ async def run(shot: bool, only: str | None) -> int:
         for app, cfg in APPS.items():
             if only and app != only:
                 continue
-            base = f"http://localhost:{cfg['port']}"
+            base = base_for_port(cfg["port"])
             print(f"══ {app}  {base}")
             # Cookie 不区分端口 ⇒ 换端前必须清（localStorage **区分**端口，不用清）
             try:
@@ -741,7 +742,7 @@ async def dump(only: str | None) -> int:
         for app, cfg in APPS.items():
             if only and app != only:
                 continue
-            base = f"http://localhost:{cfg['port']}"
+            base = base_for_port(cfg["port"])
             try:
                 await b.cdp.send("Network.clearBrowserCookies")
             except Exception:
@@ -777,7 +778,7 @@ async def why(app: str) -> int:
         await b.apply_device(safe_area=None, mobile=False)
         await b.cdp.send("Page.addScriptToEvaluateOnNewDocument", source=WHY_JS)
         cfg = APPS[app]
-        base = f"http://localhost:{cfg['port']}"
+        base = base_for_port(cfg["port"])
         if not await login(b, base, cfg["user"]):
             print(f"[env] {app} 登录失败")
             return 2

@@ -66,7 +66,7 @@ import { ResultView } from "./ResultView";
 const FIELD_CLS = cn(
   "w-full rounded-r2 border border-line bg-surface px-3 py-2 text-body-sm text-ink-800",
   "placeholder:text-ink-400",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus"
 );
 
 /**
@@ -513,7 +513,7 @@ export default function ContractReviewPage() {
         <Button variant="secondary" onClick={cancel}>
           取消并返回
         </Button>
-        <p className="max-w-md text-caption leading-relaxed text-ink-400">
+        <p className="max-w-md text-caption leading-relaxed text-ink-600">
           {job
             ? "已转为后台任务，离开页面也不会丢失；可在任务中心查看进度。"
             : "审查期间请勿关闭页面；取消只会终止本次等待。"}

@@ -91,7 +91,7 @@ export function SegmentedControl<T extends string = string>({
             className={cn(
               "inline-flex items-center justify-center whitespace-nowrap rounded-[4px] font-medium",
               "transition-colors duration-fast ease-out",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30",
+              "focus-visible:outline-none focus-visible:shadow-focus",
               "disabled:cursor-not-allowed disabled:opacity-50",
               fullWidth && "flex-1",
               sizeStyles[size],
@@ -110,7 +110,9 @@ export function SegmentedControl<T extends string = string>({
               <span
                 className={cn(
                   "num rounded-r1 px-1 text-caption leading-4",
-                  active ? "bg-brand-500/15 text-link" : "bg-surface-hover text-ink-500"
+                  // 角标底是 --surface-hover（比 subtle 更深）：ink-500 在浅色档只有 4.33:1，
+                  // ink-600 为 6.27:1（深色档 7.64:1）。2026-10-14 由 ink-500 提深。
+                  active ? "bg-brand-500/15 text-link" : "bg-surface-hover text-ink-600"
                 )}
               >
                 {option.badge}

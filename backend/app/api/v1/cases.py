@@ -138,31 +138,18 @@ async def list_cases(
     )
 
 
-@router.get("/pool", response_model=dict, summary="派单池（待抢单案件）")
-async def dispatch_pool(
-    params: PaginationParams = Depends(),
-    db: AsyncSession = Depends(get_db),
-    ctx=Depends(get_tenant_context),
-):
-    base = select(Case).where(Case.tenant_id == ctx.tenant_id, Case.status == "PENDING_DISPATCH")
-    # 有界计数：判据是「匹配集是否远大于一页」。
-    # 小匹配集（如 0 条）无收益（实测 1.0x）——因为此时计数本就走完小集合；
-    # 但大律所场景（单租户 4.3 万行 → 匹配 8572 条）实测 30.99ms → 0.95ms（32.6x）。
-    # 线上匹配集事先不可知，故统一采用有界计数：小集合零损失、大集合高收益。
-    total, is_lower_bound = await count_bounded(db, base)
-    rows = list(
-        (await db.execute(base.order_by(Case.id.desc()).offset(params.offset).limit(params.limit)))
-        .scalars()
-        .all()
-    )
-    return ok(
-        Page.build(
-            [CaseOut.model_validate(r).model_dump() for r in rows],
-            total,
-            params,
-            total_is_lower_bound=is_lower_bound,
-        ).model_dump()
-    )
+# 🚫 `GET /cases/pool` 已于 2026-10-11 **删除**（全仓零调用方）。
+#
+# 它曾与 `GET /dispatches/pool` 构成**两个口径不一致的「派单池」**：
+#   · `/dispatches/pool`（正牌）= `Dispatch` 表：`PENDING ∩ (lawyer_id IS NULL ∨ mode=POOL)`
+#   · `/cases/pool`（已删）    = `Case` 表：`status=PENDING_DISPATCH`
+# 产品语义上「派单池」是**派单**的属性（待接单 ∩ 未指定律师），不是案件状态的属性。
+# 且旧端点在 `Case.status` 上过滤、**无角色可见性收窄** ⇒ 是个「容易被误用成第二个池子」的坑。
+#
+# ⚠️ 历史文档 `deliverables/product-strategy/roadmap-update-pending-rulings-2026-09-22.md`
+# 曾把它列入「含客户案情端点 ⇒ 维持 + 强制审计留痕」，但那条裁定**从未落地**（该端点
+# 始终无留痕）。该列表是**当时的状态描述**，不是「有人在调用」的证据。
+# 防回归判据：`backend/verify_route_coverage.py`。
 
 
 @router.get("/stats", response_model=dict, summary="按状态计数（驾驶舱聚合）")
@@ -213,8 +200,14 @@ async def create_access_request(
     payload: AccessRequestCreate,
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
+    user=Depends(get_current_user),
 ):
-    """律师发起申请：落库为 PENDING，等待律所管理员审批（POST /decision）。"""
+    """律师发起申请：落库为 PENDING，等待律所管理员审批（POST /decision）。
+
+    审计留痕（2026-10-12 补）：申请「跨律师读取客户案情」是**敏感授权动作**，
+    审计表是追加式账本，能回答「谁、何时、为何、申请多久」——
+    授权行本身只记最终态，回答不了「谁提的申请、申请理由是什么」。
+    """
     if ctx.role != Role.LAWYER:
         raise PermissionDeniedError("仅律师可申请团队案件可见授权")
     grant = CaseAccessGrant(
@@ -226,6 +219,20 @@ async def create_access_request(
         expires_at=_now_db(),  # PENDING 阶段占位；审批通过时改写为授权窗
     )
     db.add(grant)
+    await db.flush()  # 取到 grant.id 给留痕用
+    await record(
+        db,
+        AuditAction.CASE_ACCESS_REQUEST,
+        "case_access_grant",
+        grant.id,
+        actor=user,
+        tenant_id=ctx.tenant_id,
+        detail={
+            "reason": payload.reason or None,
+            "days": payload.days,
+            "scope": GRANT_SCOPE_TEAM_READ,
+        },
+    )
     await db.commit()
     return ok({"id": grant.id, "status": grant.status})
 
@@ -276,8 +283,10 @@ async def decide_access_request(
     """律所管理员审批：approve 写授权窗（expires_at = now + days）；
     reject 关闭申请。仅 PENDING 可处理（重复处理 403）。
 
-    授权表本身即审批留痕（status / granted_by / expires_at / 时间戳），
-    不再重复写审计。
+    审计留痕（2026-10-12 补）：授权表只保留**最终态**（status / granted_by /
+    expires_at），改一行就抹掉了「改之前是什么」。审批是放行「读他人客户案情」
+    的授权决定，属《暂行办法》留痕范围 ⇒ 另写一条**追加式**审计行，
+    使「谁批的、批了多久、批的是谁」在账本上不可被后续修改覆盖。
     """
     grant = await db.get(CaseAccessGrant, grant_id)
     if grant is None or grant.tenant_id != ctx.tenant_id:
@@ -291,6 +300,21 @@ async def decide_access_request(
         grant.status = GRANT_STATUS_REJECTED
         grant.expires_at = _now_db()
     grant.granted_by = user.id
+    await record(
+        db,
+        AuditAction.CASE_ACCESS_DECIDE,
+        "case_access_grant",
+        grant.id,
+        actor=user,
+        tenant_id=ctx.tenant_id,
+        detail={
+            "action": payload.action,
+            "days": payload.days,
+            "status": grant.status,
+            "grantee_user_id": grant.grantee_user_id,
+            "expires_at": grant.expires_at.isoformat(),
+        },
+    )
     await db.commit()
     return ok(
         {"id": grant.id, "status": grant.status, "expires_at": grant.expires_at.isoformat()}

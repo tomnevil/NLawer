@@ -74,7 +74,7 @@ function ScaleIcon({ className }: { className?: string }) {
 const fieldCls =
   "w-full min-h-tap rounded-r2 border border-line bg-surface px-3 text-body text-ink-900 " +
   "placeholder:text-ink-400 transition-colors duration-fast " +
-  "focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20";
+  "focus:border-brand-500 focus:outline-none focus:shadow-focus";
 
 /**
  * 登录页骨架（四端共用）。
@@ -200,7 +200,7 @@ export function LoginShell({
         </div>
 
         <div className="relative">
-          <h1 className="font-serif text-[40px] leading-[1.25] tracking-tight">{appName}</h1>
+          <h1 className="font-serif text-display">{appName}</h1>
           <div className="mt-6 h-px w-16 bg-gold-500" />
           <p className="mt-6 max-w-md text-body text-white/70">{tagline}</p>
           <p className="mt-3 max-w-md text-caption text-white/45">
@@ -371,7 +371,7 @@ export function LoginShell({
               className={cn(
                 "flex w-full min-h-[44px] items-center justify-center rounded-r2 bg-brand-600 text-body font-medium text-white",
                 "transition-colors duration-fast hover:bg-brand-700",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2",
+                "focus-visible:outline-none focus-visible:shadow-focus",
                 "disabled:cursor-not-allowed disabled:opacity-55"
               )}
             >
@@ -388,7 +388,7 @@ export function LoginShell({
               <div className="mt-7 hidden rounded-r3 border border-line bg-surface p-3.5 sm:block">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <span className="text-label font-medium text-ink-700">演示账号</span>
-                  <span className="text-caption text-ink-400">点击即登录</span>
+                  <span className="text-caption text-ink-600">点击即登录</span>
                 </div>
 
                 {groups.length > 1 && (

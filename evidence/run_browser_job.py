@@ -13,6 +13,13 @@
   3. **admin 前端在 3002**，且是**生产构建产物**（`next start` 需要 `.next/BUILD_ID`）；
   4. **`apps/admin/.env.local` 已播种** —— `NEXT_PUBLIC_API_BASE` 是**构建期内联**的，
      缺了不会报错，只会烘出 SDK 兜底的 `:8000`（`verify_api_base_baked.py` 那个坑）；
+  4b. 🚨 **`lawyer` / `admin` / `im` 挂在 `basePath` 下**（`/lawyer` · `/admin` · `/im`，
+      为 `https://bot.tomneil.asia/<app>` 的 nginx 前缀转发）⇒ **就绪探针与每一条探针的
+      URL 都必须带前缀**；探 `/` 只会得到 **404**。唯一真源是 `evidence/approutes.py`，
+      一致性由 `evidence/verify_base_path_consistency.py` 判。
+      ⚠️ 这一条是 **2026-10-10** 补的：此前就绪探针对**四端一律探 `/`** ⇒ 本 job 自
+      **2026-10-01**（`basePath` 落地那天）起**必然 exit 2**，且**静默了 9 天** ——
+      因为本仓**非 git 仓库**（`ci.yml` 永不触发）且本 job **只在 main / 手动**跑。
   5. **顺序**：必须**先 ready 再跑**。抢跑会得到一堆「登录失败」，
      而它长得和**产品缺陷一模一样**（本项目反复栽在「把环境问题读成产品缺陷」上）。
 
@@ -31,7 +38,7 @@
     这里一律用**真 HTTP 往返**——
       后端轮 `/api/health/readyz`（`app/main.py:337`，**它会做一次真 DB 往返**，
       连接被中间件静默断开也能发现；失败返回 503 而不是 200）；
-      前端轮首页 200。
+      前端轮**带 `basePath` 的首页** 200（`approutes.app_base(<app>)` + `/`）。
     超时才判失败，并把**两个服务的日志尾巴**一起打出来 —— 不然 CI 日志里
     只剩一句「登录失败」，看不出是服务没起还是真坏了。
 
@@ -96,6 +103,19 @@ FRONTEND = ROOT / "frontend"
 
 sys.path.insert(0, str(HERE))
 
+# 四端端口与 `basePath`：**唯一真源是 `approutes`**（2026-10-10 收归）。
+#
+# 🚨 为什么以前这里是硬编码的一张表、现在必须 import：
+#   `apps/{lawyer,admin,im}/next.config.js` 自 **2026-10-01** 起配了 `basePath`，
+#   而本脚本的就绪探针当时对**四端都探 `/`** ⇒ lawyer 立刻 404 ⇒ 本 job 自那时起
+#   **必然 exit 2**，且静默了 9 天（本仓非 git 仓库 ⇒ `ci.yml` 永不触发）。
+#   ⇒ 端口与前缀**必须同源**，否则「配置改了、探针没跟」还会再来一次。
+#
+# ⚠️ 这里**不 import 探针模块**（那会把 `cdp.py` → `websockets` 拖进导入链，
+#    而 `--self-test` 要能在阶段 1 轻量地跑）。`approutes` 刻意**只依赖标准库**
+#    ⇒ 既能当唯一真源，又不破坏 `--self-test` 的轻量性。
+from approutes import APP_PORT as APP_PORTS  # noqa: E402
+from approutes import app_base  # noqa: E402
 from run_ci_probes import CI_JOB_PROBES, JOB_ENTRYPOINTS  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -103,12 +123,6 @@ from run_ci_probes import CI_JOB_PROBES, JOB_ENTRYPOINTS  # noqa: E402
 # ---------------------------------------------------------------------------
 API_PORT = 8001
 API_BASE = f"http://127.0.0.1:{API_PORT}"
-
-# 四端端口。**出处**：`verify_dark_mode.APPS` / `verify_reduced_motion.APPS` /
-# `apps/<app>/package.json` 的 `-p` 参数（三处一致）。这里**不 import 探针模块** ——
-# 那会把 `cdp.py` → `websockets` 拖进本脚本的导入链，而 `--self-test` 要能在
-# 阶段 1 轻量地跑。跨表一致性由下面的 `--self-test` 与 `run_ci_probes` 的判据 6 兜。
-APP_PORTS: dict[str, int] = {"web": 3000, "lawyer": 3001, "admin": 3002, "im": 3003}
 
 # 每个 job 的运行时规格。**探针清单不在这里**（那份在 `run_ci_probes.CI_JOB_PROBES`），
 # 这里只放「怎么把环境摆出来」+「每条探针要什么额外参数」。
@@ -150,9 +164,9 @@ JOB_SPECS: dict[str, dict] = {
     #        `verify_contract_review_gate_e2e` / `verify_task_center_e2e` / `verify_im_e2e` /
     #        `verify_im_safe_area` / `verify_im_tabs` / `verify_mobile_actionbar` /
     #        `verify_render_e2e`，以及 `verify_mobile_375`（它的参数叫 `--apps`，复数））；
-    #     · 余下 3 条（`verify_mobile_safe_area` / `verify_runtime_health` / `verify_tap_targets`）
-    #       的 `--app` 是**单端**参数且**默认「四端全跑」** ⇒ 本 job 要的正是四端全跑，
-    #       **刻意不加**（加了反而退化成只测一端）。
+    #     · 余下 4 条（`verify_mobile_safe_area` / `verify_runtime_health` / `verify_tap_targets` /
+    #       `verify_typography`）的 `--app` 是**单端**参数且**默认「四端全跑」** ⇒ 本 job 要的
+    #       正是四端全跑，**刻意不加**（加了反而退化成只测一端）。
     #     ⇒ 「哪些探针吃 `--app`」是**逐条事实**，不许用「大概都能加」这种规则去猜
     #       （同 `browser-admin` 里 `verify_admin_413_toast_e2e.py` 的注释）。
     "browser-all": {
@@ -172,7 +186,42 @@ JOB_SPECS: dict[str, dict] = {
             "verify_task_center_e2e.py": (),
             "verify_adjacent_targets.py": (),
             "verify_breakpoints.py": (),
+            "verify_contrast.py": (),
+            "verify_typography.py": (),
+            # 2026-10-29 接入：渲染半边 G1/G3/G4（此前**从没进过任何 job**）。
+            # 它**不吃** `--app` —— `APPS` 里四端 26 页一起跑，给参数会让 argparse 直接 exit 2。
+            "verify_grade_badges.py": (),
         },
+        # 🚨 T4 跑 **68 组**（4 端 × 4~5 页 × 2 视口 × 2 主题）⇒ 比其余探针慢得多，
+        #    全局 `PROBE_TIMEOUT_SEC`（420s）**不够**（本机 ≈5 min，CI runner 更慢）。
+        #    ⇒ 只给这一条放宽到 900s；其余探针仍用 420s（超时是**上限**，不影响它们）。
+        # ⚠️ `verify_typography.py`（**渲染层** T3 行高 + T3b 字号落地）**2026-10-14 接入**。
+        #    此前它在本 job 里**从没跑过**：`ci.yml` 只在 `frontend` job 跑 `--source-only`
+        #    ⇒ 与 T4 在 10-13 之前的处境**同形**（**修完没人守**）—— 那次是用户点名复核
+        #    才跑了一次，下次又会漂。
+        #    🚨 它在本 job 里跑的是**完整三档**（源码层 + 产物层 + 渲染层），不是 `--source-only`：
+        #    本 job 有 `pnpm install` + `pnpm build` ⇒ `frontend/node_modules` 与四端 `.next`
+        #    都在，正是源码层 T2/T2b/T2c 需要的**两个**前提（`frontend` job 那行**保留**，
+        #    它管 PR 反馈回路；本 job 只在主干 / 手动触发）。
+        #    ⏱️ 实测本机 **247.1s**（27 页 · 四端合计；每端只开一个浏览器、逐页导航）
+        #    —— 比预估的 2 min **长得多** ⇒ 全局 420s 的余量只有 **1.7x**，而 CI runner 更慢
+        #    ⇒ 按 T4 同一逻辑（超时是**上限**、不影响正常路径）给它放宽到 **600s**。
+        # ⚠️ `verify_grade_badges.py`（**2026-10-29 接入**）四端 26 页，本机实测 **163.1s**
+        #    ⇒ 全局 420s 的余量只有 2.6x，CI runner 更慢 ⇒ 按 T4 同一逻辑放宽到 600s。
+        "probe_timeouts": {"verify_contrast.py": 900, "verify_typography.py": 600,
+                           "verify_grade_badges.py": 600},
+    },
+    # ── 2026-10-29：通知下拉面板（**独立 job**，理由见 `CI_ELSEWHERE` 的同名条目）──
+    #   🚨 它必须**自己往库里造未读数据**（否则面板空态 ⇒ 判出「0 缺陷」是假的绿），
+    #      所以**不能**和别的探针共用种子库 ⇒ 单独一条 job、只跑它一条。
+    #   🚨 起 **lawyer** 而不是 admin：实测 admin 的首页（`/`，驾驶舱）**没有铃铛**
+    #      —— 页面上唯一的 `[aria-haspopup="dialog"]` 是个无 `aria-label` 的按钮，
+    #      点了 `aria-expanded` 仍是 false。lawyer 首页有（`aria-label="通知"`）。
+    #      ⚠️ 别「凭 AppShell 在四端都渲染」就推断 admin 也有 —— 那是我第一次的判断，**错了**。
+    "browser-ncpanel": {
+        "apps": ("lawyer",),
+        "probe_args": {"verify_notification_panel.py": ("--app", "lawyer")},
+        "probe_timeouts": {"verify_notification_panel.py": 420},
     },
 }
 
@@ -399,14 +448,19 @@ def _start_frontend(app: str, node: str, log_dir: pathlib.Path) -> Service:
 # ---------------------------------------------------------------------------
 # 跑探针
 # ---------------------------------------------------------------------------
-def _run_probe(name: str, extra: tuple[str, ...], env: dict[str, str]) -> tuple[int, float, str, str]:
-    """跑一条探针。返回 `(rc, 秒, stdout, stderr)`。**不打印、不改判**（与运行器同构）。"""
+def _run_probe(name: str, extra: tuple[str, ...], env: dict[str, str],
+               timeout: float = PROBE_TIMEOUT_SEC) -> tuple[int, float, str, str]:
+    """跑一条探针。返回 `(rc, 秒, stdout, stderr)`。**不打印、不改判**（与运行器同构）。
+
+    `timeout` 默认取全局值；`JOB_SPECS[job]["probe_timeouts"]` 可按探针**覆盖**
+    （目前只有 `verify_contrast.py` 用 —— 它的 T4 要跑 64 组，比其余探针慢得多）。
+    """
     t0 = time.monotonic()
     try:
         cp = subprocess.run(  # noqa: S603
             [sys.executable, str(HERE / name), *extra],
             cwd=str(ROOT), env=env, capture_output=True, text=True,
-            timeout=PROBE_TIMEOUT_SEC, encoding="utf-8", errors="replace",
+            timeout=timeout, encoding="utf-8", errors="replace",
         )
         return cp.returncode, time.monotonic() - t0, cp.stdout or "", cp.stderr or ""
     except subprocess.TimeoutExpired:
@@ -431,7 +485,8 @@ def _run_probes(job: str, env: dict[str, str], verbose: bool) -> int:
         extra = spec["probe_args"][name]
         cmd = " ".join([f"python evidence/{name}", *extra])
         print(f"\n▸ {cmd}")
-        rc, sec, out, err = _run_probe(name, extra, env)
+        rc, sec, out, err = _run_probe(
+            name, extra, env, spec.get("probe_timeouts", {}).get(name, PROBE_TIMEOUT_SEC))
         icon, meaning = _RC_MEANING.get(rc, ("❓", f"未知退出码 {rc}"))
         print(f"  {icon} rc={rc} · {meaning} · {sec:.1f}s")
         results.append((name, rc, sec))
@@ -537,6 +592,11 @@ def run_self_test() -> int:
             problems.append(f"[{job}] 探针 `{name}` 没写 `probe_args` ⇒ 不知道该怎么调它")
         for name in sorted(args - probes):
             problems.append(f"[{job}] `probe_args` 里有 `{name}`，但清单里没有这条探针")
+        # ⚠️ `probe_timeouts` 是**可选**覆盖（缺省用全局 `PROBE_TIMEOUT_SEC`）⇒
+        #    这里只拦**死配置**：写了超时、清单里却没有这条探针 ⇒ 它永远不会被用到。
+        for name in sorted(set(spec.get("probe_timeouts", {})) - probes):
+            problems.append(f"[{job}] `probe_timeouts` 里有 `{name}`，但清单里没有这条探针"
+                            " ⇒ **死配置**（永远用不到）")
         for name in sorted(probes):
             if not (HERE / name).exists():
                 problems.append(f"[{job}] 探针文件不存在：evidence/{name}")
@@ -697,10 +757,17 @@ def main(argv: list[str] | None = None) -> int:
         for a in apps:
             frontend = _start_frontend(a, node, log_dir)
             services.append(frontend)
-            if not _wait_http(f"http://localhost:{APP_PORTS[a]}/", PAGE_TIMEOUT_SEC, frontend,
+            # 🚨 **就绪 URL 必须带 `basePath`**：`lawyer`/`admin`/`im` 挂在
+            #    `/lawyer` · `/admin` · `/im` 下，探 `/` 会得到 **404** ⇒ 本 job 直接退 2
+            #    （2026-10-01 起、静默 9 天的那个回归）。见 `approutes` 的 docstring。
+            # ⚠️ 且**不要**在末尾补 `/`：`lawyer` 的 `/lawyer/` 会 **308 → `/lawyer`**
+            #    （Next `trailingSlash:false` 的默认行为）⇒ 白多一跳重定向，而
+            #    `urllib` 跟不跟 308 还取决于 Python 版本。`app_base()` 本身就是 200。
+            ready_url = app_base(a)
+            if not _wait_http(ready_url, PAGE_TIMEOUT_SEC, frontend,
                               f"{a} 首页"):
                 return 2
-            print(f"  ✓ {a} 就绪（http://localhost:{APP_PORTS[a]}/ 200）")
+            print(f"  ✓ {a} 就绪（{ready_url} 200）")
 
         rc = _run_probes(args.job, env, args.verbose)
     except RuntimeError as exc:

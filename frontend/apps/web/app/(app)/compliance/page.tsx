@@ -98,7 +98,7 @@ function errText(e: unknown): string {
 const FIELD_CLS = cn(
   "w-full rounded-r2 border border-line bg-surface px-3 py-2 text-body-sm text-ink-800",
   "placeholder:text-ink-400",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus"
 );
 
 export default function CompliancePage() {
@@ -235,9 +235,14 @@ export default function CompliancePage() {
                     onClick={() => toggleDim(d.key)}
                     className={cn(
                       "tap rounded-r2 border px-3 py-1.5 text-body-sm transition-colors duration-fast",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30",
+                      "focus-visible:outline-none focus-visible:shadow-focus",
                       on
-                        ? "border-brand-400 bg-brand-500/10 font-medium text-brand-700"
+                        // 🚨 用角色令牌 `text-link`，**不要**写 `text-brand-700`：
+                        //    深色梯里 `--brand-700` 仍是 #274C93（= 浅色档值），
+                        //    在深色底 #1A222E 上只有 **1.95:1**（T4 渲染层实测，8 条缺陷）。
+                        //    深色 `--link` = #8AA8E0（深色梯唯一能在暗底承载文本的亮蓝档）。
+                        //    同族写法见 `apps/admin/.../complaints/page.tsx` 的筛选芯片。
+                        ? "border-brand-400 bg-brand-500/10 font-medium text-link"
                         : "border-line text-ink-500 hover:bg-surface-hover"
                     )}
                   >
@@ -312,7 +317,7 @@ export default function CompliancePage() {
                         {RISK_LABEL[f.risk_level] ?? f.risk_level}
                       </Badge>
                       <span className="text-body-sm font-medium text-ink-800">{f.title}</span>
-                      <span className="ml-auto text-caption text-ink-400">
+                      <span className="ml-auto text-caption text-ink-600">
                         {DIM_LABEL[f.dimension] ?? f.dimension}
                       </span>
                     </div>
@@ -373,7 +378,7 @@ export default function CompliancePage() {
                   className={cn(
                     "flex w-full items-center gap-3 px-4 py-3 text-left",
                     "transition-colors duration-fast hover:bg-surface-hover",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/30"
+                    "focus-visible:outline-none focus-visible:shadow-focus"
                   )}
                 >
                   <span className="min-w-0 flex-1">

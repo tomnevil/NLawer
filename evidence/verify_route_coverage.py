@@ -80,6 +80,29 @@ BASELINE_ZERO = 0
 VERBS = ("get", "post", "put", "patch", "delete")
 _PARAM = re.compile(r"\{[^}]+\}")
 
+#: 已删端点黑名单（2026-10-11 起）。**回归即判红。**
+#:
+#: 为什么需要这条：删除一个「零调用但被人写进过文档」的端点后，最大的风险不是
+#: 删错，而是**照旧文档又加回来**——尤其当那份文档把「保留」写得像一条裁定
+#: （`roadmap-update-pending-rulings-2026-09-22.md:89` 把 `/cases/pool` 列入
+#: 「含客户案情端点 ⇒ 维持 + 审计留痕」，但那条留痕**从未落地**）。
+#: 光靠「删掉代码」守不住，得有一条判据在这里盯着。
+#:
+#: 每项 = (路径, 为什么删)。路径按 OpenAPI 里的**绝对路径**写。
+RETIRED_PATHS: tuple[tuple[str, str], ...] = (
+    (
+        "/api/v1/cases/pool",
+        "与 /dispatches/pool 口径不一致的第二个『派单池』（`Case.status==PENDING_DISPATCH` "
+        "vs `Dispatch.status==PENDING ∩ 未指定律师`），且无角色可见性收窄。全仓零调用方，"
+        "已删（见 `app/api/v1/cases.py` 端点原位注释）。正牌请用 `/api/v1/dispatches/pool`。",
+    ),
+)
+
+
+def check_retired(paths: dict) -> list[str]:
+    """返回「本该已删、却又出现」的路径清单（空 = 通过）。"""
+    return [p for p, _why in RETIRED_PATHS if p in paths]
+
 
 def route_chunks(path: str) -> list[str]:
     return [seg for seg in _PARAM.split(path)]
@@ -214,7 +237,28 @@ def main() -> int:
         print(f"[skip] 无法枚举路由：{type(exc).__name__}: {exc}")
         return 2
 
-    print(f"# 路由总数 {total}，端点层零覆盖 {len(zero)}（棘轮基线 {BASELINE_ZERO}）\n")
+    # ── 已删端点回归门禁（先于棘轮，独立判红）────────────────────────
+    # ⚠️ 必须自己再取一次 paths：`collect()` 只回传零覆盖清单，不回传全量 paths。
+    #    这里重新 `create_app().openapi()` 是**刻意**的——门禁不能依赖
+    #    `collect()` 的实现细节（它哪天改了回传结构，门禁会静默失效）。
+    try:
+        from app.main import create_app
+
+        _paths = create_app().openapi().get("paths", {})
+    except Exception as exc:  # noqa: BLE001
+        print(f"[skip] 无法枚举路由做回归门禁：{type(exc).__name__}: {exc}")
+        return 2
+    revived = check_retired(_paths)
+    if revived:
+        print(f"❌ 已删端点回归（{len(revived)}）：{revived}")
+        for p in revived:
+            for rp, why in RETIRED_PATHS:
+                if rp == p:
+                    print(f"   · {p} —— {why}")
+        return 1
+
+    print(f"# 路由总数 {total}，端点层零覆盖 {len(zero)}（棘轮基线 {BASELINE_ZERO}）")
+    print(f"# 已删端点回归检查：{len(RETIRED_PATHS)} 条黑名单，0 条回归\n")
     for title, group in (
         ("A 类：服务层有测试、端点层零请求（零件测过、装配没测）",
          [z for z in zero if z[3]]),

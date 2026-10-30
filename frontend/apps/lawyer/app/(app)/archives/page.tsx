@@ -13,7 +13,7 @@ import {
   SegmentedControl,
   Skeleton,
   Spinner,
-  cn,
+  GRADE_TONE,
   type BadgeProps,
   type DataTableColumn,
 } from "@nlaw/ui";
@@ -71,13 +71,6 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_TONE: Record<string, BadgeProps["variant"]> = {
   ARCHIVED: "neutral",
   CONFIRMED: "verified",
-};
-
-const GRADE_TONE: Record<string, BadgeProps["variant"]> = {
-  S: "danger",
-  A: "pending",
-  B: "info",
-  C: "neutral",
 };
 
 function errText(e: unknown): string {
@@ -186,10 +179,10 @@ export default function ArchivesPage() {
           return a ? (
             <span className="flex items-center gap-1.5">
               {a.archive_no}
-              <span className="text-caption text-ink-400">v{a.current_version}</span>
+              <span className="text-caption text-ink-600">v{a.current_version}</span>
             </span>
           ) : (
-            <span className="text-ink-400">{row.status === "CONFIRMED" ? "待生成" : "—"}</span>
+            <span className="text-ink-600">{row.status === "CONFIRMED" ? "待生成" : "—"}</span>
           );
         },
       },
@@ -266,19 +259,10 @@ export default function ArchivesPage() {
             已定稿 / 已归档案件 · 进入案件可导出开庭材料包
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading}
-          className={cn(
-            "flex h-9 items-center gap-1.5 rounded-r2 border border-line px-3",
-            "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-            "disabled:opacity-50"
-          )}
-        >
+        <Button variant="outline" type="button" onClick={() => void load()} disabled={loading}>
           {loading ? <Spinner size="sm" label={null} /> : <RefreshCw className="h-4 w-4" />}
           刷新
-        </button>
+        </Button>
       </header>
 
       {/* 两个状态互斥，用分段控件而非下拉——一眼可见当前在看哪一类 */}

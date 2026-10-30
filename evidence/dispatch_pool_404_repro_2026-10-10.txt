@@ -1,0 +1,55 @@
+→ 隔离库：C:\Users\RS\AppData\Local\Temp\repro404-skc0i23m\repro.db
+→ 种子已灌
+
+==============================================================================
+【库事实】users / cases / dispatches（租户 firm_hlw）
+==============================================================================
+users: {'admin': 1, 'assistant': 6, 'client': 7, 'ent_admin': 8, 'ent_user': 9, 'firm_admin': 2, 'lawyer_li': 4, 'lawyer_wang': 3, 'lawyer_zhao': 5}
+
+cases:
+  id=  1  HLW-DEMO-0001  lawyer_id=3     (lawyer_wang ) status=ACCEPTED           劳动争议仲裁申请书代写
+  id=  2  HLW-DEMO-0002  lawyer_id=4     (lawyer_li   ) status=IN_REVIEW          劳动合同解除经济补偿核算
+  id=  3  HLW-DEMO-0003  lawyer_id=4     (lawyer_li   ) status=DISPATCHED         买卖合同违约追责
+  id=  4  HLW-DEMO-0004  lawyer_id=3     (lawyer_wang ) status=PENDING_DISPATCH   房屋租赁合同纠纷咨询
+  id=  5  HLW-DEMO-0005  lawyer_id=5     (lawyer_zhao ) status=CONFIRMED          离婚财产分割协议
+  id=  6  HLW-DEMO-0006  lawyer_id=5     (lawyer_zhao ) status=ACCEPTED           法定继承纠纷咨询
+  id=  7  HLW-DEMO-0007  lawyer_id=3     (lawyer_wang ) status=ARCHIVED           交通事故人身损害赔偿
+  id=  8  HLW-DEMO-0008  lawyer_id=3     (lawyer_wang ) status=CLOSED             工伤待遇赔偿争议
+  id=  9  HLW-DEMO-0009  lawyer_id=2     (firm_admin  ) status=DISPATCHED         科技公司股权架构设计
+  id= 10  HLW-DEMO-0010  lawyer_id=5     (lawyer_zhao ) status=INTAKE             商业秘密保护合规咨询
+
+dispatches:
+  id=  1  case_id=  3 lawyer_id=4     (lawyer_li   ) mode=AUTO        status=ACCEPTED
+  id=  2  case_id=  4 lawyer_id=None  (—           ) mode=POOL        status=PENDING
+  id=  3  case_id=  9 lawyer_id=2     (firm_admin  ) mode=DESIGNATED  status=ACCEPTED
+  id=  4  case_id=  1 lawyer_id=3     (lawyer_wang ) mode=AUTO        status=ACCEPTED
+  id=  5  case_id=  6 lawyer_id=5     (lawyer_zhao ) mode=AUTO        status=ACCEPTED
+  id=  6  case_id= 10 lawyer_id=None  (—           ) mode=POOL        status=PENDING
+
+→ 起后端（真 uvicorn，端口 8011）
+→ 后端就绪
+
+==============================================================================
+【复现】GET /api/v1/dispatches/pool  ->  逐条 GET /api/v1/cases/{case_id}
+==============================================================================
+
+── lawyer_wang ──  pool HTTP 200 · 2 条
+   ❌ dispatch#  6 case_id= 10 mode=POOL        dispatch.lawyer_id=None  -> GET /cases/10 HTTP 404  案件不存在
+   ✅ dispatch#  2 case_id=  4 mode=POOL        dispatch.lawyer_id=None  -> GET /cases/4 HTTP 200  房屋租赁合同纠纷咨询
+
+── lawyer_zhao ──  pool HTTP 200 · 2 条
+   ✅ dispatch#  6 case_id= 10 mode=POOL        dispatch.lawyer_id=None  -> GET /cases/10 HTTP 200  商业秘密保护合规咨询
+   ❌ dispatch#  2 case_id=  4 mode=POOL        dispatch.lawyer_id=None  -> GET /cases/4 HTTP 404  案件不存在
+
+── firm_admin ──  pool HTTP 200 · 2 条
+   ✅ dispatch#  6 case_id= 10 mode=POOL        dispatch.lawyer_id=None  -> GET /cases/10 HTTP 200  商业秘密保护合规咨询
+   ✅ dispatch#  2 case_id=  4 mode=POOL        dispatch.lawyer_id=None  -> GET /cases/4 HTTP 200  房屋租赁合同纠纷咨询
+
+==============================================================================
+【注入反证】直接改库，看 `GET /cases/10` 在 lawyer_wang 眼里的变化
+==============================================================================
+  ❌ HTTP 404  原样（case10.lawyer_id = lawyer_zhao，即种子态）  -> 案件不存在
+  ❌ HTTP 404  注入①：case10.lawyer_id = NULL（消掉根因 B）  -> 案件不存在
+  ✅ HTTP 200  注入②：case10.lawyer_id = lawyer_wang（改成本人承办）  -> 商业秘密保护合规咨询
+
+→ 已收尾，临时目录删除：C:\Users\RS\AppData\Local\Temp\repro404-skc0i23m

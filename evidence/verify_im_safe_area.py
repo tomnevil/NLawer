@@ -68,6 +68,7 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 DEFAULT_PORT = 3003
@@ -188,7 +189,7 @@ async def main() -> int:
     suffix = ("-keep" if args.keep else "") + (
         "" if args.port == DEFAULT_PORT else f"-p{args.port}"
     )
-    base = f"http://localhost:{args.port}"
+    base = base_for_port(args.port)
     print("── im 底部安全区「是否双算」渲染级实测 ──")
     print(f"   目标 {base}   用户 {USER}   模拟安全区 {SAFE_ON}\n")
 

@@ -8,7 +8,9 @@ import {
   AppSwitcher,
   Badge,
   BottomSheet,
+  Button,
   EmptyState,
+  ProvenanceBlock,
   PullToRefresh,
   Skeleton,
   Spinner,
@@ -298,10 +300,17 @@ export default function ImWorkspace() {
    * 不是一个可分享、可回退的状态 —— 用 hash 语义更准，读完立刻清掉。
    * 清 hash 用 `replaceState` 而不是 `router.replace`：后者会触发一次路由
    * 跳转并重新挂载本组件，把刚建好的会话状态丢掉。
+   *
+   * ⚠️ 第二个参数**必须用当前 `pathname`，不能写死 `/chat`**：本应用挂在
+   * `basePath: "/im"` 下（`next.config.js`），真实路径是 `/im/chat`。
+   * `replaceState` 是**原生 history API**，绕过 Next ⇒ 框架**没有机会**替它补前缀
+   * （`next/link` 会补，这里不会）。写死 `/chat` 会把地址栏改成 **404 路径** ——
+   * 页面不白屏（`replaceState` 不触发导航），但**刷新即 404**、分享出去的链接也是坏的。
+   * 2026-10-10 渲染层实测抓到（`verify_im_e2e` 的 I3 原先用子串断言，放过了它）。
    */
   useEffect(() => {
     if (typeof window === "undefined" || window.location.hash !== "#new") return;
-    window.history.replaceState(null, "", "/chat");
+    window.history.replaceState(null, "", window.location.pathname);
     void createConversation();
   }, [createConversation]);
 
@@ -427,7 +436,7 @@ export default function ImWorkspace() {
                 className={cn(
                   "h-9 w-full rounded-r2 border border-line bg-surface-subtle pl-8 pr-3 text-body-sm text-ink-800",
                   "placeholder:text-ink-400 transition-colors duration-fast",
-                  "focus:border-brand-400 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                  "focus:border-brand-400 focus:bg-surface focus:outline-none focus:shadow-focus"
                 )}
               />
             </div>
@@ -441,7 +450,7 @@ export default function ImWorkspace() {
                 "tap-ghost flex h-9 w-9 shrink-0 items-center justify-center rounded-r2",
                 "bg-solid-brand text-white transition-opacity duration-fast",
                 "hover:opacity-90 disabled:opacity-50",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                "focus-visible:outline-none focus-visible:shadow-focus"
               )}
             >
               {creating ? (
@@ -502,7 +511,7 @@ export default function ImWorkspace() {
           ) : (
             groups.map((g) => (
               <section key={g.key} className="mb-3 last:mb-0">
-                <h2 className="px-2 pb-1 pt-2 text-caption uppercase tracking-wider text-ink-400">
+                <h2 className="px-2 pb-1 pt-2 text-caption uppercase tracking-wider text-ink-600">
                   {g.title}
                 </h2>
                 <ul>
@@ -546,7 +555,7 @@ export default function ImWorkspace() {
                               <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-ink-900">
                                 {convTitle(c)}
                               </span>
-                              <span className="num shrink-0 text-caption text-ink-400">
+                              <span className="num shrink-0 text-caption text-ink-600">
                                 {fmtTime(c.last_message_at)}
                               </span>
                             </span>
@@ -658,18 +667,16 @@ export default function ImWorkspace() {
           </div>
 
           {activeConv && (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               type="button"
               onClick={() => setCtxOpen(true)}
-              className={cn(
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-r2 border border-line px-2.5",
-                "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-                "xl:hidden"
-              )}
+              className="shrink-0 xl:hidden"
             >
               <PanelRight className="h-4 w-4" />
               案件
-            </button>
+            </Button>
           )}
         </header>
 
@@ -745,7 +752,7 @@ export default function ImWorkspace() {
 
         <div className="shrink-0 border-t border-line bg-surface px-3 py-3 lg:px-6">
           <div className="mx-auto max-w-2xl">
-            <div className="flex items-end gap-2 rounded-r4 border border-line bg-surface-subtle p-2 transition-colors duration-fast focus-within:border-brand-400 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand-500/25">
+            <div className="flex items-end gap-2 rounded-r4 border border-line bg-surface-subtle p-2 transition-colors duration-fast focus-within:border-brand-400 focus-within:bg-surface focus-within:shadow-focus">
               <label htmlFor="im-composer" className="sr-only">
                 输入消息
               </label>
@@ -771,22 +778,17 @@ export default function ImWorkspace() {
                   "text-body-sm text-ink-900 outline-none placeholder:text-ink-400 disabled:cursor-not-allowed"
                 )}
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => void send()}
                 disabled={sending || !draft.trim() || activeId === null}
-                className={cn(
-                  "flex h-9 shrink-0 items-center gap-1.5 rounded-r2 px-3.5 text-body-sm font-semibold text-white",
-                  "bg-solid-brand transition-opacity duration-fast hover:opacity-90",
-                  "disabled:cursor-not-allowed disabled:opacity-40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-                )}
+                className="shrink-0"
               >
                 <Send className="h-4 w-4" />
                 发送
-              </button>
+              </Button>
             </div>
-            <p className="mt-2 text-center text-caption text-ink-400">
+            <p className="mt-2 text-center text-caption text-ink-600">
               AI 生成内容仅供参考，不构成正式法律意见。涉及重大权益请委托执业律师。
             </p>
           </div>
@@ -924,11 +926,11 @@ function CardBlock({ card }: { card: EngineCard }) {
 
           <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3">
             <div>
-              <dt className="text-caption text-ink-400">案件编号</dt>
+              <dt className="text-caption text-ink-600">案件编号</dt>
               <dd className="num text-body-sm text-ink-800">{card.case_no ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-caption text-ink-400">派单方式</dt>
+              <dt className="text-caption text-ink-600">派单方式</dt>
               <dd className="text-body-sm text-ink-800">
                 {card.mode === "DESIGNATED"
                   ? "指定律师"
@@ -946,7 +948,15 @@ function CardBlock({ card }: { card: EngineCard }) {
   if (card.kind === "consult" && card.sections) {
     const { conclusion, legal_basis: legal, advice, risk } = card.sections;
     return (
-      <article className="mt-2 w-full overflow-hidden rounded-r3 border border-ai-500/30 bg-ai-500/[0.06]">
+      /* §5「AI 生成」内容段。此前是**内联的四边实线** + 手写半透明底色，与 §5 规定的
+         「紫色**虚线上边框** + 浅紫底」分歧（`design-audit.md` #23 / 第 9 项）
+         ⇒ 改由 `ProvenanceBlock` 提供装饰（三态装饰类集中在 `styles.css`）。
+         `hideBadge`：页眉里徽章右侧还有「结构化分析 · 未经律师确认」文案，
+         组件内置徽章槽表达不了；`p-0` 是组件文档写明的「内边距由使用方控制」，
+         让页眉保持满幅、圆角由外层 `overflow-hidden` 裁剪。
+         `as="article"`：本卡片原本就是 `<article>`（独立可复用的消息块），
+         组件默认根是 `div` ⇒ 显式传 `as` 才不丢语义标签。 */
+      <ProvenanceBlock as="article" state="ai" hideBadge className="mt-2 w-full overflow-hidden rounded-r3 p-0">
         <header className="flex items-center gap-2 border-b border-ai-500/20 px-3 py-2">
           <Badge variant="ai" size="sm">
             AI 生成
@@ -973,16 +983,23 @@ function CardBlock({ card }: { card: EngineCard }) {
             </div>
           )}
         </div>
-      </article>
+      </ProvenanceBlock>
     );
   }
 
   /* 律师已确认的正式咨询报告：带署名 + 时间戳，与客户可见的 AI 草稿在视觉上
-     明确区分（绿/verified 色系 + 「律师已确认」徽标），呼应责任边界规范。 */
+     明确区分（绿/verified 色系 + 「律师已确认」徽标），呼应责任边界规范。
+     §5「律师已确认」内容段：装饰（绿色**实线左边条 3px** + 浅绿底）改由
+     `ProvenanceBlock` 提供（此前内联版是**四边实线**，与 §5 规定的「左侧 3px 实线」分歧）。 */
   if (card.kind === "consult_report" && card.sections) {
     const { conclusion, legal_basis: legal, advice, risk } = card.sections;
     return (
-      <article className="mt-2 w-full overflow-hidden rounded-r3 border border-verified-500/40 bg-verified-500/[0.06]">
+      <ProvenanceBlock
+        as="article"
+        state="verified"
+        hideBadge
+        className="mt-2 w-full overflow-hidden rounded-r3 p-0"
+      >
         <header className="flex items-center gap-2 border-b border-verified-500/30 px-3 py-2">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-verified-500" />
           <Badge variant="verified" size="sm">
@@ -1013,12 +1030,12 @@ function CardBlock({ card }: { card: EngineCard }) {
             </div>
           )}
           {card.signed_at && (
-            <p className="border-t border-verified-500/30 pt-2 text-caption text-ink-400">
+            <p className="border-t border-verified-500/30 pt-2 text-caption text-ink-600">
               由执业律师 {card.lawyer_name ?? "本所律师"} 于 {card.signed_at} 确认出具
             </p>
           )}
         </div>
-      </article>
+      </ProvenanceBlock>
     );
   }
 
@@ -1095,7 +1112,7 @@ function CaseContext({
           {/* ── 案件概要 ── */}
           {caseInfo && (
             <section>
-              <h3 className="mb-2 text-caption uppercase tracking-wider text-ink-400">案件概要</h3>
+              <h3 className="mb-2 text-caption uppercase tracking-wider text-ink-600">案件概要</h3>
               <div className="rounded-r3 border border-line bg-surface-subtle p-3">
                 <p className="num text-body-sm font-medium text-ink-900">{caseInfo.case_no}</p>
                 <p className="mt-0.5 text-caption text-ink-500">{caseInfo.title}</p>
@@ -1132,7 +1149,7 @@ function CaseContext({
 
           {/* ── 承办律师 ── */}
           <section>
-            <h3 className="mb-2 text-caption uppercase tracking-wider text-ink-400">承办律师</h3>
+            <h3 className="mb-2 text-caption uppercase tracking-wider text-ink-600">承办律师</h3>
             {caseInfo?.lawyer_id ? (
               <div className="flex items-center gap-3 rounded-r3 border border-line bg-surface-subtle p-3">
                 <span
@@ -1158,7 +1175,7 @@ function CaseContext({
 
           {/* ── 案件进度 ── */}
           <section>
-            <h3 className="mb-2 text-caption uppercase tracking-wider text-ink-400">案件进度</h3>
+            <h3 className="mb-2 text-caption uppercase tracking-wider text-ink-600">案件进度</h3>
             {timelineItems.length > 0 ? (
               <Timeline items={timelineItems} />
             ) : (
@@ -1171,7 +1188,7 @@ function CaseContext({
           {/* ── 材料清单 ── */}
           <section>
             <div className="mb-2 flex items-baseline justify-between gap-2">
-              <h3 className="text-caption uppercase tracking-wider text-ink-400">材料清单</h3>
+              <h3 className="text-caption uppercase tracking-wider text-ink-600">材料清单</h3>
               {checklist.length > 0 && (
                 <span className="num text-caption text-ink-500">
                   缺 {missingCount} / 共 {checklist.length}
@@ -1202,7 +1219,7 @@ function CaseContext({
                         {c.missing ? `缺：${c.item}` : c.item}
                       </span>
                       {c.description && (
-                        <span className="mt-0.5 block text-caption text-ink-400">
+                        <span className="mt-0.5 block text-caption text-ink-600">
                           {c.description}
                         </span>
                       )}
@@ -1222,7 +1239,7 @@ function CaseContext({
                       <span className="min-w-0 flex-1 truncate text-body-sm text-ink-700">
                         {e.name}
                       </span>
-                      <span className="shrink-0 text-caption text-ink-400">{e.category}</span>
+                      <span className="shrink-0 text-caption text-ink-600">{e.category}</span>
                     </li>
                   ))}
                 </ul>

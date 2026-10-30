@@ -466,7 +466,7 @@ export default function AuditRetentionPage() {
             </p>
           )}
 
-          <p className="flex items-start gap-1.5 text-caption text-ink-400">
+          <p className="flex items-start gap-1.5 text-caption text-ink-600">
             <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             每次清理都会写入一条 AUDIT_RETENTION_PURGE 审计记录——审计的删除本身也必须被审计。
           </p>

@@ -1,4 +1,4 @@
-﻿"""CSRF 防护：签名式双提交令牌（signed double-submit cookie）。
+"""CSRF 防护：签名式双提交令牌（signed double-submit cookie）。
 
 **为什么需要它？**
 refresh 令牌一旦改存 HttpOnly Cookie，浏览器会**自动携带**该 Cookie——

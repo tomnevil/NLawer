@@ -104,7 +104,7 @@ function errText(e: unknown): string {
 const FIELD_CLS = cn(
   "w-full rounded-r2 border border-line bg-surface px-3 py-2 text-body-sm text-ink-800",
   "placeholder:text-ink-400",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus"
 );
 
 export default function BillingPage() {
@@ -335,7 +335,7 @@ export default function BillingPage() {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-body-sm font-medium text-ink-800">
                     {o.title}
-                    <span className="num ml-1.5 text-caption font-normal text-ink-400">
+                    <span className="num ml-1.5 text-caption font-normal text-ink-600">
                       #{o.order_no}
                     </span>
                   </span>

@@ -20,8 +20,9 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
     | "primary"
     | "ai"
     | "gold"
-    | "neutral"
+    | "brand"
     | "ink"
+    | "neutral"
     | "outline";
   size?: "sm" | "md" | "lg";
   dot?: boolean;
@@ -32,16 +33,15 @@ const normalize = (variant: string): string => {
   if (variant === "success") return "verified";
   if (variant === "warning") return "pending";
   if (variant === "error") return "danger";
-  if (variant === "ink") return "neutral";
   return variant;
 };
 
 const variantStyles: Record<string, string> = {
   default: "bg-surface-subtle text-ink-600 border-line",
   // 律师已确认
-  verified: "bg-verified-500/15 text-verified-600 border-verified-500/30",
+  verified: "bg-verified-500/15 text-verified-700 border-verified-500/30",
   // 待复核 / 风险
-  pending: "bg-pending-500/15 text-pending-600 border-pending-500/30",
+  pending: "bg-pending-500/15 text-pending-700 border-pending-500/30",
   // 高风险
   danger: "bg-danger-500/15 text-danger-600 border-danger-500/30",
   info: "bg-info-500/15 text-info-600 border-info-500/30",
@@ -51,7 +51,18 @@ const variantStyles: Record<string, string> = {
   ai: "bg-ai-500/15 text-ai-600 border-ai-500/30",
   // S 级案件 / 高价值标记。金色全局面积 ≤3%，此处已是允许的少数用途之一
   gold: "bg-gold-500/15 text-gold-700 border-gold-500/30",
+  // B 级案件：§2.4 指定 --brand-600 墨蓝（与 primary 的 brand-500 不是同一档）
+  // ⚠️ 底色/边框保持 brand-600 档（B 级的视觉标识不变），但**文字**改用 --link：
+  //    深色档下 --brand-600 (#3A63B0) 落在深色表面上只有 2.69:1（渲染级实测，低于 4.5 线），
+  //    而 --link 两档都达标（深色档 #8AA8E0 = 6.57:1）。与上面 primary / outline 的做法一致。
+  brand: "bg-brand-600/15 text-link border-brand-600/30",
+  // C 级案件：§2.4 指定 --ink-400 中性。底色取 ink-400；文字取 ink-600 以保证可读
+  //（ink-400 在 tokens.css 里标注「禁用于正文」，故不用于文字通道）
+  ink: "bg-ink-400/15 text-ink-600 border-ink-400/30",
   // 已归档 / 中性状态：刻意不抢注意力
+  // ⚠️ 文字用 ink-600 而非 ink-500：底是 --surface-subtle #EFF1F3（**非纯白**），
+  //    ink-500 在其上只有 4.18:1（渲染级实测，低于 4.5 线）；ink-600 是 6.99:1。
+  //    （ink-500 的 4.7 是**白底**声明值 —— 规范表头写的就是「白底对比度」。）
   neutral: "bg-surface-subtle text-ink-500 border-line",
 };
 
@@ -64,6 +75,8 @@ const dotColor: Record<string, string> = {
   primary: "bg-brand-500",
   ai: "bg-ai-500",
   gold: "bg-gold-500",
+  brand: "bg-brand-600",
+  ink: "bg-ink-400",
   neutral: "bg-ink-400",
 };
 

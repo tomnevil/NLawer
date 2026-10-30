@@ -299,7 +299,7 @@ export default function AdminCompliancePage() {
           return n > 0 ? (
             <span className="num font-medium text-ink-800">{n}</span>
           ) : (
-            <span className="text-ink-400">0</span>
+            <span className="text-ink-600">0</span>
           );
         },
       },
@@ -330,7 +330,7 @@ export default function AdminCompliancePage() {
         align: "center",
         render: (_v, row) => {
           const lv = row.review_status;
-          if (!lv || lv === "L1") return <span className="text-caption text-ink-400">L1（无需）</span>;
+          if (!lv || lv === "L1") return <span className="text-caption text-ink-600">L1（无需）</span>;
           return <Badge variant="info">{lv}</Badge>;
         },
       },
@@ -517,7 +517,7 @@ export default function AdminCompliancePage() {
               onChange={(e) => resetTo(() => setRisk(e.target.value))}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">全部风险</option>
@@ -537,7 +537,7 @@ export default function AdminCompliancePage() {
               onChange={(e) => resetTo(() => setExternal(e.target.value))}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">全部用途</option>
@@ -557,13 +557,13 @@ export default function AdminCompliancePage() {
               className={cn(
                 "h-9 w-full rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800 sm:w-56",
                 "placeholder:text-ink-400",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             />
           </FilterBar>
 
           {/* 裸数组端点的事实必须说出来，否则「共 N 条」会被误读成全量 */}
-          <p className="mt-2 text-caption text-ink-400">
+          <p className="mt-2 text-caption text-ink-600">
             后端 <code>GET /compliance/scans</code> 返回<strong>全量裸数组</strong>
             （无分页、无筛选参数），筛选与分页均在本页本地完成。
           </p>
@@ -630,7 +630,7 @@ export default function AdminCompliancePage() {
               {detail.review_status && detail.review_status !== "L1" && (
                 <Badge variant="info">要求 {detail.review_status} 复核</Badge>
               )}
-              <span className="num ml-auto text-caption text-ink-400">扫描 #{detail.id}</span>
+              <span className="num ml-auto text-caption text-ink-600">扫描 #{detail.id}</span>
             </div>
 
             {/* 四维得分 */}
@@ -696,7 +696,7 @@ export default function AdminCompliancePage() {
               ) : (detail.findings ?? []).length === 0 ? (
                 <p className="rounded-r2 border border-line bg-surface-subtle p-3 text-body-sm text-ink-500">
                   未命中任何关键词规则。
-                  <span className="text-ink-400">
+                  <span className="text-ink-600">
                     {" "}
                     注意：这不等于合规——规则表只覆盖有限关键词。
                   </span>
@@ -710,7 +710,7 @@ export default function AdminCompliancePage() {
                           {RISK_META[f.risk_level]?.label ?? f.risk_level}
                         </Badge>
                         <span className="text-body-sm font-medium text-ink-800">{f.title}</span>
-                        <span className="ml-auto text-caption text-ink-400">
+                        <span className="ml-auto text-caption text-ink-600">
                           {DIM_LABEL[f.dimension] ?? f.dimension}
                         </span>
                       </div>
@@ -729,7 +729,7 @@ export default function AdminCompliancePage() {
               )}
             </div>
 
-            <p className="flex items-start gap-1.5 text-caption text-ink-400">
+            <p className="flex items-start gap-1.5 text-caption text-ink-600">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               本页为只读监控台，不提供发起扫描或修改结论的入口。
               （扫描任务无创建/完成时间字段对外暴露，故不显示时间。）

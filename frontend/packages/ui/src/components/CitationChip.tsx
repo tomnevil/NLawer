@@ -38,7 +38,7 @@ export const CitationChip: React.FC<CitationChipProps> = ({
         "num mx-0.5 inline-flex h-[18px] min-w-[18px] -translate-y-1 items-center justify-center",
         "rounded-r1 border px-1 align-super text-caption font-medium leading-none",
         "transition-colors duration-fast ease-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30",
+        "focus-visible:outline-none focus-visible:shadow-focus",
         active
           ? "border-gold-600 bg-gold-600 text-white"
           : "border-gold-400/60 bg-gold-500/15 text-gold-700 hover:border-gold-500 hover:bg-gold-500/25",

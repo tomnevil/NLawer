@@ -228,9 +228,47 @@ setItems(await authed<Dispatch[]>("/api/v1/dispatches/pool"));  // 实际是 Pag
 顺带一个契约事实：`DispatchOut` 只有
 `{id, case_id, lawyer_id, mode, status, score, reason}`，
 **没有 `case_title` 也没有 `grade`**。旧实现读的这两个字段恒为 `undefined`，
-所以卡片永远只显示「案件 #12」。案件标题必须按 `case_id` 回查
-`GET /api/v1/cases/{id}` 才能拿到——本页用 `Promise.allSettled` 并发回查
-（并发数受 `page_size` 约束），单条失败不影响其余行渲染。
+所以卡片永远只显示「案件 #12」。
+
+**（2026-10-10 修订）** 当时的修法是「按 `case_id` 逐条回查
+`GET /api/v1/cases/{id}` 拿标题，用 `Promise.allSettled` 并发、单条失败不影响其余行」。
+⚠️ **该修法在 P2-10（2026-09-29）之后结构上不可能成立**：
+
+| 端点 | 可见性口径 |
+|---|---|
+| `GET /dispatches/pool` | **租户级**（`tenant_id` + `PENDING` + 未指定/POOL） |
+| `GET /cases/{id}` | **承办人级**（本人承办 / 有效团队授权，否则 404） |
+
+池子把「你还没资格读」的案件 id 交出去，前端再按 `case_id` 回查 ⇒
+**池内案件对任何律师都读不到** ⇒ 派单池永远只显示「案件 #N」，
+而标题/等级/标的正是律师决定要不要接单的依据。症状是一条
+`GET /api/v1/cases/{id}` 404（2026-10-10 由三账号对照 + 注入反证查清，
+存证 `evidence/dispatch_pool_404_repro_2026-10-10.txt`）。
+
+**现行契约**：摘要由**服务端在同一租户内内联**——`/dispatches/pool` 返回
+`Page<PoolItemOut>`，每行多一个嵌套的 `case_brief`（`CaseBriefOut`）。
+相比逐条回查：① 不必放宽案件详情的归属鉴权（P2-10 原则不动）；
+② `page_size` 次往返压成 1 次。
+
+⚠️ 两点约束（都有判据守着，见 `backend/tests/test_dispatch_pool_brief.py`）：
+- **必须嵌套**（`case_brief`）不许摊平：`DispatchOut.lawyer_id`（派单指向的律师）
+  与 `Case.lawyer_id`（案件承办人）**同名不同义**，摊平会静默互相覆盖。
+- `case_brief` 是**白名单投影**（`id`/`case_no`/`title`/`grade`/`status`/
+  `dispute_type`/`claim_amount`/`focus`），**当事人姓名、案情全文、客户 id 一律不给**。
+  字段集与前端 `CaseBrief` 接口精确对应，改一处必须同步改三处。
+
+**池不变量（2026-10-11 补）**：池内案件必须 **`Case.lawyer_id IS NULL`** 且
+**`status = PENDING_DISPATCH`**。池子的可见性来自**「池子」这个通道**，
+与 `lawyer_id` 无关 —— 池内案件一旦带上承办人，就只对该一人可见、其余律师
+点进详情读到 404，还会把「池内案件读不到标题」这个真实缺陷**掩盖**成
+「个别案件 404」（种子曾如此：`HLW-DEMO-0004→wang` / `0010→zhao`）。
+断言落在源头：`backend/app/seed/business.py::_assert_pool_invariant`
+（播种期就炸）+ `test_dispatch_pool_brief.py::T6/T6b`。
+
+**详情入口（2026-10-11 补）**：派单池页**行内刻意不可点** —— 池内案件在
+`GET /cases/{id}` 上必然 404（池按租户取、详情按承办人鉴权），而且它本来
+也没有详情可给（时间线/材料/文书都是**接单之后**才产生的）。进入详情的
+**唯一**入口是**接单成功后**的 `router.push`。
 
 ### 4.4 列表端点的返回形状不统一
 

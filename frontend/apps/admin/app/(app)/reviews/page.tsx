@@ -528,7 +528,7 @@ export default function AdminReviewsPage() {
               onChange={(e) => resetTo(() => setStatus(e.target.value))}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">全部状态</option>
@@ -548,7 +548,7 @@ export default function AdminReviewsPage() {
               onChange={(e) => resetTo(() => setTargetType(e.target.value))}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">全部对象</option>
@@ -579,7 +579,7 @@ export default function AdminReviewsPage() {
         {total > 0 && (
           <div className="border-t border-line px-4 py-3">
             {lowerBound && (
-              <p className="mb-2 text-caption text-ink-400">
+              <p className="mb-2 text-caption text-ink-600">
                 匹配任务超过计数上限，总数显示为 <span className="num">{total}+</span>（下界）。
               </p>
             )}
@@ -703,7 +703,7 @@ export default function AdminReviewsPage() {
                       */}
                       <p className="text-caption text-ink-500">
                         关键法条
-                        <span className="ml-1 text-ink-400">
+                        <span className="ml-1 text-ink-600">
                           （{analysis.related_laws.filter((l) => l.citation_id != null).length}/
                           {analysis.related_laws.length} 可溯源）
                         </span>
@@ -722,7 +722,7 @@ export default function AdminReviewsPage() {
                     <div>
                       <p className="text-caption text-ink-500">
                         类案
-                        <span className="ml-1 text-ink-400">
+                        <span className="ml-1 text-ink-600">
                           （{analysis.similar_cases.filter((c) => c.citation_id != null).length}/
                           {analysis.similar_cases.length} 可溯源）
                         </span>
@@ -806,7 +806,7 @@ export default function AdminReviewsPage() {
               )}
             </div>
 
-            <p className="flex items-start gap-1.5 text-caption text-ink-400">
+            <p className="flex items-start gap-1.5 text-caption text-ink-600">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               本页为只读监控台，不提供复核动作。需要执行复核请由执业律师在律师端操作。
             </p>

@@ -1,4 +1,4 @@
-﻿"""安全与认证：密码哈希、JWT 签发校验、敏感字段信封加密。
+"""安全与认证：密码哈希、JWT 签发校验、敏感字段信封加密。
 
 移植自 AIECO `app/core/security.py`，保留 bcrypt + Fernet 组合
 （AIECO 实际直接 import bcrypt，passlib 未使用，故不引入）。

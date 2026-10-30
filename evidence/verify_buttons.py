@@ -135,6 +135,7 @@ sys.path.insert(0, str(HERE))
 # 演示账号表在 `app.seed.data` 里 —— 账号**不硬编码**，从后端同一份源头读。
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 ROOT = HERE.parents[0]
@@ -501,8 +502,13 @@ def judge_sizes(sizes: dict[str, set[str]]) -> list[str]:
     return bad
 
 
+#: §6.1 规范变体之外**明确认可的兼容/扩展变体**（改这里 = 改判定口径，须同步规范文档）。
+#: ⚠️ 不要写成「实现里多出来的都算兼容」—— 那会让 B3 的这条提示**恒真**（零判据）。
+COMPAT_VARIANTS = frozenset({"outline", "accent", "danger-outline"})
+
+
 def judge_variants(variants: set[str]) -> tuple[list[str], list[str]]:
-    """B3：规范声明 5 变体；实现是超集只**报出**，不判缺陷（组件注释已声明为兼容保留）。"""
+    """B3：规范声明 5 变体；**未登记的**多出变体才提示（已登记的兼容变体不再刷屏）。"""
     bad: list[str] = []
     note: list[str] = []
     spec = {"primary", "verify", "secondary", "ghost", "danger"}
@@ -510,12 +516,13 @@ def judge_variants(variants: set[str]) -> tuple[list[str], list[str]]:
     extra = variants - spec
     if missing:
         bad.append(f"规范 §6.1 的 5 个变体里缺 {sorted(missing)}")
-    if extra:
+    # 多出的分两类：已登记的兼容变体（静默）/ 未登记的（提示，提示语引导登记）
+    unregistered = extra - COMPAT_VARIANTS
+    if unregistered:
         note.append(
-            f"实现多出 {len(extra)} 个变体 {sorted(extra)}（规范声明 5 个；"
-            "`Button.tsx` 自述 `outline`/`accent` 为兼容保留）")
-    if len(variants) != SPEC_VARIANTS:
-        note.append(f"变体集合大小 {len(variants)} ≠ 规范 §6.1 声明的 {SPEC_VARIANTS}")
+            f"实现多出 {len(unregistered)} 个**未登记**的变体 {sorted(unregistered)}"
+            f"（规范声明 {SPEC_VARIANTS} 个；已登记的兼容变体见 `COMPAT_VARIANTS`）"
+            " ⇒ 若是刻意扩展，请同步规范 §6.1 并把名字加进 `COMPAT_VARIANTS`")
     return bad, note
 
 
@@ -718,7 +725,7 @@ async def run_render(only: str | None, path_filter: str | None = None,
     async with Browser(headless=True, width=390, height=844, device_scale_factor=2) as b:
         await b.apply_device(mobile=True)
         for app, spec in targets.items():
-            base = f"http://localhost:{spec['port']}"
+            base = base_for_port(spec["port"])
             if not await login(b, base, spec["user"]):
                 print(f"[{app}] ✗ 登录失败（环境问题）")
                 env.append(app)
@@ -846,7 +853,7 @@ async def dump(only: str | None) -> int:
     async with Browser(headless=True, width=390, height=844, device_scale_factor=2) as b:
         await b.apply_device(mobile=True)
         for app, spec in targets.items():
-            base = f"http://localhost:{spec['port']}"
+            base = base_for_port(spec["port"])
             if not await login(b, base, spec["user"]):
                 print(f"[{app}] ✗ 登录失败")
                 continue
@@ -875,7 +882,7 @@ async def dump(only: str | None) -> int:
 
 async def why(app: str, path: str | None) -> int:
     spec = APPS[app]
-    base = f"http://localhost:{spec['port']}"
+    base = base_for_port(spec["port"])
     async with Browser(headless=True, width=390, height=844, device_scale_factor=2) as b:
         await b.apply_device(mobile=True)
         if not await login(b, base, spec["user"]):
@@ -937,6 +944,9 @@ FIXTURE_BUTTON_MISSING = FIXTURE_BUTTON_OK.replace(
 FIXTURE_BUTTON_EXTRA = FIXTURE_BUTTON_OK.replace(
     "};", '  outline: "bg-surface text-ink-700 border border-line-strong",\n'
            '  accent: "bg-gold-500 text-white shadow-s1",\n};', 1)
+#: 未登记的扩展变体 ⇒ **必须出提示**（防「多出来都算兼容」把 B3 提示变成恒真）。
+FIXTURE_BUTTON_UNREGISTERED = FIXTURE_BUTTON_OK.replace(
+    "};", '  sparkle: "bg-gold-500 text-white shadow-s1",\n};', 1)
 
 FIXTURE_TOKENS_OK = """
 :root {
@@ -1072,8 +1082,11 @@ def self_test() -> int:
     v, vn = judge_variants(parse_variants(FIXTURE_BUTTON_OK))
     arm("B3-a 恰好 5 个 ⇒ 绿且无提示", v == [] and vn == [], f"→ {v} {vn}")
     v2, vn2 = judge_variants(parse_variants(FIXTURE_BUTTON_EXTRA))
-    arm("B3-b 多出 outline/accent ⇒ **只报不判**（组件已声明为兼容保留）",
-        v2 == [] and len(vn2) == 2, f"→ {v2} {vn2}")
+    arm("B3-b 🚨 多出的是**已登记**兼容变体（outline/accent）⇒ 静默（不刷屏）",
+        v2 == [] and vn2 == [], f"→ {v2} {vn2}")
+    vu, vnu = judge_variants(parse_variants(FIXTURE_BUTTON_UNREGISTERED))
+    arm("B3-b2 🚨 多出**未登记**变体（sparkle）⇒ 必须出 1 条提示（防提示恒真、零判据）",
+        vu == [] and len(vnu) == 1, f"→ {vu} {vnu}")
     v3, _ = judge_variants(parse_variants(FIXTURE_BUTTON_MISSING))
     arm("B3-c 缺 `ghost` ⇒ 必须报红", len(v3) == 1, f"→ {v3}")
 

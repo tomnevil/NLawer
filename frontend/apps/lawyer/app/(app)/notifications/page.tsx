@@ -252,7 +252,7 @@ export default function NotificationsPage() {
               disabled={busy}
               className={cn(
                 "flex h-9 min-h-tap items-center gap-1.5 rounded-r2 border border-line px-3 sm:min-h-0",
-                "text-body-sm text-brand-600 transition-colors duration-fast hover:bg-surface-hover",
+                "text-body-sm text-link transition-colors duration-fast hover:bg-surface-hover",
                 "disabled:opacity-50"
               )}
             >
@@ -340,7 +340,7 @@ export default function NotificationsPage() {
                 // 整行可点，最小高度 76px，远高于 48px 触控下限（规范 08 节）
                 "flex w-full items-start gap-3 rounded-r3 border border-line bg-surface p-4 text-left",
                 "min-h-[76px] transition-colors duration-fast",
-                "hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30",
+                "hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-focus",
                 // 未读：左侧墨蓝竖条 + 品牌色圆点 + 加粗标题，三重编码
                 unread && "border-l-2 border-l-brand-600"
               )}
@@ -375,7 +375,7 @@ export default function NotificationsPage() {
                   </span>
                 )}
 
-                <span className="mt-1.5 flex items-center gap-2 text-caption text-ink-400">
+                <span className="mt-1.5 flex items-center gap-2 text-caption text-ink-600">
                   <span>{formatRelativeTime(n.created_at)}</span>
                   {/* 无可跳转目标的类型（如用量预警）不显示「点击查看」，
                       避免给出一个点了没反应的暗示 */}

@@ -1,0 +1,91 @@
+============================================================================
+临时驱动：typography 渲染层 + T4（68 组）
+  隔离库：C:\Users\RS\AppData\Local\Temp\nlawer-typo-t4-rivpeqbj\typo_t4.db
+  日志：C:\Users\RS\AppData\Local\Temp\nlawer-typo-t4-rivpeqbj\logs
+============================================================================
+→ 灌种子（seed_demo.py --reset，库：typo_t4.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  ok 后端就绪
+→ 起前端 next start（web → http://localhost:3000）
+  ok web 就绪
+→ 起前端 next start（lawyer → http://localhost:3001）
+  ok lawyer 就绪
+→ 起前端 next start（admin → http://localhost:3002）
+  ok admin 就绪
+→ 起前端 next start（im → http://localhost:3003）
+  ok im 就绪
+
+============================================================================
+>> typography（渲染层 T3/T3b）
+============================================================================
+── 扫描：2489 个 `className` 块，preset 字号档 17 个，产物 `leading-*` 11 个
+── merge 配置来源：**项目**（`cn.ts` 登记 10 档：caption,label,body-sm,body,body-lg,h4,h3,h2,h1,display）
+── T2 已判对数（正文档 × 行高覆盖）：7
+── 产物 `leading-*` 实测值：
+     leading-4              = 1rem       → 比 13px=1.2308  14px=1.1429
+     leading-5              = 1.25rem    → 比 13px=1.5385  14px=1.4286
+     leading-[1.55]         = 1.55       → 比 13px=1.55  14px=1.55
+     leading-[1.75]         = 1.75       → 比 13px=1.75  14px=1.75
+     leading-[1.85]         = 1.85       → 比 13px=1.85  14px=1.85
+     leading-[1.95]         = 1.95       → 比 13px=1.95  14px=1.95
+     leading-[1.9]          = 1.9        → 比 13px=1.9  14px=1.9
+     leading-none           = 1          → 比 13px=1.0  14px=1.0
+     leading-relaxed        = 1.625      → 比 13px=1.625  14px=1.625
+     leading-snug           = 1.375      → 比 13px=1.375  14px=1.375
+     leading-tight          = 1.25       → 比 13px=1.25  14px=1.25
+── preset 字号档：
+     caption    11px
+     label      12px
+     xs         12px
+     body-sm    13px
+     body       14px
+     sm         14px
+     body-lg    15px
+     h4         16px
+     base       16px
+     h3         18px
+     lg         18px
+     xl         20px
+     h2         22px
+     2xl        24px
+     h1         30px
+     3xl        30px
+     display    38px
+── web/  正文候选 3 个，判红 0 个；字号类覆盖 42 对，判红 0 个
+── web/qa  正文候选 2 个，判红 0 个；字号类覆盖 22 对，判红 0 个
+── web/documents  正文候选 2 个，判红 0 个；字号类覆盖 91 对，判红 0 个
+── web/contract-review  正文候选 5 个，判红 0 个；字号类覆盖 23 对，判红 0 个
+── web/compliance  正文候选 2 个，判红 0 个；字号类覆盖 22 对，判红 0 个
+── web/knowledge  正文候选 2 个，判红 0 个；字号类覆盖 21 对，判红 0 个
+── web/billing  正文候选 3 个，判红 0 个；字号类覆盖 30 对，判红 0 个
+── lawyer/  正文候选 2 个，判红 0 个；字号类覆盖 35 对，判红 0 个
+── lawyer/dispatches  正文候选 3 个，判红 0 个；字号类覆盖 37 对，判红 0 个
+── lawyer/cases  正文候选 6 个，判红 0 个；字号类覆盖 35 对，判红 0 个
+── lawyer/cases/8  正文候选 18 个，判红 0 个；字号类覆盖 74 对，判红 0 个
+── lawyer/reviews  正文候选 1 个，判红 0 个；字号类覆盖 33 对，判红 0 个
+── lawyer/archives  正文候选 2 个，判红 0 个；字号类覆盖 35 对，判红 0 个
+── lawyer/notifications  正文候选 2 个，判红 0 个；字号类覆盖 19 对，判红 0 个
+── admin/  正文候选 7 个，判红 0 个；字号类覆盖 75 对，判红 0 个
+── admin/reviews  正文候选 1 个，判红 0 个；字号类覆盖 50 对，判红 0 个
+── admin/cases  正文候选 9 个，判红 0 个；字号类覆盖 59 对，判红 0 个
+── admin/dispatches  正文候选 5 个，判红 0 个；字号类覆盖 39 对，判红 0 个
+── admin/compliance  正文候选 5 个，判红 0 个；字号类覆盖 52 对，判红 0 个
+── admin/billing  正文候选 5 个，判红 0 个；字号类覆盖 51 对，判红 0 个
+── admin/complaints  正文候选 2 个，判红 0 个；字号类覆盖 36 对，判红 0 个
+── admin/audit  正文候选 11 个，判红 0 个；字号类覆盖 46 对，判红 0 个
+── im/  正文候选 3 个，判红 0 个；字号类覆盖 28 对，判红 0 个
+── im/chat  正文候选 3 个，判红 0 个；字号类覆盖 10 对，判红 0 个
+── im/cases  正文候选 10 个，判红 0 个；字号类覆盖 36 对，判红 0 个
+── im/cases/10  正文候选 3 个，判红 0 个；字号类覆盖 12 对，判红 0 个
+── im/me  正文候选 0 个，判红 0 个；字号类覆盖 15 对，判红 0 个
+
+   [note] [T2b] `text-body-sm` 被同组字号类 ['text-[11px]'] 覆盖（**合法冲突**，字号未回落 ⇒ 不判）—— frontend/packages/ui/src/components/DataTable.tsx:626
+   [note] [T4] ✅ `html .cjk-gap` 的 `margin-inline` = `0.25em` == §3.3 现读值 `0.25em`
+   [note] [T4·只报] `cjk-gap` **调用点 0 处** —— 这一项**只报不判**（哪些中英混排处该加间隙需要**语义**判断，静态数不出来）
+   [note] [T4·只报] ⇒ CSS 钩子存在且值正确，但**无任何调用点**：规范要求了、产品**没落地** ⇒ 这是**功能缺口**（不归本门禁判）
+
+── 判对数 源码层 7 + 渲染行高 117 + 渲染字号 1028 = 1152；缺陷 0 条
+<< typography（渲染层 T3/T3b）  rc=0

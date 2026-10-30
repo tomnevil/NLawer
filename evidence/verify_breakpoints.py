@@ -111,6 +111,7 @@ sys.path.insert(0, str(HERE))
 # （与 `verify_mobile_safe_area.py:70` 同一做法）。
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port, base_path_for_port  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -176,7 +177,11 @@ SIDEBAR_TOKEN_EXEMPT: dict[str, str] = {
 # ---------------------------------------------------------------------------
 # 测量 JS。只做**观察**，不下判断（判断在 Python 侧，便于自检直接喂合成数据）。
 # ---------------------------------------------------------------------------
-MEASURE_JS = r"""(() => {
+_MEASURE_TPL = r"""(() => {
+  // 🚨 `BP` = 该端的 `basePath`（`/im` · `/lawyer` · `/admin`；web 端为空串）。
+  //    由 `measure_js(bp)` 注入 —— **不要**在这里写死，也不要删掉它：
+  //    没有它，`links` 会把每个站内链接都算成同一个前缀（见下方注释）。
+  const BP = "__BP__";
   const tok = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w').trim();
   const vh = innerHeight;
   const visible = (el) => {
@@ -215,9 +220,16 @@ MEASURE_JS = r"""(() => {
   // 页内**导航出口**：指向一级路由的站内链接（用于判「TabBar 藏起来之后还能不能走」）。
   // 只取 pathname 第一段，去重 —— 数量不重要，「有没有」才重要。
   const links = [...new Set([...document.querySelectorAll('a[href]')].map((a) => {
-    const h = a.getAttribute('href') || '';
+    let h = (a.getAttribute('href') || '').split('#')[0].split('?')[0];
     if (!h.startsWith('/')) return null;                 // 站外 / 锚点不算
-    const seg = h.split('#')[0].split('?')[0].split('/').filter(Boolean)[0];
+    // 🚨 **必须先剥掉 `BP`**（`basePath`）再取第一段。不剥的话**每一个**站内链接
+    //    的第一段都是同一个前缀（`/im/chat` → `im`、`/im/cases` → `im`）⇒
+    //    `Set` 去重后 `links` 塌缩成**一项**（`['im']`）⇒ B2a 的
+    //    `others = [x for x in links if x != cur_seg]` **几乎恒非空** ⇒
+    //    「≥1024 必须有导航出口」这条判据被**悄悄架空**（2026-10-10 实测发现：
+    //    `browser-all` 里它照样绿，但已经守不住 #39 那类回归了）。
+    if (BP && h.startsWith(BP)) h = h.slice(BP.length) || '/';
+    const seg = h.split('/').filter(Boolean)[0];
     return seg || null;
   }).filter(Boolean))].sort();
   return {
@@ -232,6 +244,16 @@ MEASURE_JS = r"""(() => {
     tabbarVisible: tb ? visible(tb) : false,
   };
 })()"""
+
+
+def measure_js(bp: str = "") -> str:
+    """把该端的 `basePath` 注入测量脚本（`bp=""` ⇒ 与改动前**逐字等价**）。
+
+    ⚠️ 自检臂用**合成 HTML**（`href` 不带前缀）⇒ 必须传 `""`，否则夹具会被剥坏。
+    用 `.replace()` 而不是 f-string：模板里有大量 `{` `}`（JS 对象字面量），
+    f-string 会把它们当占位符 ⇒ 得逐个转义，改一次错一次。
+    """
+    return _MEASURE_TPL.replace("__BP__", bp)
 
 
 # ---------------------------------------------------------------------------
@@ -386,7 +408,8 @@ async def run_self_test() -> int:
             await b.goto(url, wait=0.35)
             await b.cdp.send("Emulation.setDeviceMetricsOverride",
                              width=w, height=900, deviceScaleFactor=1, mobile=False)
-            m = await b.cdp.evaluate(MEASURE_JS)
+            # ⚠️ 自检夹具的 `href` **不带前缀** ⇒ 必须传 `""`（剥前缀会剥坏夹具）。
+            m = await b.cdp.evaluate(measure_js())
             print(f"  [{key}] {desc}")
             pre = premise_problems(m, w)
             if pre:
@@ -470,7 +493,10 @@ async def run(shot: bool) -> int:
     async with Browser(headless=True, width=390, height=844) as b:
         await b.apply_device(safe_area=None, mobile=False)
         for app, cfg in APPS.items():
-            base = f"http://localhost:{cfg['port']}{cfg['path']}"
+            base = f"{base_for_port(cfg['port'])}{cfg['path']}"
+            # 🚨 该端的 `basePath`：`measure_js()` 要靠它把 `links` 的第一段剥回
+            #    应用内路由（否则 B2a 恒成立 —— 见 `measure_js` 上方注释）。
+            bp = base_path_for_port(cfg["port"])
             print(f"\n══ {app}  {base}   （Tab：{'有' if cfg['tabs'] else '无（§8.4）'}）")
             # ⚠️ Cookie **不区分端口**（同 host 共享）⇒ 换端前必须清，
             # 否则上一端的 refresh cookie 会让本端 `restoreSession()` 复原成别人的会话。
@@ -493,13 +519,13 @@ async def run(shot: bool) -> int:
             cur_path = cfg["path"]
             for path, w, h, label in plan:
                 if path != cur_path:
-                    await b.goto(f"http://localhost:{cfg['port']}{path}", wait=1.6)
+                    await b.goto(f"{base_for_port(cfg['port'])}{path}", wait=1.6)
                     await b.settle(extra=1.0)
                     cur_path = path
                 await b.cdp.send("Emulation.setDeviceMetricsOverride",
                                  width=w, height=h, deviceScaleFactor=1, mobile=False)
                 await b.settle(0.5)
-                m = await b.cdp.evaluate(MEASURE_JS)
+                m = await b.cdp.evaluate(measure_js(bp))
                 pre = premise_problems(m, w)
                 if pre:
                     print(f"  {label:28s} 前提不成立：{pre[0]} ⇒ **不判**")
@@ -570,7 +596,8 @@ async def dump(routes: list[str]) -> int:
     async with Browser(headless=True, width=1440, height=900) as b:
         await b.apply_device(safe_area=None, mobile=False)
         for app, cfg in APPS.items():
-            base = f"http://localhost:{cfg['port']}"
+            base = base_for_port(cfg["port"])
+            bp = base_path_for_port(cfg["port"])
             try:
                 await b.cdp.send("Network.clearBrowserCookies")
             except Exception:
@@ -587,7 +614,7 @@ async def dump(routes: list[str]) -> int:
                     await b.cdp.send("Emulation.setDeviceMetricsOverride",
                                      width=w, height=h, deviceScaleFactor=1, mobile=False)
                     await b.settle(0.5)
-                    m = await b.cdp.evaluate(MEASURE_JS)
+                    m = await b.cdp.evaluate(measure_js(bp))
                     if not m:
                         print(f"  {label:28s} —")
                         continue

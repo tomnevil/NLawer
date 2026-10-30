@@ -91,6 +91,8 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port  # noqa: E402
+
 #: §8.3 的线
 MIN_GAP = 8.0
 #: 只看近邻（超过这个距离就不算「相邻」）
@@ -336,7 +338,7 @@ async def run_render(dump: bool = False) -> tuple[list[str], int, int, int]:
     async with Browser(headless=True, width=390, height=844, device_scale_factor=2) as b:
         await b.apply_device(mobile=True)
         for app, spec in APPS.items():
-            base = f"http://localhost:{spec['port']}"
+            base = base_for_port(spec["port"])
             try:
                 if not await login(b, base, spec["user"]):
                     out.append(f"[ENV] [{app}] 登录失败")
@@ -521,7 +523,7 @@ REMOVE_CONTENT_JS = r"""(() => {
 
 async def render_self_test() -> int:
     from cdp import Browser
-    base = "http://localhost:3003"
+    base = base_for_port(3003)
     n_all2 = n_content2 = -1
     try:
         async with Browser(headless=True, width=390, height=844,

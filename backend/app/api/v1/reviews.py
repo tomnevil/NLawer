@@ -155,6 +155,25 @@ async def ensure_review(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
+    """创建 / 幂等取得复核任务。
+
+    ## 承办人默认值（2026-10-12 裁定 A）
+
+    律师调用且**未显式指定** `assignee_id` 时，默认把复核指派给**调用者本人**。
+
+    为什么必须给默认值：复核端点在 2026-09-30 加了「可见性门禁」
+    （`_assert_review_access`）——**无承办人**的复核落进「待分配池」，
+    只对调度资格者（管理员 / L3）可见。若这里不给默认值，调用者会建出一条
+    **自己读不到**的复核，紧随其后的 `POST /reviews/{id}/submit` 必然
+    `404 REVIEW_NOT_FOUND`（前端 `lawyer/app/(app)/cases/[id]/page.tsx` 正是
+    「ensure → submit」这个顺序）。
+
+    边界（刻意保留）：
+    - **显式传入** `assignee_id` 时不覆盖 —— 系统派单（`consult_review.py`）走的就是显式；
+    - **客户**（`CLIENT`）不参复核，其发起的复核仍进池等待律师认领（不默认指派）；
+    - 幂等命中一条**本就无承办人**的旧复核时，一并认领给本次调用者
+      （否则「建完读不到」的坑会在旧数据上继续复现）。
+    """
     from app.models.enums import ReviewLevel
 
     try:
@@ -172,10 +191,25 @@ async def ensure_review(
         # 放行等于允许对任意 target_id 建复核，故一律拒。
         raise NotFoundError("案件不存在", code=ErrorCode.CASE_NOT_FOUND)
 
+    # 律师默认自任承办人（见 docstring「承办人默认值」）；显式传入时不覆盖。
+    effective_assignee = assignee_id
+    if effective_assignee is None and ctx.role == Role.LAWYER:
+        effective_assignee = ctx.user_id
+
     r = await ReviewService(db).ensure(
         target_type=tt, target_id=target_id, case_id=case_id,
-        tenant_id=ctx.tenant_id, required_level=lv, assignee_id=assignee_id,
+        tenant_id=ctx.tenant_id, required_level=lv, assignee_id=effective_assignee,
     )
+    # 幂等命中「待分配池」里的旧复核 ⇒ 认领给本次调用者（仅当确无承办人，
+    # 且调用者就是默认承办人；绝不抢占已有承办人的复核）。
+    claimed = False
+    if (
+        ctx.role == Role.LAWYER
+        and r.assignee_id is None
+        and effective_assignee == ctx.user_id
+    ):
+        r.assignee_id = ctx.user_id
+        claimed = True
     await record(
         db,
         AuditAction.REVIEW_CREATE,
@@ -188,7 +222,8 @@ async def ensure_review(
             "target_id": target_id,
             "case_id": case_id,
             "required_level": lv.value,
-            "assignee_id": assignee_id,
+            "assignee_id": r.assignee_id,
+            "claimed_from_pool": claimed,
         },
     )
     await db.commit()
@@ -262,8 +297,8 @@ async def review_transcript(
     可见性同复核详情：仅承办人 / 调度资格者可见（客户不可）。聊天含客户 PII，
     故严格受复核门禁约束，且按租户二次过滤，避免越权读取他人会话。
     """
-    from app.models.conversation import Conversation, Message
     from app.models.consult_report import ConsultReport
+    from app.models.conversation import Conversation, Message
 
     r = await db.get(Review, review_id)
     if r is None or r.tenant_id != ctx.tenant_id:

@@ -266,7 +266,7 @@ const NotificationRow: React.FC<RowProps> = ({ item, onActivate }) => {
         {item.content && (
           <span className="mt-0.5 line-clamp-2 block text-body-sm text-ink-500">{item.content}</span>
         )}
-        <span className="mt-1 flex items-center gap-2 text-caption text-ink-400">
+        <span className="mt-1 flex items-center gap-2 text-caption text-ink-600">
           <span>{formatRelativeTime(item.created_at)}</span>
           {meta.noun && item.ref_id != null && <span>· 前往{meta.noun}</span>}
         </span>
@@ -726,7 +726,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       <div className="flex items-center gap-2">
         <h2 className="text-h4 text-ink-900">通知</h2>
         {unread.total > 0 && (
-          <span className="rounded-r1 bg-brand-600/10 px-1.5 py-0.5 text-caption font-medium text-brand-700">
+          <span className="rounded-r1 bg-brand-600/10 px-1.5 py-0.5 text-caption font-medium text-link">
             {unread.total} 条未读
           </span>
         )}
@@ -735,7 +735,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         <button
           type="button"
           onClick={markAll}
-          className="tap-ghost flex items-center gap-1 rounded-r2 px-2 py-1.5 text-body-sm text-brand-600 transition-colors duration-fast hover:bg-surface-hover"
+          className="tap-ghost flex items-center gap-1 rounded-r2 px-2 py-1.5 text-body-sm text-link transition-colors duration-fast hover:bg-surface-hover"
         >
           <CheckIcon className="h-3.5 w-3.5" />
           全部已读
@@ -772,7 +772,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
           <BellIcon className="h-8 w-8 text-ink-300" />
           <p className="text-body-sm text-ink-500">暂无通知</p>
-          <p className="text-caption text-ink-400">派单、复核、归档等节点会在这里提醒你</p>
+          <p className="text-caption text-ink-600">派单、复核、归档等节点会在这里提醒你</p>
         </div>
       )}
 
@@ -790,7 +790,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           setOpen(false);
           onViewAll();
         }}
-        className="flex min-h-[48px] w-full items-center justify-center text-body-sm text-brand-600 transition-colors duration-fast hover:bg-surface-hover"
+        className="flex min-h-[48px] w-full items-center justify-center text-body-sm text-link transition-colors duration-fast hover:bg-surface-hover"
       >
         查看全部通知
       </button>

@@ -1,0 +1,32 @@
+→ 隔离库：C:\Users\RS\AppData\Local\Temp\lawyer-pool-72r2158h\job.db
+→ 种子已灌
+→ 起后端 uvicorn（127.0.0.1:8001）
+→ 后端就绪
+→ BUILD_ID(lawyer) = mUVub8oNzc3B_c-hR9vVA
+→ 起前端 next start（lawyer → http://localhost:3001）
+→ BUILD_ID(admin) = qahCak8xSwJgTN1asrbJq
+→ 起前端 next start（admin → http://localhost:3002）
+→ lawyer 就绪（http://localhost:3001/lawyer 200）
+→ admin 就绪（http://localhost:3002/admin 200）
+
+========================================================================
+→ 跑 verify_runtime_health.py --app lawyer
+========================================================================
+── 前置检查 ──
+  [ ok ] admin dev server (3002)  HTTP 200
+  [ ok ] backend (8001)  HTTP 200
+
+── 运行时健康采集（1 个端）──
+  [ ok ] lawyer :3001  已访问 6 页（账号 lawyer_wang）
+         /  /dispatches  /cases  /reviews  /archives  /notifications
+
+========================================================================
+lawyer  :3001  6 页  →  0 个问题（白名单放过 1）
+========================================================================
+=> 退出码 0：全部页面无未捕获异常、无控制台报错、无失败请求
+
+
+>>> verify_runtime_health.py rc=0 · 55.7s
+-> 服务已收尾
+-> 临时目录：C:\Users\RS\AppData\Local\Temp\lawyer-pool-72r2158h（保留供取证，不自动删）
+EXIT=0

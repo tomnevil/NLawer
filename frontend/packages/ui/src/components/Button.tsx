@@ -7,11 +7,19 @@ import { Spinner } from "./Spinner";
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * 变体。规范第 06.1 节定义 5 种：primary(pri) / verify(vfy) / secondary(sec) / ghost(gho) / danger(dgr)。
-   * `outline` 与 `accent` 为兼容保留。
+   * `outline`、`accent`、`danger-outline` 为兼容/扩展保留。
    *
    * ⚠️ 主色按钮全局唯一 —— 每屏最多一个 `primary`，用于该屏最关键动作。
    */
-  variant?: "primary" | "verify" | "secondary" | "outline" | "ghost" | "danger" | "accent";
+  variant?:
+    | "primary"
+    | "verify"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "danger"
+    | "accent"
+    | "danger-outline";
   /** 桌面高度 28 / 34 / 40px；移动端统一 48px（触控目标） */
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
@@ -35,6 +43,12 @@ const variantStyles: Record<string, string> = {
   // dgr：破坏性操作
   danger:
     "bg-danger-500 text-white shadow-s1 hover:bg-danger-600 active:bg-danger-700 border border-transparent",
+  // danger-outline：**次要的危险动作**（描边红），如「重新生成」。
+  // 与 `danger`（实底红 = 破坏性主操作）区分：视觉重量更低，但仍保留红色危险语义。
+  // 2026-10-11 新增（Q3 = C1 裁定）：此前 `web/qa` 的「重新生成」是原生 `<button>` 手写
+  // 同款样式，收敛进变体后才能被 `verify_buttons.py` B4 覆盖到（原生按钮到不了移动端 48px）。
+  "danger-outline":
+    "bg-surface text-danger-600 border border-danger-500/40 hover:bg-danger-500/10",
   // accent：香槟金强调（低频使用，注意全局金色面积 ≤ 3%）
   accent: "bg-gold-500 text-white shadow-s1 hover:bg-gold-600 border border-transparent",
 };
@@ -67,7 +81,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center font-medium whitespace-nowrap",
           "transition-colors duration-fast ease-out",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+          "focus-visible:outline-none focus-visible:shadow-focus",
           "disabled:cursor-not-allowed disabled:opacity-50",
           variantStyles[variant],
           sizeStyles[size],

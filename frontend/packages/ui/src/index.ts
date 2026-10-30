@@ -16,6 +16,7 @@ export { Input } from "./components/Input";
 export type { InputProps } from "./components/Input";
 export { Badge } from "./components/Badge";
 export type { BadgeProps } from "./components/Badge";
+export { GRADE_TONE } from "./lib/gradeTone";
 export { Modal } from "./components/Modal";
 export type { ModalProps } from "./components/Modal";
 // `Sidebar` / `Header`（v1 骨架）已于阶段三删除：

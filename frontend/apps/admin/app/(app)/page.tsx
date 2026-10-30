@@ -183,7 +183,7 @@ const REVIEW_COLUMNS: DataTableColumn<Review>[] = [
     header: "结论",
     width: "104px",
     render: (v: string | null | undefined) => {
-      if (!v) return <span className="text-ink-400">待处理</span>;
+      if (!v) return <span className="text-ink-600">待处理</span>;
       const tone = v === "APPROVED" ? "verified" : v === "REJECTED" ? "danger" : "pending";
       const label = v === "APPROVED" ? "通过" : v === "REJECTED" ? "退回" : "要求修改";
       return <Badge variant={tone}>{label}</Badge>;
@@ -311,7 +311,7 @@ export default function AdminCockpit() {
           <h1 className="text-h1 text-ink-900">律所运营驾驶舱</h1>
           <p className="mt-1 text-body-sm text-ink-500">案件 · 复核 · 计费 · 合规 全链路监控</p>
         </div>
-        {dashboard?.period && <span className="num text-caption text-ink-400">账期 {dashboard.period}</span>}
+        {dashboard?.period && <span className="num text-caption text-ink-600">账期 {dashboard.period}</span>}
       </header>
 
       {error && (
@@ -365,7 +365,7 @@ export default function AdminCockpit() {
             </div>
             <Link
               href="/complaints"
-              className="inline-flex shrink-0 items-center gap-1 text-body-sm font-medium text-brand-600 hover:text-brand-700"
+              className="inline-flex shrink-0 items-center gap-1 text-body-sm font-medium text-link hover:text-link-hover"
             >
               查看投诉举报
               <ArrowRight className="h-3.5 w-3.5" />
@@ -474,7 +474,7 @@ export default function AdminCockpit() {
             })}
 
             {voided > 0 && (
-              <p className="pt-2 text-caption text-ink-400">
+              <p className="pt-2 text-caption text-ink-600">
                 另有已作废案件 <span className="num">{voided}</span> 件，不计入漏斗
               </p>
             )}

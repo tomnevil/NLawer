@@ -75,6 +75,8 @@ FE = ROOT / "frontend"
 SPEC = ROOT / "deliverables" / "ui-design" / "design-spec.md"
 TOKENS = FE / "packages" / "ui" / "src" / "tokens.css"
 
+from approutes import app_url  # noqa: E402
+
 #: CSS 通用族 + 系统关键字：由浏览器解析到系统默认，**不需要**加载
 GENERIC = {
     "sans-serif", "serif", "monospace", "cursive", "fantasy", "fangsong",
@@ -430,7 +432,7 @@ async def run_render(dump: bool = False) -> tuple[list[str], int, int]:
         async with Browser(headless=True, width=1440, height=900,
                            device_scale_factor=1) as b:
             await b.cdp.send("CSS.enable")
-            await b.goto("http://localhost:3000/", wait=1.5)
+            await b.goto(app_url("web", "/"), wait=1.5)
             await b.settle(extra=1.5)
             n = await b.cdp.evaluate(PROBE_JS)
             probes = await _probe_all(b, PROBE_JS)
@@ -487,7 +489,7 @@ async def render_self_test() -> int:
         async with Browser(headless=True, width=1440, height=900,
                            device_scale_factor=1) as b:
             await b.cdp.send("CSS.enable")
-            await b.goto("http://localhost:3000/", wait=1.5)
+            await b.goto(app_url("web", "/"), wait=1.5)
             await b.settle(extra=1.5)
 
             n1 = await b.cdp.evaluate(PROBE_JS)

@@ -116,7 +116,7 @@ export const CollapsePanel: React.FC<CollapsePanelProps> = ({
             "tap flex w-full min-h-tap items-center gap-2.5 px-4 py-3 text-left",
             "transition-colors duration-fast",
             !disabled && "hover:bg-surface-hover",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/30"
+            "focus-visible:outline-none focus-visible:shadow-focus"
           )}
         >
           {icon && <span className="shrink-0 text-ink-500 [&>svg]:h-4 [&>svg]:w-4">{icon}</span>}

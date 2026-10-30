@@ -55,6 +55,7 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port, base_path_of_base  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 # 与 `verify_runtime_health.py` 保持**同一套页表**。
@@ -267,8 +268,12 @@ async def resolve_path(b: Browser, base: str, path: str) -> str:
         return path
     await b.goto(f"{base}/cases", wait=1.5)
     await b.settle(extra=2.0)
+    # 🚨 选择器**必须带 `basePath`**：`next/link` 渲染出的 `href` 是**带前缀**的
+    #    （`/im/cases/123`），而 `a[href^="/cases/"]` 会**一个都匹配不到**
+    #    ⇒ 探针报「环境问题」，而页面其实**好好的**（2026-10-10 实测）。
+    bp = base_path_of_base(base)
     href = await b.cdp.evaluate(
-        "(() => { const a = document.querySelector('a[href^=\"/cases/\"]');"
+        f"(() => {{ const a = document.querySelector('a[href^=\"{bp}/cases/\"]');"
         " return a ? a.getAttribute('href') : null; })()"
     )
     if not href:
@@ -314,7 +319,7 @@ async def main() -> int:
 
     for app in apps:
         spec = APPS[app]
-        base = f"http://localhost:{spec['port']}"
+        base = base_for_port(spec["port"])
         pages = [args.only] if args.only else list(spec["pages"])
         print(f"[{app}] :{spec['port']}  账号 {spec['user']}")
 

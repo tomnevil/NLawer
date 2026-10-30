@@ -54,6 +54,7 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port, base_path_of_base, strip_prefix  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 SAFE_ON = {"top": 47, "bottom": 34, "left": 0, "right": 0}
@@ -261,10 +262,15 @@ async def resolve_case_url(b: Browser, base: str) -> str | None:
     await b.goto(f"{base}/cases", wait=1.5)
     await b.settle(extra=2.5)
 
+    # 🚨 选择器**必须带 `basePath`**（同 `verify_mobile_375.py`）：`next/link`
+    #    渲染出的 `href` 是带前缀的（`/lawyer/cases/123`），裸 `a[href^="/cases/"]`
+    #    会**一个都匹配不到** ⇒ 探针报「环境问题」，而页面其实好好的（2026-10-10 实测）。
+    bp = base_path_of_base(base)
+
     # 候选点击目标，按「可靠度」排序；逐个试，点完看 URL 变没变。
     candidates = (
-        ("a[href^=\"/cases/\"]（真实锚点）",
-         "(() => { const a = [...document.querySelectorAll('a[href^=\"/cases/\"]')]"
+        (f"a[href^=\"{bp}/cases/\"]（真实锚点）",
+         f"(() => {{ const a = [...document.querySelectorAll('a[href^=\"{bp}/cases/\"]')]"
          ".find(x => x.getAttribute('href').split('/').filter(Boolean).length >= 2);"
          " if (a) { a.click(); return true; } return false; })()"),
         ("tbody tr（桌面表格行）",
@@ -283,9 +289,13 @@ async def resolve_case_url(b: Browser, base: str) -> str | None:
             continue
         await asyncio.sleep(2.5)
         path = await b.cdp.evaluate("location.pathname") or ""
-        if path.startswith("/cases/") and len(path.split("/")) > 2 and path.split("/")[2]:
+        # 🚨 先剥 `basePath` 再判形态。不剥会有**两个**错：
+        #    ① `/lawyer/cases/123` 的 `split("/")[2]` 是 `cases`（不是案件 id）⇒ 判据失效；
+        #    ② `f"{base}{path}"` 会拼出**双前缀**：`…/lawyer` + `/lawyer/cases/123`。
+        inner = strip_prefix(bp, path)
+        if inner.startswith("/cases/") and len(inner.split("/")) > 2 and inner.split("/")[2]:
             print(f"   进入详情：点击 {label} ⇒ {path}")
-            return f"{base}{path}"
+            return f"{base}{inner}"
 
     # ---- 三种都失败：打诊断，明确这是「没测成」而不是「产品坏了」----
     diag = await b.cdp.evaluate(
@@ -343,7 +353,7 @@ async def main() -> int:
     ap.add_argument("--shot", action="store_true", help="存一张取证截图（叠放关系肉眼可查）")
     args = ap.parse_args()
 
-    base = f"http://localhost:{args.port}"
+    base = base_for_port(args.port)
     print(f"── MobileActionBar × TabBar 叠放审计  {base}  390×844 ──\n")
 
     bad: list[str] = []

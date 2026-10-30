@@ -184,7 +184,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
           {value.length}/{max}
         </span>
         {value.length > 0 && (
-          <span className="num text-caption text-ink-400">共 {totalMB.toFixed(1)}MB</span>
+          <span className="num text-caption text-ink-600">共 {totalMB.toFixed(1)}MB</span>
         )}
       </div>
 

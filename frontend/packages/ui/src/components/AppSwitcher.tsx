@@ -89,7 +89,7 @@ export const AppSwitcher: React.FC<AppSwitcherProps> = ({
           "flex w-full items-center gap-2.5 rounded-r2 px-2 py-1.5 text-left",
           "transition-colors duration-fast ease-out",
           canSwitch && "hover:bg-surface-hover",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
+          "focus-visible:outline-none focus-visible:shadow-focus"
         )}
       >
         <AppShellLogoMark />

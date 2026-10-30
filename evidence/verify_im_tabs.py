@@ -41,12 +41,17 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port, strip_base_path  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 DEFAULT_PORT = 3003
 USER = "client"
 # 运行期由 main() 按 --port 赋值；各函数读的是这个全局，所以放在模块级
 BASE = ""
+#: 🚨 `PORT` 与 `BASE` **一起**赋值：`wait_path()` 要用它把 `location.pathname` 里的
+#: `basePath` 剥掉（见 `approutes.strip_base_path` 的 docstring —— 不剥就会把
+#: 「**正确**的 `/im/chat`」报成「期望 `/chat`」的**产品缺陷**）。
+PORT = DEFAULT_PORT
 
 # (Tab 文案, 期望路径, 页面标志文案)
 # 标志文案用来区分「路由到了但页面是空壳」和「真的渲染出来了」
@@ -128,24 +133,30 @@ async def login(b: Browser) -> bool:
 
 
 async def wait_path(b: Browser, want: str, timeout: float = 12.0) -> bool:
-    """等客户端路由真正切过去（`router.push` 是异步的）。"""
+    """等客户端路由真正切过去（`router.push` 是异步的）。
+
+    ⚠️ 比的是**剥掉 `basePath` 后的应用内路径**：`TABS` 表里写的是应用内路径
+    （`/chat`），而浏览器里 `location.pathname` 是 `/im/chat`。
+    不剥前缀 ⇒ 把**对的**判成产品缺陷（2026-10-10 实测 4 条假红）。
+    """
     deadline = asyncio.get_running_loop().time() + timeout
     while asyncio.get_running_loop().time() < deadline:
         got = await b.cdp.evaluate("location.pathname")
-        if got == want:
+        if strip_base_path(PORT, got or "") == want:
             return True
         await asyncio.sleep(0.25)
     return False
 
 
 async def main() -> int:
-    global BASE
+    global BASE, PORT
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--shots", action="store_true", help="每个 Tab 存一张截图（取证用）")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT, help="im 实例端口（默认 3003）")
     args = ap.parse_args()
-    BASE = f"http://localhost:{args.port}"
+    PORT = args.port
+    BASE = base_for_port(args.port)
     tag = "" if args.port == DEFAULT_PORT else f"-p{args.port}"
 
     print("── im 四 Tab 点击可达性 + 桌面三栏宽度实测 ──")
@@ -187,7 +198,11 @@ async def main() -> int:
             print(f"        正文开头: {s['head'][:90]}")
 
             if not ok_path:
-                defects.append(f"「{label}」点击后路径为 {s['path']!r}，期望 {want_path!r}")
+                defects.append(
+                    f"「{label}」点击后**应用内路径**为 "
+                    f"{strip_base_path(PORT, s['path'])!r}，期望 {want_path!r}"
+                    f"（浏览器实际路径 {s['path']!r}，已剥去 `basePath`）"
+                )
             if s["activeTab"] != label:
                 defects.append(
                     f"「{label}」点击后高亮的却是 {s['activeTab']!r}"

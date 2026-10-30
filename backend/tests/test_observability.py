@@ -403,10 +403,29 @@ def test_readyz_fails_when_db_down(client, monkeypatch):
 
 
 def test_request_id_header_still_propagates(client):
-    """本轮改动不得破坏既有契约。"""
-    response = client.get("/", headers={"X-Request-ID": "pytest-trace-1"})
-    assert response.headers["X-Request-ID"] == "pytest-trace-1"
+    """合规的客户端 `X-Request-ID` 必须原样回显（既有契约）。
+
+    ⚠️ P2-8 起中间件**只接受 8–64 位十六进制 + 连字符**（防日志注入），
+    旧样本 `pytest-trace-1` 含非 hex 字符 ⇒ 会被丢弃换新生成，
+    已不再是「合法样本」。这里换成合法的 uuid 形态。
+    """
+    rid = "deadbeefcafe"
+    response = client.get("/", headers={"X-Request-ID": rid})
+    assert response.headers["X-Request-ID"] == rid
     assert "X-Response-Time" in response.headers
+
+
+def test_request_id_header_rejects_non_hex(client):
+    """非法 `X-Request-ID`（非 hex / 过短 / 过长）必须被丢弃换新，**不得回显**。
+
+    这条是 P2-8 的**反向臂**：只测「合法值被回显」时，把校验整个删掉
+    判据照样绿（回显一切）—— 必须同时钉住「非法值不被采信」。
+    """
+    for bad in ("pytest-trace-1", "short", "x" * 200):
+        response = client.get("/", headers={"X-Request-ID": bad})
+        got = response.headers["X-Request-ID"]
+        assert got != bad, f"非法请求 id 被原样回显：{bad!r}"
+        assert len(got) == 32 and all(c in "0123456789abcdef" for c in got), got
 
 
 def test_unhandled_error_counter_increments(client):

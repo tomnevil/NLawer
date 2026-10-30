@@ -79,7 +79,7 @@ function errText(e: unknown): string {
 const FIELD_CLS = cn(
   "w-full rounded-r2 border border-line bg-surface px-3 py-2 text-body-sm text-ink-800",
   "placeholder:text-ink-400",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus"
 );
 
 export default function KnowledgePage() {
@@ -194,19 +194,10 @@ export default function KnowledgePage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className={cn(
-              "flex h-9 items-center gap-1.5 rounded-r2 border border-line px-3",
-              "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-              "disabled:opacity-50"
-            )}
-          >
+          <Button variant="outline" type="button" onClick={() => void load()} disabled={loading}>
             {loading ? <Spinner size="sm" label={null} /> : <RefreshCw className="h-4 w-4" />}
             刷新
-          </button>
+          </Button>
           <Button
             variant={showForm ? "outline" : "primary"}
             leftIcon={<Plus className="h-3.5 w-3.5" />}
@@ -391,7 +382,7 @@ export default function KnowledgePage() {
                       <Badge variant="pending" size="sm">待律师审</Badge>
                     )}
                     {d.tags && (
-                      <span className="truncate text-caption text-ink-400">{d.tags}</span>
+                      <span className="truncate text-caption text-ink-600">{d.tags}</span>
                     )}
                   </div>
                 </div>
@@ -403,7 +394,7 @@ export default function KnowledgePage() {
                     "tap-ghost flex h-9 w-9 shrink-0 items-center justify-center rounded-r2",
                     "text-ink-400 transition-colors duration-fast",
                     "hover:bg-danger-500/10 hover:text-danger-600",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-500/30"
+                    "focus-visible:outline-none focus-visible:shadow-focus"
                   )}
                 >
                   <Trash2 className="h-4 w-4" />

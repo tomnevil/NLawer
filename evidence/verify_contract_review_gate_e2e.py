@@ -59,7 +59,9 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
-WEB = "http://localhost:3000"
+from approutes import app_base  # noqa: E402
+
+WEB = app_base("web")
 API = "http://127.0.0.1:8001"
 USER = "ent_user"
 PWD = "Ent@12345"

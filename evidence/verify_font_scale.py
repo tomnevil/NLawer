@@ -67,6 +67,8 @@ FE = ROOT / "frontend"
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "backend"))
 
+from approutes import base_for_port  # noqa: E402
+
 #: §8.5（§8.5「案号、金额、日期在移动端仍保持等宽字体」）明文写的移动端字号下限。
 #: §3.2 的最小档也是 11px（caption）—— 两个出处互证。
 MIN_FONT_PX = 11.0
@@ -360,7 +362,7 @@ async def run_render(scale: dict[str, dict], dump: bool = False) -> tuple[list[s
     async with Browser(headless=True, width=390, height=844, device_scale_factor=2) as b:
         await b.apply_device(mobile=True)
         for app, spec in APPS.items():
-            base = f"http://localhost:{spec['port']}"
+            base = base_for_port(spec["port"])
             try:
                 if not await login(b, base, spec["user"]):
                     notes.append(f"[ENV] [{app}] 登录失败")
@@ -423,7 +425,7 @@ async def render_self_test(scale: dict[str, dict]) -> int:
 
     steps = scale_px_set(scale)
     lds = scale_leading_set(scale)
-    base = "http://localhost:3003"
+    base = base_for_port(3003)
     try:
         async with Browser(headless=True, width=390, height=844,
                            device_scale_factor=2) as b:
@@ -671,6 +673,12 @@ def main() -> int:
     bad, notes, stats = run_source(files, scale, dump=a.dump)
     for s in stats:
         print(f"  {s}")
+
+    # 🚨 机器可读的**无条件**汇总行：`run_ci_probes.py` 的 `declared` 棘轮用正则
+    #    `缺陷 (\d+) 条` 取数，**取不到 ⇒ 判红「取不到条数」**（坑 50：宁可红，不许静默）。
+    #    ⚠️ 此前只在 `bad` 非空时打印 ⇒ 缺陷清零后棘轮**永久取不到数**（防线静默失效）。
+    #    与 `verify_buttons.py`（`── 源码层：缺陷 {n} 条 ──`）/ `verify_focus_ring.py` 对齐。
+    print(f"── 源码层：缺陷 {len(bad)} 条 ──")
 
     if bad:
         groups: dict[tuple[str, str], list[str]] = {}

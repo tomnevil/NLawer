@@ -187,6 +187,11 @@ def test_k4_production_rejects_insecure_cookie():
 
     `Secure=False` 会让 refresh 经明文 HTTP 传输，同网络攻击者可直接嗅探，
     **把 HttpOnly 防 XSS 的收益全部抵消**。守卫在 `config.py:208`。
+
+    ⚠️ **必须显式传 `DEBUG=False`**（2026-10-11 修）：`config.py` 于 09-30 新增了
+    「生产环境禁止 DEBUG=true」守卫，而 `Settings.DEBUG` 默认 `True` ⇒ 本测试若不
+    显式关掉 DEBUG，会**先**撞上 DEBUG 守卫、报错信息里没有 `AUTH_COOKIE_SECURE`，
+    于是这条断言失败（**测的是 DEBUG 守卫，不是 cookie 守卫** —— 判据被旁路）。
     """
     import os
 
@@ -197,6 +202,8 @@ def test_k4_production_rejects_insecure_cookie():
         Settings(
             ENVIRONMENT="production",
             SECRET_KEY=strong,
+            # 先满足 DEBUG 守卫，才能测到下面的 cookie 守卫（见 docstring）。
+            DEBUG=False,
             AUTH_COOKIE_ENABLED=True,
             AUTH_COOKIE_SECURE=False,
             _env_file=None,

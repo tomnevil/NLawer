@@ -133,20 +133,50 @@ async def db(engine, seeded):
 # ═══════════════════════ G1–G3 守卫函数层 ═══════════════════════
 
 
+def _ctx(tenant_id: str, *, user_id: int | None = None, role=None):
+    """构造守卫需要的请求上下文（`ctx.tenant_id` / `ctx.role` / `ctx.user_id`）。
+
+    🚨 守卫签名在「复核可见性门禁」那一轮从 `(db, review_id, tenant_id)`
+    变成了 `(db, review_id, ctx, user)` —— 旧用例把**字符串**当 `ctx` 传，
+    在门禁上线后就整片红了（`ctx.tenant_id` 取不到）。这里补一个最小替身，
+    与 G4 的 HTTP 层替身同款，避免把「测试写法过期」误读成产品缺陷。
+    """
+    from app.core.rbac import Role
+
+    return type(
+        "Ctx", (), {"tenant_id": tenant_id, "user_id": user_id, "role": role or Role.LAWYER}
+    )()
+
+
+def _user(user_id: int, *, can_l3_review: bool = False):
+    """守卫可见性判定只读 `user.id` 与 `user.can_l3_review`。"""
+    return type("User", (), {"id": user_id, "can_l3_review": can_l3_review})()
+
+
 async def test_cross_tenant_review_is_rejected(db, seeded):
     """G1：租户 B 取租户 A 的复核 ⇒ 必须拒绝。这是 P0-14 的核心。"""
     from app.api.v1.reviews import _review_or_404
     from app.core.errors import NotFoundError
 
     with pytest.raises(NotFoundError):
-        await _review_or_404(db, seeded["review_id"], TENANT_B)
+        await _review_or_404(
+            db, seeded["review_id"], _ctx(TENANT_B, user_id=seeded["actor_id"]),
+            _user(seeded["actor_id"]),
+        )
 
 
 async def test_same_tenant_review_is_returned(db, seeded):
-    """G2：同租户必须放行（**干净对照**——没有它，G1 的绿可能是「守卫拒绝一切」）。"""
+    """G2：同租户必须放行（**干净对照**——没有它，G1 的绿可能是「守卫拒绝一切」）。
+
+    复核在夹具里就指派给了 `review-actor`，故这里用**该承办人**身份取，
+    走的是「承办人本人可见」那条正路（而非靠管理员身份绕过可见性门禁）。
+    """
     from app.api.v1.reviews import _review_or_404
 
-    r = await _review_or_404(db, seeded["review_id"], TENANT_A)
+    r = await _review_or_404(
+        db, seeded["review_id"], _ctx(TENANT_A, user_id=seeded["actor_id"]),
+        _user(seeded["actor_id"]),
+    )
     assert r.id == seeded["review_id"]
     assert r.tenant_id == TENANT_A
 
@@ -161,14 +191,19 @@ async def test_missing_and_cross_tenant_are_indistinguishable(db, seeded):
     from app.core.errors import AppError, NotFoundError
 
     missing_id = seeded["review_id"] + 9900
+    actor = seeded["actor_id"]
 
     err_missing = None
     err_cross = None
     with pytest.raises(NotFoundError) as e1:
-        await _review_or_404(db, missing_id, TENANT_A)
+        await _review_or_404(
+            db, missing_id, _ctx(TENANT_A, user_id=actor), _user(actor)
+        )
     err_missing = e1.value
     with pytest.raises(NotFoundError) as e2:
-        await _review_or_404(db, seeded["review_id"], TENANT_B)
+        await _review_or_404(
+            db, seeded["review_id"], _ctx(TENANT_B, user_id=actor), _user(actor)
+        )
     err_cross = e2.value
 
     assert isinstance(err_missing, AppError) and isinstance(err_cross, AppError)

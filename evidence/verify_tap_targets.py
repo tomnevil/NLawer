@@ -48,6 +48,7 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 TAP = 48  # 规范 §8.3
@@ -205,7 +206,7 @@ async def main() -> int:
     async with Browser(headless=True, width=390, height=844, device_scale_factor=3) as b:
         await b.apply_device(mobile=True)
         for app, spec in targets.items():
-            base = f"http://localhost:{spec['port']}"
+            base = base_for_port(spec["port"])
             if not await login(b, base, spec["user"]):
                 print(f"[{app}] ✗ 登录失败（环境问题）")
                 env_fail.append(app)

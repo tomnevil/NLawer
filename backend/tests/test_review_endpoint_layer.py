@@ -126,16 +126,21 @@ def seeded(engine):
             s.add(case_client)
             await s.flush()
 
-            def _review(tid, target_id):
+            def _review(tid, target_id, assignee_id):
+                # ⚠️ **必须带承办人**：2026-09-30 起复核端点加了「可见性门禁」
+                # （`_assert_review_access`），无承办人的复核进「待分配池」，
+                # 只对调度资格者（管理员 / L3）可见。夹具若留空，
+                # 下面的普通律师用例会整片 404 —— 那是**夹具不真实**，不是产品缺陷。
                 return Review(
                     tenant_id=tid,
                     target_type=ReviewTargetType.CASE_ANALYSIS,
                     target_id=target_id,
                     status=ReviewStatus.DRAFT,
+                    assignee_id=assignee_id,
                 )
 
-            rev_a = _review(TENANT_A, 7001)
-            rev_b = _review(TENANT_B, 7002)
+            rev_a = _review(TENANT_A, 7001, lawyer_a.id)
+            rev_b = _review(TENANT_B, 7002, lawyer_b.id)
             s.add_all([rev_a, rev_b])
             await s.commit()
 
@@ -196,10 +201,19 @@ def _code(resp) -> str:
     return str(resp.json().get("error", {}).get("code", ""))
 
 
-def _ensure(c, target_id: int, target_type: str = "CASE_ANALYSIS", case_id: int | None = None):
+def _ensure(c, target_id: int, target_type: str = "CASE_ANALYSIS", case_id: int | None = None,
+            assignee_id: int | None = None):
+    """`POST /reviews/ensure`。
+
+    ⚠️ 端点不带 `assignee_id` 时复核进「待分配池」——**对普通律师不可见**
+    （可见性门禁只放行承办人 / 管理员 / 调度资格者）。因此凡是「建完就要
+    自己读写」的用例都必须显式指派，否则第一步 `records` 就 404。
+    """
     params = {"target_type": target_type, "target_id": target_id}
     if case_id is not None:
         params["case_id"] = case_id
+    if assignee_id is not None:
+        params["assignee_id"] = assignee_id
     return c.post("/api/v1/reviews/ensure", params=params)
 
 
@@ -212,6 +226,21 @@ def _status(engine, review_id: int) -> str:
         f = async_sessionmaker(engine, expire_on_commit=False)
         async with f() as s:
             return (await s.get(Review, review_id)).status.value
+
+    return asyncio.run(_q())
+
+
+def _assignee(engine, review_id: int) -> int | None:
+    """读复核的承办人（`None` = 待分配池）。"""
+    from app.models.review import Review
+
+    async def _q():
+        from sqlalchemy.ext.asyncio import async_sessionmaker
+
+        f = async_sessionmaker(engine, expire_on_commit=False)
+        async with f() as s:
+            r = await s.get(Review, review_id)
+            return r.assignee_id if r is not None else None
 
     return asyncio.run(_q())
 
@@ -250,7 +279,7 @@ def test_zero_coverage_routes_all_respond(app_factory, seeded):
     app = app_factory(seeded["a"])
     with _client(app) as c:
         r1 = c.get("/api/v1/reviews")
-        r2 = _ensure(c, 8001)
+        r2 = _ensure(c, 8001, assignee_id=seeded["a"])
         assert r1.status_code == 200, r1.text
         assert r2.status_code == 200, r2.text
         rid = _data(r2)["id"]
@@ -268,12 +297,12 @@ def test_zero_coverage_routes_all_respond(app_factory, seeded):
         assert r7.status_code == 200, r7.text
 
         # void 需要一条 DRAFT：ensure 一条新的
-        rid2 = _data(_ensure(c, 8002))["id"]
+        rid2 = _data(_ensure(c, 8002, assignee_id=seeded["a"]))["id"]
         r8 = c.post(f"/api/v1/reviews/{rid2}/void", json={"comment": "作废"})
         assert r8.status_code == 200, r8.text
 
         # edit 已被 test_review_tenant_guard 覆盖过，这里一并冒烟
-        rid3 = _data(_ensure(c, 8003))["id"]
+        rid3 = _data(_ensure(c, 8003, assignee_id=seeded["a"]))["id"]
         r9 = c.post(f"/api/v1/reviews/{rid3}/edit", json={"comment": "改一版"})
         assert r9.status_code == 200, r9.text
 
@@ -382,7 +411,7 @@ def test_full_chain_through_endpoints(app_factory, seeded, engine):
     """
     app = app_factory(seeded["a"])
     with _client(app) as c:
-        rid = _data(_ensure(c, 9200))["id"]
+        rid = _data(_ensure(c, 9200, assignee_id=seeded["a"]))["id"]
         assert _status(engine, rid) == "draft"
 
         r = c.post(f"/api/v1/reviews/{rid}/submit", json={"comment": "提交"})
@@ -406,7 +435,7 @@ def test_records_are_written_by_the_endpoints(app_factory, seeded):
     """R7：留痕由端点写入，`actor_id` 是**调用者**。"""
     app = app_factory(seeded["a"])
     with _client(app) as c:
-        rid = _data(_ensure(c, 9300))["id"]
+        rid = _data(_ensure(c, 9300, assignee_id=seeded["a"]))["id"]
         c.post(f"/api/v1/reviews/{rid}/submit", json={"comment": "提交"})
         c.post(f"/api/v1/reviews/{rid}/decide", json={"decision": "APPROVED"})
 
@@ -425,7 +454,7 @@ def test_illegal_transition_rejected_and_status_unchanged(app_factory, seeded, e
     """R8：DRAFT 直接 `archive` ⇒ 4xx `REVIEW_TRANSITION_DENIED`，状态未变。"""
     app = app_factory(seeded["a"])
     with _client(app) as c:
-        rid = _data(_ensure(c, 9400))["id"]
+        rid = _data(_ensure(c, 9400, assignee_id=seeded["a"]))["id"]
         before = _status(engine, rid)
         r = c.post(f"/api/v1/reviews/{rid}/archive")
         assert r.status_code >= 400, r.text
@@ -490,7 +519,7 @@ def test_archived_review_cannot_be_edited(app_factory, seeded, engine):
     """
     app = app_factory(seeded["a"])
     with _client(app) as c:
-        rid = _data(_ensure(c, 9600))["id"]
+        rid = _data(_ensure(c, 9600, assignee_id=seeded["a"]))["id"]
         c.post(f"/api/v1/reviews/{rid}/submit", json={"comment": "提交"})
         c.post(f"/api/v1/reviews/{rid}/decide", json={"decision": "APPROVED"})
         r = c.post(f"/api/v1/reviews/{rid}/archive")
@@ -515,7 +544,7 @@ def test_unknown_decision_is_rejected(app_factory, seeded, engine):
     """
     app = app_factory(seeded["a"])
     with _client(app) as c:
-        rid = _data(_ensure(c, 9500))["id"]
+        rid = _data(_ensure(c, 9500, assignee_id=seeded["a"]))["id"]
         c.post(f"/api/v1/reviews/{rid}/submit", json={"comment": "提交"})
         before = _status(engine, rid)
         r = c.post(f"/api/v1/reviews/{rid}/decide", json={"decision": "WHATEVER"})
@@ -561,3 +590,58 @@ def test_client_can_ensure_review_on_own_case(app_factory, seeded):
     with _client(app_client) as c:
         r = _ensure(c, 9603, case_id=seeded["case_client"])
         assert r.status_code == 200, f"客户甲反而建不了自己案件的复核：{r.text}"
+
+
+# ═══════════ R13 `ensure` 的承办人默认值（2026-10-12 裁定 A）═══════════
+
+
+def test_lawyer_ensure_without_assignee_is_self_assigned(app_factory, seeded, engine):
+    """R13：律师不传 `assignee_id` ⇒ 默认**自任承办人**，且**建完立刻能提交**。
+
+    没有这个默认值时，复核落进「待分配池」，而池只对调度资格者
+    （管理员 / L3）可见 ⇒ 紧随的 `submit` 必 `404 REVIEW_NOT_FOUND`
+    （前端 `lawyer/app/(app)/cases/[id]/page.tsx` 正是 ensure → submit 的顺序）。
+
+    ⚠️ 断言必须**同时**钉住「承办人是谁」与「submit 真的 200」：
+    只钉 `assignee_id` 时，把门禁改成「谁都可见」也能让这条变绿（判据被旁路）。
+    """
+    app = app_factory(seeded["a"])
+    with _client(app) as c:
+        rid = _data(_ensure(c, 9700))["id"]  # 刻意不传 assignee_id
+        assert _assignee(engine, rid) == seeded["a"], "律师 ensure 未默认自任承办人"
+        r = c.post(f"/api/v1/reviews/{rid}/submit", json={"comment": "提交"})
+        assert r.status_code == 200, f"ensure 之后立刻 submit 被拒：{r.text}"
+
+
+def test_lawyer_ensure_claims_unassigned_existing_review(app_factory, seeded, engine):
+    """R13b：幂等命中一条**已存在的无承办人**复核 ⇒ 认领给调用者。
+
+    旧数据（门禁上线前 `ensure` 建的池内复核）不会因为 R13 的默认值自动修好 ——
+    `ensure` 是幂等的，命中已有行就原样返回。不认领的话「建完读不到」会在旧数据上继续复现。
+    """
+    tid = 9702
+    # 客户身份建一条：不默认指派 ⇒ 进池
+    app_client = app_factory(seeded["client_a"])
+    with _client(app_client) as c:
+        rid = _data(_ensure(c, tid, case_id=seeded["case_client"]))["id"]
+    assert _assignee(engine, rid) is None, "客户发起的复核不该被指派"
+
+    # 律师再 ensure 同一 target ⇒ 幂等命中并认领
+    app = app_factory(seeded["a"])
+    with _client(app) as c:
+        got = _data(_ensure(c, tid, case_id=seeded["case_client"]))["id"]
+        assert got == rid, "ensure 不幂等（又建了一条）"
+        assert _assignee(engine, rid) == seeded["a"], "律师 ensure 未认领池内复核"
+
+
+def test_client_ensure_still_lands_in_pool(app_factory, seeded, engine):
+    """R13c（**反向臂**）：**客户** ensure ⇒ 不默认指派，复核仍进池等律师认领。
+
+    没有这条，把「默认指派」写成无条件（不看角色）也能全绿 ——
+    那会把客户发起的复核指派给客户本人，而客户按设计**不可访问**复核
+    （`_assert_review_access` 对 CLIENT 一律拒），等于把复核变成死单。
+    """
+    app_client = app_factory(seeded["client_a"])
+    with _client(app_client) as c:
+        rid = _data(_ensure(c, 9703, case_id=seeded["case_client"]))["id"]
+    assert _assignee(engine, rid) is None, "客户发起的复核被指派了（应进池）"

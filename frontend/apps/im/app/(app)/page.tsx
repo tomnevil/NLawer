@@ -229,7 +229,7 @@ export default function ImHome() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-body font-medium text-ink-800">向 AI 提问</span>
-            <span className="block text-caption text-ink-400">
+            <span className="block text-caption text-ink-600">
               描述您遇到的情况，AI 先给结构化分析
             </span>
           </span>
@@ -239,9 +239,9 @@ export default function ImHome() {
         {/* ────────────────────── 我的案件列表 ────────────────────── */}
         <div className="mt-5 flex items-baseline px-0.5">
           <h2 className="text-body font-medium text-ink-900">我的案件</h2>
-          {!loading && <span className="ml-2 text-caption text-ink-400">{casesTotal}</span>}
+          {!loading && <span className="ml-2 text-caption text-ink-600">{casesTotal}</span>}
           {casesTotal > 0 && (
-            <Link href="/cases" className="ml-auto text-label font-medium text-brand-600">
+            <Link href="/cases" className="ml-auto text-label font-medium text-link">
               全部 →
             </Link>
           )}
@@ -283,7 +283,7 @@ export default function ImHome() {
                       <span className="block truncate text-body-sm font-medium text-ink-800">
                         {c.title}
                       </span>
-                      <span className="mt-0.5 flex items-center gap-2 text-caption text-ink-400">
+                      <span className="mt-0.5 flex items-center gap-2 text-caption text-ink-600">
                         <span className="num">{c.case_no}</span>
                         <span>{caseStatusLabel(c.status)}</span>
                       </span>
@@ -310,10 +310,12 @@ export default function ImHome() {
               className="flex min-h-tap flex-col rounded-r3 border border-line bg-surface p-3.5 shadow-s1 transition-colors duration-fast hover:bg-surface-hover"
             >
               <span className="mb-2 flex h-8 w-8 items-center justify-center rounded-r2 border border-brand-100 bg-brand-50">
-                <a.icon className="h-4 w-4 text-brand-600" />
+                {/* 图标走角色令牌 `--link`：深色 `--brand-600` 压 brand-50 只有 2.78:1（<3:1，WCAG 1.4.11），
+                    `--link` 两档 7.42 / 6.79。详 ruling-nontext-contrast-2026-10-30.md §3/§6。 */}
+                <a.icon className="h-4 w-4 text-link" />
               </span>
               <span className="text-body-sm font-medium text-ink-800">{a.title}</span>
-              <span className="mt-0.5 text-caption leading-[1.55] text-ink-400">{a.desc}</span>
+              <span className="mt-0.5 text-caption leading-[1.55] text-ink-600">{a.desc}</span>
             </Link>
           ))}
         </div>

@@ -496,6 +496,86 @@ jobs:
           if-no-files-found: ignore
 
   # ══════════════════════════════════════════════════════════════
+  # 通知下拉面板（单端 · 2026-10-29）
+  # ══════════════════════════════════════════════════════════════
+  # 🚨 **为什么要独立一个 job**：面板是 `{open && !isMobile && (…)}` ⇒ 默认关闭，
+  #   `verify_contrast` 的 T4「开页面量 DOM」**不点铃铛** ⇒ 未读角标 /「全部已读」/
+  #   「查看全部通知」三处**结构上量不到**。而它要渲染前两处就必须有**未读数据** ——
+  #   探针得**自己往库里写**。`run_browser_job` 的种子在同一 job 内被**所有探针共享**
+  #   ⇒ 写库会污染后续探针（红点逻辑就是按 `unread==0` 判的）。
+  #   ⇒ 给它一条只跑它一条、自己一份隔离库的 job，副作用归零。
+  # ⚠️ 代价：多一次 pnpm install + 单端构建 + 起服务 ≈ 一条 `browser-admin`。
+  #   起 **lawyer** 一端：实测 admin 的首页（`/`，驾驶舱）**没有铃铛** —— 页面上唯一的
+  #   `[aria-haspopup="dialog"]` 是个无 `aria-label` 的按钮，点了 `aria-expanded` 仍 false。
+  #   ⚠️ 别「凭 AppShell 在四端都渲染」就推断 admin 也有 —— 第一版就是这么错的（实测红）。
+  browser-ncpanel:
+    name: Browser (notification panel)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    env:
+      # 同 `browser-admin`：`DATABASE_URL` 刻意不在这里（编排器换成 mkdtemp 隔离库）。
+      ENVIRONMENT: test
+      MODERATION_ENABLED: "true"
+      MODERATION_BACKEND: builtin
+      SECRET_KEY: ci-only-not-a-real-secret-0123456789abcdef
+      CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR: ""
+      CODEBUDDY_TOOL_CALL_ID: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      # ⚠️ 必须在 `Build` **之前**（`NEXT_PUBLIC_API_BASE` 是构建期内联的）。
+      - name: Seed build-time env (NEXT_PUBLIC_API_BASE)
+        working-directory: frontend
+        run: echo "NEXT_PUBLIC_API_BASE=http://localhost:8001" > apps/lawyer/.env.local
+
+      - name: Build lawyer (production)
+        working-directory: frontend
+        run: pnpm --filter app-lawyer build
+
+      - name: Run browser probes (notification panel)
+        run: python evidence/run_browser_job.py --job browser-ncpanel
+
+      - name: Upload browser job logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-ncpanel-logs
+          path: /tmp/nlawer-browser-job-*/logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ══════════════════════════════════════════════════════════════
   # 浏览器门禁（四端全量）：Phase 3 · 2026-09-26 拍板 §11.4-③
   # ══════════════════════════════════════════════════════════════
   # 与 `browser-admin` 同一套机制（前提由 `evidence/run_browser_job.py` 备齐），

@@ -41,7 +41,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               "w-full rounded-r2 border bg-surface text-ink-900 placeholder:text-ink-400",
               "transition-colors duration-fast ease-out",
-              "focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+              "focus:outline-none focus:shadow-focus",
               error
                 ? "border-danger-500/50 focus:border-danger-500"
                 : "border-line-strong focus:border-brand-400",

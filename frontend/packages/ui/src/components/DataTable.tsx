@@ -104,11 +104,16 @@ function resolveMobileMode(
 }
 
 function SortGlyph({ dir }: { dir: SortDirection | null }) {
+  // 非文本对比度（WCAG 1.4.11，3:1）：图标也走角色令牌 `--link`，不要换回 `brand-*` 档位 ——
+  // 深色 `--brand-600` 是主按钮填充色（#3A63B0），压 surface-subtle 只有 2.83:1；
+  // `--link` 两档都宽（7.30 / 6.91）。静置态用 `ink-500`（4.83 / 6.49）：
+  // 原 `ink-300` 是「禁用描边」档，两档都只有 ~1.35，而静置箭头是「可排序」的唯一提示，不豁免。
+  // 详 deliverables/ui-design/ruling-nontext-contrast-2026-10-30.md §3/§6。
   return (
     <svg
       className={cn(
         "h-3 w-3 shrink-0 transition-colors duration-fast",
-        dir ? "text-brand-600" : "text-ink-300"
+        dir ? "text-link" : "text-ink-500"
       )}
       viewBox="0 0 12 12"
       fill="none"
@@ -325,7 +330,7 @@ export function DataTable<T extends Record<string, any>>({
       {selectable && selected.length > 0 ? (
         <>
           <span className="text-body-sm text-ink-700">
-            已选 <span className="num font-medium text-brand-600">{selected.length}</span> 项
+            已选 <span className="num font-medium text-link">{selected.length}</span> 项
           </span>
           <button
             type="button"
@@ -403,10 +408,13 @@ export function DataTable<T extends Record<string, any>>({
                             checked ? [...prev, col.key] : prev.filter((k) => k !== col.key)
                           );
                         }}
-                        className="h-3.5 w-3.5 rounded-[3px] border-line text-brand-600 focus:ring-2 focus:ring-brand-500/30"
+                        // 原生 checkbox 只吃 `accent-color`、不吃 `color`：`text-brand-600` 在这里
+                        // 从未生效过（像素级证明，ruling-nontext-contrast-2026-10-30.md §2/§4）。
+                        // `border-line` / `rounded-[3px]` 同样无效但保留 —— 删它们是另一件事，别混进来。
+                        className="h-3.5 w-3.5 rounded-[3px] border-line accent-brand-600 focus:shadow-focus"
                       />
                       {col.header}
-                      {col.pinned && <span className="ml-auto text-caption text-ink-400">固定</span>}
+                      {col.pinned && <span className="ml-auto text-caption text-ink-600">固定</span>}
                     </label>
                   );
                 })}
@@ -432,7 +440,7 @@ export function DataTable<T extends Record<string, any>>({
                   checked={allSelected}
                   onChange={toggleAll}
                   aria-label="全选"
-                  className="h-3.5 w-3.5 rounded-[3px] border-line text-brand-600 focus:ring-2 focus:ring-brand-500/30"
+                  className="h-3.5 w-3.5 rounded-[3px] border-line accent-brand-600 focus:shadow-focus"
                 />
               </th>
             )}
@@ -501,7 +509,7 @@ export function DataTable<T extends Record<string, any>>({
                       checked={isSelected}
                       onChange={() => toggleRow(key)}
                       aria-label={`选择第 ${rowIndex + 1} 行`}
-                      className="h-3.5 w-3.5 rounded-[3px] border-line text-brand-600 focus:ring-2 focus:ring-brand-500/30"
+                      className="h-3.5 w-3.5 rounded-[3px] border-line accent-brand-600 focus:shadow-focus"
                     />
                   </td>
                 )}
@@ -593,7 +601,7 @@ export function DataTable<T extends Record<string, any>>({
                     onChange={() => toggleRow(key)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`选择第 ${rowIndex + 1} 行`}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded-[3px] border-line text-brand-600"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded-[3px] border-line accent-brand-600"
                   />
                 )}
 

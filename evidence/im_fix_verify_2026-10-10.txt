@@ -1,0 +1,39 @@
+→ 灌种子（seed_demo.py --reset，库：im_verify.db）
+        ent_admin      Ent@12345        企业管理员    ent_acme
+        ent_user       Ent@12345        企业员工     ent_acme
+      --------------------------------------------------------------------
+→ 起后端 uvicorn（127.0.0.1:8001）
+  ✓ 后端就绪（readyz 200）
+→ 起前端 next start（im → http://localhost:3003）
+  ✓ im 就绪（http://localhost:3003/im 200）
+
+
+▸ verify_im_e2e.py   rc=0   45.2s
+  ── stdout 尾部 ──
+    ✅ I1 im 端登录
+      ✅ I2 工作台渲染  (品牌署名缺失 ⇒ 页面可能未挂载)
+      ✅ I3 点「向 AI 提问」跳转到 /chat  (应用内路径='/chat' 浏览器路径='/im/chat')
+    
+    通过 3 / 失败 0
+
+▸ verify_im_tabs.py   rc=0   114.0s
+  ── stdout 尾部 ──
+      ⇒ 正文栏 ≈ 750px（判据 ≥ 432px，来自 §2.3：带 240 侧栏时的宽度）
+    
+    阶段 B：桌面端 1440×900，落在 /chat
+      TabBar 存在=True  可见=False（期望 False，`lg:hidden`）
+      三栏实测（期望 rail=288 panel=320，>1400 常规档）：
+            288px  w-full shrink-0 flex-col
+            832px  min-w-0 flex-1 flex-col
+            320px  hidden w-panel shrink-0
+      ⇒ 正文栏 ≈ 832px（判据 ≥ 432px，来自 §2.3：带 240 侧栏时的宽度）
+    
+    
+    ── 汇总 ──
+      ✓ 4 个 Tab 全部可点、路径正确、高亮正确、内容区非空壳、非 404、无框架错误
+      ✓ 桌面端 1280/1440 两档 TabBar 均消失；三栏宽度符合断点；正文栏 ≥ 432px
+    
+    EXIT=0  通过
+
+（服务已拆；临时目录 C:\Users\RS\AppData\Local\Temp\nlawer-im-verify-7hzuqj35）
+EXIT=0

@@ -1,0 +1,97 @@
+→ 复用被改过的库副本：C:\Users\RS\AppData\Local\Temp\nlawer-contrast-repro-gg3jba8s\repro.db（1224704 字节）—— **不重灌种子**
+→ 起后端 uvicorn（127.0.0.1:8001）
+  OK 后端就绪
+→ 起前端 next start（web → http://localhost:3000）
+  OK web 就绪
+→ 起前端 next start（lawyer → http://localhost:3001）
+  OK lawyer 就绪
+→ 起前端 next start（admin → http://localhost:3002）
+  OK admin 就绪
+→ 起前端 next start（im → http://localhost:3003）
+  OK im 就绪
+=== rc=1 · 232.9s ===
+期望值来源：`deliverables\ui-design\design-spec.md` §2.1/2.2/2.3 的对比度列
+T0 推导出的合格线：4.5（规范所有 `✓` 行都 ≥ 它、所有非 `✓` 行都 < 它）
+T1'/T3 断言的是**定性**（标 `✓` ⇒ ≥ 4.5）；声明值偏差 > 0.5 只记**文档问题**
+T4 按字号取门槛：大字号（≥24px 或 ≥18.66px 粗体）3.0、其余 4.5；离门槛 <0.15 报临界不判
+
+  web/ @390/light            ✓  文本元素 35  区间内 0
+  web/ @390/dark             ✓  文本元素 35  区间内 0
+  web/qa @390/light          ✓  文本元素 15  区间内 1
+  web/qa @390/dark           ✓  文本元素 15  区间内 0
+  web/documents @390/light   ✓  文本元素 109  区间内 0
+  web/documents @390/dark    ✓  文本元素 109  区间内 0
+  web/contract-review @390/light ✓  文本元素 22  区间内 1
+  web/contract-review @390/dark ✓  文本元素 22  区间内 0
+  lawyer/ @390/light         ✓  文本元素 27  区间内 4
+  lawyer/ @390/dark          ✓  文本元素 27  区间内 0
+  lawyer/cases @390/light    ✓  文本元素 48  区间内 2
+  lawyer/cases @390/dark     ✓  文本元素 48  区间内 0
+  lawyer/reviews @390/light  ✓  文本元素 31  区间内 2
+  lawyer/reviews @390/dark   ✓  文本元素 31  区间内 0
+  lawyer/archives @390/light ✓  文本元素 20  区间内 1
+  lawyer/archives @390/dark  ✓  文本元素 20  区间内 0
+  admin/ @390/light          ✓  文本元素 63  区间内 3
+  admin/ @390/dark           ✓  文本元素 63  区间内 0
+  admin/audit @390/light     ✓  文本元素 45  区间内 3
+  admin/audit @390/dark      ✓  文本元素 45  区间内 0
+  admin/cases @390/light     ✓  文本元素 40  区间内 4
+  admin/cases @390/dark      ✓  文本元素 40  区间内 0
+  admin/compliance @390/light ✓  文本元素 45  区间内 5
+  admin/compliance @390/dark ✓  文本元素 45  区间内 0
+  im/ @390/light             ✓  文本元素 31  区间内 0
+  im/ @390/dark              ✓  文本元素 31  区间内 0
+  im/chat @390/light         ✗  文本元素 12
+      [T4] 对比度 **4.47:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 block truncate text-caption text-ink-500` 文字=`渠道 web_sim`  fg=rgb(102,110,122) bg=rgb(235,239,247)
+  im/chat @390/dark          ✓  文本元素 12  区间内 0
+  im/cases @390/light        ✓  文本元素 60  区间内 2
+  im/cases @390/dark         ✓  文本元素 60  区间内 0
+  im/me @390/light           ✓  文本元素 16  区间内 0
+  im/me @390/dark            ✓  文本元素 16  区间内 0
+  web/ @1280/light           ✓  文本元素 46  区间内 0
+  web/ @1280/dark            ✓  文本元素 46  区间内 0
+  web/qa @1280/light         ✓  文本元素 29  区间内 1
+  web/qa @1280/dark          ✓  文本元素 29  区间内 0
+  web/documents @1280/light  ✓  文本元素 120  区间内 0
+  web/documents @1280/dark   ✓  文本元素 120  区间内 0
+  web/contract-review @1280/light ✓  文本元素 33  区间内 1
+  web/contract-review @1280/dark ✓  文本元素 33  区间内 0
+  lawyer/ @1280/light        ✓  文本元素 37  区间内 4
+  lawyer/ @1280/dark         ✓  文本元素 37  区间内 0
+  lawyer/cases @1280/light   ✓  文本元素 53  区间内 8
+  lawyer/cases @1280/dark    ✓  文本元素 53  区间内 0
+  lawyer/reviews @1280/light ✓  文本元素 44  区间内 8
+  lawyer/reviews @1280/dark  ✓  文本元素 44  区间内 0
+  lawyer/archives @1280/light ✓  文本元素 42  区间内 9
+  lawyer/archives @1280/dark ✓  文本元素 42  区间内 0
+  admin/ @1280/light         ✓  文本元素 92  区间内 11
+  admin/ @1280/dark          ✓  文本元素 92  区间内 0
+  admin/audit @1280/light    ✓  文本元素 61  区间内 3
+  admin/audit @1280/dark     ✓  文本元素 61  区间内 0
+  admin/cases @1280/light    ✓  文本元素 75  区间内 12
+  admin/cases @1280/dark     ✓  文本元素 75  区间内 0
+  admin/compliance @1280/light ✓  文本元素 75  区间内 13
+  admin/compliance @1280/dark ✓  文本元素 75  区间内 0
+  im/ @1280/light            ✓  文本元素 27  区间内 0
+  im/ @1280/dark             ✓  文本元素 27  区间内 0
+  im/chat @1280/light        ✗  文本元素 19
+      [T4] 对比度 **4.47:1** < 4.5（正文尺寸 11px/500 的门槛）：<span> 11px/500 class=`mt-0.5 block truncate text-caption text-ink-500` 文字=`渠道 web_sim`  fg=rgb(102,110,122) bg=rgb(235,239,247)
+  im/chat @1280/dark         ✓  文本元素 19  区间内 0
+  im/cases @1280/light       ✓  文本元素 56  区间内 2
+  im/cases @1280/dark        ✓  文本元素 56  区间内 0
+  im/me @1280/light          ✓  文本元素 12  区间内 0
+  im/me @1280/dark           ✓  文本元素 12  区间内 0
+
+==========================================================================
+[T1–T3 令牌层] T1a **实际核对 9/9 行**（覆盖率缺口：无）
+                T1b **角色令牌 16 个**（`--text-*` 同档严格 / `--link*` 任一档宽松）全部命中调色板档
+                规范表 9 行 + 深色 4 对 + 状态对 3 对 ⇒ 缺陷 0 条（另 **角色令牌漂移 0 条**）
+
+[T4 渲染层] 测量 64 组；**不合格 2 组 / 缺陷 2 条**。
+⚠️ T4 **临界不判**：100 处离门槛不到 0.15（两位小数舍入可能翻转）。最低 5 条：
+   · 4.55:1（门槛 4.5）  <span> 11px/500 class=`inline-flex items-center whitespace-nowrap border font-mediu` 文字=`AI 对话`
+   · 4.55:1（门槛 4.5）  <span> 11px/500 class=`inline-flex items-center whitespace-nowrap rounded-r1 border` 文字=`0 / 20000`
+   · 4.55:1（门槛 4.5）  <span> 11px/500 class=`inline-flex items-center whitespace-nowrap border font-mediu` 文字=`进入`
+   · 4.55:1（门槛 4.5）  <span> 11px/500 class=`inline-flex items-center whitespace-nowrap border font-mediu` 文字=`进入`
+   · 4.55:1（门槛 4.5）  <span> 11px/500 class=`inline-flex items-center whitespace-nowrap border font-mediu` 文字=`进入`
+

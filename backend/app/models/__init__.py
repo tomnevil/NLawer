@@ -1,4 +1,4 @@
-﻿"""模型包：统一导入以保证 Base.metadata 完整注册（Alembic 依赖）。
+"""模型包：统一导入以保证 Base.metadata 完整注册（Alembic 依赖）。
 
 导入顺序有讲究：被外键引用的表必须先注册（users / cases / conversations）。
 """

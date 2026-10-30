@@ -7,9 +7,9 @@ from app.core.audit import AuditAction, record
 from app.core.deps import get_current_user, get_db, get_tenant_context
 from app.core.errors import ErrorCode, NotFoundError
 from app.core.pagination import Page, PaginationParams, count_bounded, ok
-from app.models.case import Dispatch
+from app.models.case import Case, Dispatch
 from app.models.enums import DispatchStatus
-from app.schemas.case import DispatchOut
+from app.schemas.case import CaseBriefOut, DispatchOut
 from app.services.dispatch_service import DispatchService
 from app.services.job_handlers import trigger_case_analysis
 
@@ -74,6 +74,40 @@ async def list_dispatches(
     )
 
 
+async def _briefs_for(
+    db: AsyncSession, case_ids: set[int], tenant_id: str
+) -> dict[int, CaseBriefOut]:
+    """按 `case_id` 批量取**案件摘要**（一次 IN 查询，返回 `{case_id: 摘要}`）。
+
+    ## 为什么池摘要必须由服务端补齐（2026-10-10 查清的根因）
+
+    池子按**租户**取（见 `grab_pool` 的谓词），而 `GET /cases/{id}` 按**承办人**鉴权
+    （`cases._case_or_404`，P2-10：律师只能读本人承办，否则需有效团队授权，无权按
+    「不存在」处理）。两个口径对同一个 `case_id` 给出**互相矛盾**的答案 ⇒
+    池内案件对**任何**律师都读不到 ⇒ 前端那条「按 `case_id` 回查标题」在 P2-10 之后
+    **结构上不可能**成立，派单池永远只显示「案件 #N」——而标题/等级/标的正是
+    律师决定**要不要接这一单**的依据（池子的核心功能）。
+
+    ⇒ 摘要由服务端在**同一租户内**补齐：既**不必**放宽 `_case_or_404`（P2-10 的
+    归属原则不动），又把 `page_size` 次往返压成 **1 次**。
+
+    ## 🚨 `tenant_id` 过滤不是多余的
+
+    本函数**必须**按 `tenant_id` 收窄。派单表的 `case_id` 只有外键约束，
+    「本租户的派单指向他租户的案件」这种脏数据在库层面拦不住；少写这个条件，
+    就会把**别家租户的案件标题**通过本租户的池子漏出去。
+    `tests/test_dispatch_pool_brief.py::T3` 用一条这样的人造数据把它钉死。
+    """
+    if not case_ids:
+        return {}
+    rows = (
+        await db.execute(
+            select(Case).where(Case.id.in_(case_ids), Case.tenant_id == tenant_id)
+        )
+    ).scalars().all()
+    return {c.id: CaseBriefOut.model_validate(c) for c in rows}
+
+
 @router.get("/pool", response_model=dict, summary="可抢单池（待接且未指定律师）")
 async def grab_pool(
     params: PaginationParams = Depends(),
@@ -94,9 +128,17 @@ async def grab_pool(
         .scalars()
         .all()
     )
+    # 内联摘要：`DispatchOut` 里没有标题/等级（见 `schemas/case.py::PoolItemOut`）
+    briefs = await _briefs_for(db, {r.case_id for r in rows}, ctx.tenant_id)
+    items = []
+    for r in rows:
+        item = DispatchOut.model_validate(r).model_dump()
+        brief = briefs.get(r.case_id)
+        item["case_brief"] = brief.model_dump() if brief is not None else None
+        items.append(item)
     return ok(
         Page.build(
-            [DispatchOut.model_validate(r).model_dump() for r in rows],
+            items,
             total,
             params,
             total_is_lower_bound=is_lower_bound,

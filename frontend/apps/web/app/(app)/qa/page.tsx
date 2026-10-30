@@ -7,10 +7,12 @@ import { streamSSE } from "@nlaw/sdk";
 import {
   Badge,
   BottomSheet,
+  Button,
   CitationChip,
   CitationPanel,
   EmptyState,
   ProvenanceBadge,
+  ProvenanceBlock,
   ProvenanceLegend,
   Skeleton,
   cn,
@@ -353,21 +355,18 @@ function QAWorkspace() {
           {/* 三态图例常驻：用户在任何位置都能解读颜色含义（规范第 05 节） */}
           <ProvenanceLegend variant="compact" className="ml-auto" />
 
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             type="button"
             onClick={() => setCiteOpen(true)}
             disabled={panelCitations.length === 0}
-            className={cn(
-              "flex h-8 shrink-0 items-center gap-1.5 rounded-r2 border border-line px-2.5",
-              "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-              "disabled:cursor-not-allowed disabled:opacity-40",
-              "lg:hidden"
-            )}
+            className="shrink-0 lg:hidden"
           >
             <BookOpen className="h-4 w-4" />
             依据
             {panelCitations.length > 0 && <span className="num">({panelCitations.length})</span>}
-          </button>
+          </Button>
         </header>
 
         <div ref={scrollRef} className="scroll-thin min-h-0 flex-1 overflow-y-auto px-4 py-5 lg:px-6">
@@ -405,7 +404,7 @@ function QAWorkspace() {
         </div>
 
         <div className="shrink-0 border-t border-line px-4 py-3 lg:px-6">
-          <div className="mx-auto flex max-w-reading items-end gap-2 rounded-r4 border border-line bg-surface-subtle p-2 transition-colors duration-fast focus-within:border-brand-400 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand-500/25">
+          <div className="mx-auto flex max-w-reading items-end gap-2 rounded-r4 border border-line bg-surface-subtle p-2 transition-colors duration-fast focus-within:border-brand-400 focus-within:bg-surface focus-within:shadow-focus">
             <label htmlFor="qa-input" className="sr-only">
               输入法律问题
             </label>
@@ -422,22 +421,17 @@ function QAWorkspace() {
               placeholder="例如：公司拖欠工资三个月怎么办？"
               className="h-9 min-w-0 flex-1 bg-transparent px-2 text-body-sm text-ink-900 outline-none placeholder:text-ink-400"
             />
-            <button
+            <Button
               type="button"
               onClick={submit}
               disabled={streaming || !input.trim()}
-              className={cn(
-                "flex h-9 shrink-0 items-center gap-1.5 rounded-r2 px-3.5 text-body-sm font-semibold text-white",
-                "bg-solid-brand transition-opacity duration-fast hover:opacity-90",
-                "disabled:cursor-not-allowed disabled:opacity-40",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-              )}
+              className="shrink-0"
             >
               <Send className="h-4 w-4" />
               {streaming ? "生成中" : "发送"}
-            </button>
+            </Button>
           </div>
-          <p className="mx-auto mt-2 max-w-reading text-center text-caption text-ink-400">
+          <p className="mx-auto mt-2 max-w-reading text-center text-caption text-ink-600">
             AI 生成内容仅供参考，不构成正式法律意见。引用法条请以官方文本为准。
           </p>
         </div>
@@ -511,23 +505,29 @@ function AiTurn({
         <p className="text-body-sm font-medium text-danger-600">生成中断</p>
         <p className="mt-1 text-body-sm text-ink-600">{turn.error}</p>
         {turn.question && (
-          <button
+          <Button
+            variant="danger-outline"
             type="button"
             onClick={onRetry}
-            className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-r2 border border-danger-500/40 bg-surface px-3 text-body-sm font-medium text-danger-600 transition-colors duration-fast hover:bg-danger-500/10"
+            className="mt-3"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             重新生成
-          </button>
+          </Button>
         )}
       </div>
     );
   }
 
-  /* 流式生成中 */
+  /* 流式生成中 —— §5「AI 生成」内容段。
+     装饰（紫色**虚线上边框** + 浅紫底）由 `ProvenanceBlock` 的状态类提供，
+     不再内联**四边实线 + 手写半透明底色**：那样与 §5 规定的「虚线上边框」有分歧
+     （`design-audit.md` #23 / 第 9 项）。
+     `hideBadge` 是因为这里徽章右侧还要挂「正在生成…」状态文案，
+     组件内置的徽章槽表达不了 ⇒ 按 `hideBadge` 的文档用法（已有徽章的容器内）自行渲染。 */
   if (turn.streaming) {
     return (
-      <div className="ai-content rounded-r3 border border-ai-500/25 bg-ai-500/[0.05] p-4">
+      <ProvenanceBlock state="ai" hideBadge className="rounded-r3">
         <div className="mb-2 flex items-center gap-2">
           <ProvenanceBadge state="ai" size="sm" />
           <span className="text-caption text-ink-500">
@@ -538,17 +538,19 @@ function AiTurn({
           {turn.text}
           <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse-soft bg-ai-500 align-middle" />
         </p>
-      </div>
+      </ProvenanceBlock>
     );
   }
 
   const citations = turn.citations ?? [];
 
-  /* 简单回复（如寒暄）：单段纯文本，不渲染四段式骨架 */
+  /* 简单回复（如寒暄）：单段纯文本，不渲染四段式骨架。
+     §5「AI 生成」内容段：卡片**本体**也染 AI 态（顶部虚线 + 浅紫底）⇒ 页眉不再单独叠色。
+     `as="article"` 保留语义标签（`as` **不传**时根仍是 `div` ⇒ 其它调用方零影响）。 */
   if (turn.structured === false) {
     return (
-      <article className="rounded-r3 border border-line bg-surface shadow-s1">
-        <header className="flex items-center gap-2 border-b border-line bg-ai-500/[0.05] px-4 py-2.5">
+      <ProvenanceBlock as="article" state="ai" hideBadge className="rounded-r3 p-0 shadow-s1">
+        <header className="flex items-center gap-2 border-b border-line px-4 py-2.5">
           <ProvenanceBadge state="ai" size="sm" />
           <span className="text-caption text-ink-500">AI 助手 · 未经律师确认</span>
         </header>
@@ -557,17 +559,18 @@ function AiTurn({
             {turn.sections?.conclusion}
           </p>
           {turn.disclaimer && (
-            <p className="border-t border-line pt-3 text-caption text-ink-400">{turn.disclaimer}</p>
+            <p className="border-t border-line pt-3 text-caption text-ink-600">{turn.disclaimer}</p>
           )}
         </div>
-      </article>
+      </ProvenanceBlock>
     );
   }
 
   return (
-    <article className="rounded-r3 border border-line bg-surface shadow-s1">
-      {/* 责任边界：AI 产出的内容必须显式标注，客户要能一眼看出这不是律师写的 */}
-      <header className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-line bg-ai-500/[0.05] px-4 py-2.5">
+    <ProvenanceBlock as="article" state="ai" hideBadge className="rounded-r3 p-0 shadow-s1">
+      {/* 责任边界：AI 产出的内容必须显式标注，客户要能一眼看出这不是律师写的。
+          §5 的 AI 态装饰由 `ProvenanceBlock` 提供 ⇒ 页眉不再单独叠 `bg-ai-500/*`。 */}
+      <header className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-line px-4 py-2.5">
         <ProvenanceBadge state="ai" size="sm" />
         <span className="text-caption text-ink-500">四段式结构化输出 · 未经律师确认</span>
         {citations.length > 0 && (
@@ -624,7 +627,7 @@ function AiTurn({
                     >
                       <span className="num font-medium text-gold-600">{i + 1}</span>
                       <span className="max-w-[16rem] truncate">{c.title}</span>
-                      <span className="shrink-0 text-ink-400">{TYPE_LABEL[c.type] ?? c.type}</span>
+                      <span className="shrink-0 text-ink-600">{TYPE_LABEL[c.type] ?? c.type}</span>
                     </button>
                   </li>
                 );
@@ -634,9 +637,9 @@ function AiTurn({
         )}
 
         {turn.disclaimer && (
-          <p className="border-t border-line pt-3 text-caption text-ink-400">{turn.disclaimer}</p>
+          <p className="border-t border-line pt-3 text-caption text-ink-600">{turn.disclaimer}</p>
         )}
       </div>
-    </article>
+    </ProvenanceBlock>
   );
 }

@@ -377,12 +377,22 @@ GATED: tuple[tuple[str, str], ...] = (
       "**I5 用真实映射表验 M7** —— 合成夹具的措辞可能与真实条目不同；注入臂前提由 `build_old_map` "
       "**现读校验**，措辞变了 ⇒ **exit 2**，不许静默变绿。未进 CI —— 手工跑）。"
       "产品侧 **0 判红** + 12 条 M7s（人工已逐条核过语义：均指扁平 184/186/187）"),
+    ("verify_no_bom.py",
+     "UTF-8 BOM 门禁：扫描仓库内所有 `*.py` 首字节，禁止 UTF-8 BOM（U+FEFF）；"
+     "历史 7 个 BOM 文件曾让多条门禁静默失明/误报（ast.parse 抛 U+FEFF）。纯源码扫描，无浏览器"),
 )
 
 # ---------------------------------------------------------------------------
 # ② 探针自检：与实测分开。空集也要显式写出来，别让人以为"忘了加"。
 # ---------------------------------------------------------------------------
 SELFTESTABLE: frozenset[str] = frozenset({
+    # §2.1 `--ink-400` 禁用于正文：自检 19 臂 + 2 注入反证 + 1 行号臂，全用**合成 fixture**
+    # （`_SYN_CASES`：6 正例 / 13 阴性对照 —— 占位符 / 破折号 / 图标 / 注释 / 背景色 /
+    # 表达式占位 / hover 态 / 纯符号 / **自闭合图标后的兄弟文字** / **`cn()` 内图标** /
+    # `cn()` 内状态前缀），不读真实仓库、不启浏览器。
+    # ⚠️ 行号臂（L1）不是凑数：`cn()` 的实参是从全文切出的子串，用子串内偏移算行号会把
+    #    `:1295` 报成 `:4` —— 只数条数的臂对这类缺陷**完全失明**（2026-10-29 实测踩过）。
+    "verify_ink400_body.py",
     "verify_component_wiring.py",
     "verify_enum_domain_drift.py",
     "verify_register_abuse_defense.py",
@@ -465,6 +475,9 @@ SELFTESTABLE: frozenset[str] = frozenset({
     # 🚨 M7 是**唯一跨文件**的判据（扫活文件里的歧义号引用）⇒ 传 `live_docs` dict 而不是传 root，
     # 这样自检/注入都能喂合成文档，**不用往磁盘上写文件**。
     "verify_methodology_numbering.py",
+    # UTF-8 BOM 门禁：纯静态（扫仓库 `*.py` 首字节，不启浏览器、不读真实仓库、不联网）
+    # ⇒ 满足 SELFTESTABLE 三标准。自检是纯函数（`has_bom` 对合成字节串），≤2s。
+    "verify_no_bom.py",
 })
 
 # ---------------------------------------------------------------------------
@@ -486,6 +499,9 @@ SELFTEST_ONLY: tuple[str, ...] = (
     "verify_contrast.py",
     "verify_focus_ring.py",
     "verify_grade_badges.py",
+    # 2026-10-29 新增：通知下拉面板（P1–P5）。自检是纯函数（合成 payload + 注入反证），
+    # 不启浏览器、不读真实仓库 ⇒ 满足 SELFTEST_ONLY 的三条收录标准。
+    "verify_notification_panel.py",
     # ⚠️ 2026-09-22 补齐：下面 5 个**一直有 `--self-test`，但两个清单都没登记**
     #    ⇒ 它们的自检**从不执行**。这与判据 0b 同形状：**登记表不完整 + 没有守卫**。
     #    代价已经出现过一次：`verify_design_tokens.py` 的 `rglob` 挂死（160s）
@@ -496,6 +512,10 @@ SELFTEST_ONLY: tuple[str, ...] = (
     "verify_font_scale.py",         # 实测 1.1s
     "verify_spacing_scale.py",      # 实测 0.7s
     "verify_typography.py",         # 实测 1.6s
+    # 2026-10-10：纯函数（读 4 份 `next.config.js` + 扫全仓 `verify_*.py`），不启浏览器。
+    # ⚠️ 自检里 `check_c1()` 会跑 3 次、`check_c2()` 会扫全仓 3 次 ⇒ 重复调用会推过
+    #    本档的「≤2s」门槛（实测 3.0s）⇒ 已改成**结果复用**（实测 1.5s）。
+    "verify_base_path_consistency.py",  # 实测 1.5s
 )
 
 # 有 `--self-test`，但**阶段 1 不跑它**：自检**依赖环境**（会真起浏览器 / 真连服务），
@@ -683,6 +703,32 @@ CI_JOB_PROBES: dict[str, tuple[str, ...]] = {
         "verify_task_center_e2e.py",
         "verify_adjacent_targets.py",
         "verify_breakpoints.py",
+        "verify_contrast.py",
+        # ⚠️ 与 `frontend` job 重叠的探针（**同文件、不同开关**）—— 本表里有**两条**：
+        #   `frontend` 跑 `--source-only`（PR 反馈回路；源码层 + 产物层，只需
+        #   `node_modules` + 四端 `.next` 里的 CSS）；本 job 跑**无参** ⇒ 再加**渲染层**
+        #   T3（行高地板）/ T3b（字号类落地），需真浏览器 + 真后端 + 真种子库。
+        #   ⇒ 两处**都要留**：删掉 `frontend` 那条 ⇒ PR 上没人守源码层；
+        #     删掉本条 ⇒ 渲染层又变成「修完没人守」（它在 2026-10-14 之前**从没进过任何 job**）。
+        "verify_typography.py",
+        # 🚨 **2026-10-29 接入**：`verify_grade_badges.py` 的渲染半边（G1 底色 / G3 字母通道 /
+        #   G4 文字色由变体决定）**至今没有 CI 覆盖** —— 它在 `frontend` job 里只跑
+        #   `--source-only`（`StaticGate`），而它的 `APPS` 覆盖**四端 26 页**、要真浏览器。
+        #   与 `verify_typography.py` 完全同形（同一个「修完没人守」的病）。
+        #   ⇒ 起因是 2026-10-29 把 `Badge` 的 `verified`/`pending` 从 `-600` 提到 `-700`
+        #   （裁定：`deliverables/ui-design/ruling-token-tier-2026-10-29.md`），
+        #   改的正是 G4 要核对的令牌 —— **不改判据就等于改了个没人看的东西**。
+        #   ✅ 接入前本机实跑（四端生产产物 + 隔离库 + 真后端）：**rc=0 · G1 23/23 ·
+        #   G3 23/23 · G4 68 通过 / 0 失败 / 63 不判**，163.1s。
+        "verify_grade_badges.py",
+    ),
+    # 🚨 **独立 job**（2026-10-29）：通知下拉面板**只有点开铃铛才挂载**，
+    #   而它要渲染角标/「全部已读」就必须有**未读数据**。`run_browser_job` 的种子在
+    #   **同一 job 内被所有探针共享** ⇒ 探针写库会污染后续探针（红点逻辑按 `unread==0` 判）。
+    #   ⇒ 给它一条只跑它一条、自己一份隔离库的 job，写库就没有副作用。
+    #   ⚠️ 代价：多一个 job = 多一次 pnpm install + 生产构建 + 起服务（≈ 一条 `browser-admin`）。
+    "browser-ncpanel": (
+        "verify_notification_panel.py",
     ),
 }
 
@@ -714,6 +760,9 @@ JOB_ENTRYPOINTS: dict[str, tuple[str, ...]] = {
     ),
     "browser-all": (
         "python evidence/run_browser_job.py --job browser-all",
+    ),
+    "browser-ncpanel": (
+        "python evidence/run_browser_job.py --job browser-ncpanel",
     ),
 }
 
@@ -850,7 +899,8 @@ CI_ELSEWHERE: dict[str, str] = {
         "⚠️ 本机**不能**跑 `pnpm build` 来验证这条接线（四端 dev server 正在跑，"
         "重建会毁掉它们的 `.next`）⇒ **首次 CI 运行即为它的端到端验证**。",
     "verify_typography.py":
-        "@job:frontend —— `ci.yml` 的 **`frontend` job**：`Install dependencies`"
+        "@job:frontend —— **源码层 / 产物层（静态档）**：`ci.yml` 的 **`frontend` job**："
+        "`Install dependencies`"
         "（pnpm ⇒ 有 `node_modules`）"
         "→ `Build (production)`（⇒ 有 `apps/*/.next`）→ 紧跟一步 "
         "`python3 ../evidence/verify_typography.py --source-only`（**断言 exit 0**）。"
@@ -866,7 +916,13 @@ CI_ELSEWHERE: dict[str, str] = {
         "而 `exit 0` ⇔ 0 缺陷 ⇒ 「断言 exit 0」与棘轮**等价且更强**（exit 2 也会红）。"
         "⚠️ 本机**不能**跑 `pnpm build` 验证这条接线（四端 dev server 正在跑，重建会毁掉它们的 `.next`）"
         "⇒ **首次 CI 运行即为它的端到端验证**（同 `verify_api_base_baked.py`）。"
-        "历史明细 `evidence/cn_fix_execution_2026-09-24.txt` + `_t2c_*.log`。",
+        "历史明细 `evidence/cn_fix_execution_2026-09-24.txt` + `_t2c_*.log`。"
+        "🚨 **2026-10-14 起还有第二处：渲染层由 `browser-all` 跑**（`@job:browser-all`，"
+        "见 `CI_JOB_PROBES` 的同名条目）—— 本 job 只跑 `--source-only`，"
+        "**渲染层 T3（行高地板）/ T3b（字号类落地）此前从未进过任何 job**。"
+        "⚠️ 两处**不是重复**：本 job 管 **PR 反馈回路**（快、无浏览器），"
+        "`browser-all` 管**渲染层**（真浏览器 + 真后端，仅主干 / 手动）。"
+        "⚠️ 判据 5 只读**第一个** `@job:`（= 这里的 `frontend`）⇒ 两处都登记在清单里，自洽。",
     # ── Phase 2（2026-09-24）：`browser-admin` job 的真判据 ──────────────────
     #   前提由 `evidence/run_browser_job.py` **备齐**（隔离 SQLite + 种子 + 后端 8001
     #   + admin 生产构建产物 @3002 + 轮询就绪），`ci.yml` 只写一行调用。
@@ -970,6 +1026,45 @@ CI_ELSEWHERE: dict[str, str] = {
         "CDP + 四端（含 im `/chat` `/cases` `/me` 的 expanded 档）。✅ rc=0（57.6s）。"
         "🚨 **首次真跑 rc=1**（B2a：im 在 1024/1440 **没有导航出口**）⇒ 正是待办 **#39**"
         "—— 此前只写在任务里，**那次让它有了硬性的 CI 后果**；#39 修完后转绿。",
+    # ── Phase 4（2026-10-13）：T4 **渲染级**对比度接入 `browser-all` ──
+    #   `verify_contrast.py` 的**静态层**（T0–T3）早已在 `evidence` job 跑
+    #   （`GATED_STATIC`，`--tokens-only`）；这一条接的是它的**渲染层 T4**
+    #   （无头 Chrome + 真后端 + 四端生产产物）。拍板见 `contrast-ruling-2026-10-13.md` §五。
+    #   ⚠️ 加进 `CI_JOB_PROBES` 会让它跑**全量**（T0–T3 再算一遍，秒级，可忽略）。
+    "verify_contrast.py":
+        "@job:browser-all —— **`browser-all` job**：T4 渲染级对比度（WCAG 1.4.3，**按字号取门槛**），"
+        "CDP + 真后端 + 四端产物。2026-10-13 接入（此前**只在手动跑** ⇒ 修完没人守）。"
+        "✅ 扩面后 64 组 / 0 条（`evidence/contrast_render_2026-10-13_r6.txt`；"
+        "32 组的最后一版是 `..._r5.txt`）。"
+        "⚠️ 它比其余探针慢（≈5 min）⇒ `run_browser_job.JOB_SPECS` 里给了**单独 900s 超时**。",
+    # ── 2026-10-29：`verify_grade_badges.py` 的**渲染半边** ──────────────────────
+    #   它的**源码层 G2** 早在 `GATED`（`StaticGate`，`--source-only`，由 `frontend` job 跑）；
+    #   这一条接的是 **G1（底色）/ G3（字母通道）/ G4（文字色由变体决定）** —— 四端 26 页，
+    #   要无头 Chrome + 真后端 + 四端生产产物。
+    #   🚨 起因：把 `Badge` 的 `verified`/`pending` 从 `-600` 提到 `-700`（令牌档位专项裁定），
+    #   而**改的正是 G4 要核对的令牌** —— 不把 G4 接进来，就等于改了个没人看的东西。
+    #   ✅ 接入前本机实跑验收：rc=0 · G1 23/23 · G3 23/23 · G4 68 通过 / 0 失败 / 63 不判（163.1s）。
+    #   ⚠️ 同一文件在 `frontend` job 跑 `--source-only`，本 job 跑**无参** ⇒ 两处都留（同
+    #   `verify_typography.py` / `verify_contrast.py` 的处境）。
+    "verify_grade_badges.py":
+        "@job:browser-all —— **`browser-all` job**：G1 徽章底色符 §2.4（`/15` 叠层）/ "
+        "G3 等级字母通道 / G4 徽章文字色由变体决定，四端 **26 页**、131 个 Badge / 23 个等级徽章。"
+        "2026-10-29 接入（此前**从没进过任何 job** ⇒ 与 `verify_typography.py` 在 10-14 之前同形）。"
+        "✅ 接入前验收：G1 23/23 · G3 23/23 · G4 68 通过 / 0 失败 / 63 不判。"
+        "⚠️ 本机 163.1s ⇒ `JOB_SPECS` 给了**单独 600s 超时**。"
+        "⚠️ `im /cases/@first-case` 会报一条 **ENV**（占位符解析失败），**不算缺陷**。",
+    # ── 2026-10-29：通知下拉面板（P1–P5）────────────────────────────────────────
+    #   面板 `{open && !isMobile && …}` **默认关闭** ⇒ T4「开页面量 DOM」不点铃铛
+    #   ⇒ 未读角标 /「全部已读」/「查看全部通知」三处**结构上量不到**。
+    #   🚨 **为什么给它独立 job**：它必须**自己往库里造未读数据**（否则面板是空态、
+    #   那两处不渲染 ⇒ 判出「0 缺陷」是假的绿），而 `run_browser_job` 的种子在同一 job 内
+    #   被所有探针共享 ⇒ 写库会污染后续探针。独立 job = 独立库 ⇒ 副作用归零。
+    "verify_notification_panel.py":
+        "@job:browser-ncpanel —— **`browser-ncpanel` job**：P1 面板挂载 / P2 三处强调文本"
+        "**都渲染**（拦「空态假绿」）/ P3 文字色 == 角色令牌 `--link`（页面现读，不写死 hex）/ "
+        "P4 面板打开态整页 `judge_render` / P5 `--brand-700` 漏改指纹 = 0。"
+        "浅色 + 深色两档，1280 视口，桌面面板。2026-10-29 新增。"
+        "⚠️ 它**会往库里写 3 条未读通知**（幂等：先按 title 删再插）⇒ 绝不能放进共享种子的 job。",
 }
 
 # ---------------------------------------------------------------------------
@@ -1035,6 +1130,9 @@ NON_GATE_SCRIPTS: dict[str, str] = {
     "run_ci_probes.py": "运行器本身",
     "cdp.py": "**库**：CDP 极简客户端（不依赖 playwright，直连本机 Chromium）—— 被 `mobile_preview` / `im_login_test` / `visual_baseline` 复用",
     "envprobe.py": "**库**：环境探测（HTTP + 种子规模指纹）—— 被 `verify_render_e2e` / `visual_baseline` 复用（`NO_PROXY` 那个坑要两处一致，故抽成单点）",
+    "approutes.py": "**库**：前端路由前缀（`basePath`）与端口的**唯一真源** —— 被 `run_browser_job` 与 16 条门禁探针复用。"
+                    "⚠️ 它**刻意只依赖标准库**（不拖 `cdp` → `websockets`），否则会破坏 `run_browser_job --self-test` 的轻量性。"
+                    "它**不是**门禁：一致性由 `verify_base_path_consistency.py` 判（2026-10-01 `basePath` 事故后新增）。",
     "report_spec_coverage.py": "**报表**：规范覆盖率矩阵。**故意不叫 `verify_*`** —— 它不是门禁，不该被卷进判据 0",
     "visual_baseline.py": "**工具**：像素级视觉基线回归（真浏览器 + 必须同一数据集 **且同一服务模式** `dev`/`prod` ⇒ **只能手工跑**，进不了 CI）",
     "mobile_preview.py": "**工具**：手机视口截图（真浏览器）",
@@ -1735,6 +1833,9 @@ def run_self_test() -> int:
             "  browser-all:\n"
             "    steps:\n"
             "      - run: python evidence/run_browser_job.py --job browser-all\n"
+            "  browser-ncpanel:\n"
+            "    steps:\n"
+            "      - run: python evidence/run_browser_job.py --job browser-ncpanel\n"
         )
         _ci_tmp_dir = pathlib.Path(tempfile.mkdtemp(prefix="ci-probe-selftest-"))
         _tmp_ci = _ci_tmp_dir / "ci.yml"
@@ -1871,28 +1972,79 @@ class StaticGate(NamedTuple):
 STATIC_GATES: dict[str, StaticGate] = {
     # 探针: (开关, rc 上限, 条数上限, 计数口径, 测量说明) —— 全部 **2026-09-22 实测**
     "verify_buttons.py": StaticGate(
-        "--source-only", 1, 10, "declared",
-        "**10 条**（`<button>` 硬编码 `h-8`/`h-9` 绕过 `Button` ⇒ 移动端不足 §6.1 的 48px；"
-        "带 `min-h-tap` 补偿的**已正确排除**）。欠账 #32。"),
+        "--source-only", 0, 0, "declared",
+        "**0 条（已归零）**。历史：09-22 冻结 10 · 09-27 实测 11（欠账悄悄变大）· 10-10 第 21 项把 6 处"
+        "「刷新」收敛为 `outline` ⇒ 11 → 5，余 5 处待拍板。**2026-10-11** 按裁定材料"
+        "`deliverables/ui-design/button-bypass-rulings-2026-10-10.md` 收口余下 5 处："
+        "① `im/chat` 案件 + `web/qa` 依据 → `Button variant=\"outline\" size=\"sm\"`（Q1=sm）；"
+        "② `im/chat` 发送 + `web/qa` 发送/生成中 → `Button`（Q2=B2，改用 `primary`；"
+        "⚠️ 裁定材料原写「深色对比 < 4.5:1」，实测 `#3A63B0` 上白字 **5.85:1** ⇒ 该代价被高估，B2 可接受）；"
+        "③ `web/qa` 重新生成 → `Button` **新增 `danger-outline` 变体**（Q3=C1，动共享包）。"
+        "⇒ **5 → 0**。棘轮收紧到 0（只拦增长）。**2026-10-11 实测**。"),
     "verify_design_tokens.py": StaticGate(
         "--source-only", 0, 0, "cross",
         "**0 条（绿）**。⚠️ 修 `rglob` 剪枝前要 **160s** ⇒ 曾被当挂死；"
         "改 `os.walk` + `dirnames[:]` 后 1.3s，输出**逐字节不变**（对照组文件集 116==116）。"),
     "verify_focus_ring.py": StaticGate(
-        "--source-only", 1, 3, "declared",
-        "**3 条**（F3 环宽 `ring-2`=2px ≠ 规范 3px ×48 处、F4 环色 5 种不统一、"
-        "F5 令牌 `shadow-focus` **0 调用点**）。欠账 #31。"),
+        "--source-only", 0, 0, "declared",
+        "**0 条（绿）** —— 第 20 项：48 处 `focus*:ring-2 ring-brand-500/{20,25,30,40}`"
+        "（2px、4 种透明度）全部收敛为规范令牌 `focus*:shadow-focus`（`0 0 0 3px "
+        "var(--focus-ring)` = `--brand-500` @ 22%）；顺带清掉 2 处随 `ring-*` 一起失效的"
+        "`ring-offset-*` 死类。🚨 修完暴露**两个门禁自身缺口**，均已修："
+        "① F5 的正则要求 `shadow-focus` 前后是空白/引号 ⇒ **认不出 `focus:shadow-focus`**，"
+        "按规范改完仍报「调用点 0 处」；② `cov` 只数 `focus:ring-*` ⇒ 全站改用令牌后"
+        "`cov==0` ⇒ `summary_exit` 判 **exit 2「覆盖率 0/环境问题」**，把合规报成没测成。"
+        "⚠️ **渲染层 F6+ 未在本机跑**（需浏览器 job）。**2026-09-27 实测**。"),
     "verify_font_scale.py": StaticGate(
-        "--source-only", 1, 6, "declared",
-        "**6 条**（聚 1 条根因）+ 18 条 T4 提示（**只报不判**，供拍板）。"),
+        "--source-only", 0, 0, "declared",
+        "**0 条（绿）** —— 第 23 项把 `packages/ui` 的 6 处 `text-[10px]` 收进 `text-caption`（11px）后清零。"
+        "🚨 该探针**原先只在有缺陷时**才打印 `缺陷 N 条` ⇒ 清零后 `declared` 棘轮取不到数、"
+        "会被判红「取不到条数」（**坑 50 同形**）⇒ 已改为**无条件**打印 `── 源码层：缺陷 N 条 ──`。"
+        "另有 16 条 T4/T2-T3 **提示**（只报不判，供拍板：`text-[11px]` 字面值、"
+        "`text-[40px]`/`text-[28px]` 不在 17 档）。**2026-09-27 实测**。"),
     "verify_grade_badges.py": StaticGate(
-        "--source-only", 1, 5, "cross",
-        "**5 条**（4 个等级映射不符 §2.4，其中 `brand`/`ink` 两个变体**组件层根本不存在**；"
-        "+ G2 六份 `GRADE_TONE` 重复来源）。⚠️ 该探针**不自报** `缺陷 N 条` ⇒ 只能数 `✗`。欠账 #33。"),
+        "--source-only", 0, 0, "cross",
+        "**0 条（绿）** —— 第 22 项：`GRADE_TONE` 由 6 份收归 `packages/ui/src/lib/gradeTone.ts` **1 份**，"
+        "映射改为 §2.4 规范色（S→`gold` / A→`danger` / B→`brand` / C→`ink`；后两者是**新增变体**，"
+        "原先组件层不存在）。⚠️ 该探针**不自报** `缺陷 N 条` ⇒ 只能数行首红叉。"
+        "✅ **渲染层 G1/G3/G4 自 2026-10-29 起接入 `browser-all`**（此前**从没进过任何 job**，"
+        "与 `verify_typography.py` 在 10-14 之前的处境同形）；本值仍只覆盖**源码层**。"
+        "接入前本机实跑验收：**rc=0 · G1 23/23 · G3 23/23 · G4 68 通过 / 0 失败 / 63 不判**，163.1s。"
+        "**2026-09-27 实测**（源码层）· **2026-10-29 实测**（渲染层）。"),
     "verify_contrast.py": StaticGate(
         "--tokens-only", 0, 0, "cross",
-        "**0 条（绿）**。唯一发现是规范表 5 条对比度**近似值**，"
-        "探针自己标「不是产品缺陷」（属规范侧改数）。"),
+        "**0 条（绿）**。2026-10-13 现状：T1a 核对 **9/9 行** · **T1b 核对 16 个角色令牌** · "
+        "T2 4 对 · T3 3 对全过；规范表声明值经 §9.5 改数后**全部落在 `DOC_TOL` 内**"
+        "（此前那 5 条「规范表对比度近似值」的文档问题已消失）。"
+        "🚨 **T1b 是 2026-10-13 新增**：`--text-*` 必须命中**同档**调色板档、`--link*` 命中**任一档**"
+        "—— 起因是 B 类根治改 `--ink-500` 时，与它**同值**的 `--text-muted` 没跟着改，"
+        "而角色令牌在规范表里**没有行** ⇒ 此前**不受任何判据约束**（只被 T4 扩面捞出来）。"
+        "⚠️ 本档只覆盖**静态层 T0–T3**；**渲染层 T4** 自 2026-10-13 起接入 `browser-all` "
+        "（见 `CI_ELSEWHERE` 的同名条目）—— 两档不是同一件事，别把这里的绿读成 T4 的绿。"),
+    "verify_base_path_consistency.py": StaticGate(
+        "--source-only", 0, 0, "declared",
+        "**0 条（绿）** —— 2026-10-10 新增。起因：`apps/{lawyer,admin,im}/next.config.js` "
+        "自 **2026-10-01** 起配了 `basePath`，而编排器就绪探针与 15 条门禁探针**全都按无前缀写** "
+        "⇒ `browser-all` / `browser-admin` 自那时起**必然 exit 2**，且**静默 9 天**"
+        "（本仓**非 git 仓库** ⇒ `ci.yml` 永不触发；两个 job 又只在 main / 手动跑）。"
+        "**C1**：四端 `next.config.js` 的 `basePath` ↔ `approutes.APP_BASE_PATH` 逐端一致；"
+        "**C2**：`evidence/verify_*.py` 不得手拼「端口 + 路径」的前端 URL（必须走 `approutes`）。"
+        "⚠️ 两条都**只能证伪**（C1 证不了前缀本身对；C2 拦写法不拦行为）。**2026-10-10 实测**。"),
+    "verify_ink400_body.py": StaticGate(
+        "--source-only", 0, 0, "declared",
+        "**0 条（绿）** —— 2026-10-13 新增，补「`--ink-400` 禁用于正文」的**源码级**地板。"
+        "起因：对比度专项（`contrast-ruling-2026-10-13.md`）手工清掉 65 处「`ink-400` 当正文用」，"
+        "但**没有任何判据拦新写的**；渲染级 T4 每端只测 4 页 ⇒ 覆盖不到 `apps` 的其余页面。"
+        "**R1** 同串「字号令牌 + 裸 `text-ink-400`」· **R2** `text-ink-400` 包**文字**"
+        "（非纯符号、**排除自闭合标签**）· **R3**（2026-10-29 补）同一 `cn()` 调用的**不同实参**"
+        "里分别出现字号令牌与裸 `text-ink-400` ⇒ 均为 **0**。字号档**现读** `cn.ts` 的 "
+        "`FONT_SIZE_TOKENS`（不硬编码 —— 项目加档时不会静默失明）。"
+        "⚠️ 规范明文允许的 `placeholder:` / 图标 / `—` / `aria-hidden` / 未激活态**一律不判**。"
+        "⚠️ 只**证伪**：拦写法不拦行为（变量拼接 / 动态 className 判不出）。**2026-10-13 实测**。"
+        "🚨 **R3 的起因**：`cn()` 的全部实参**合并**才是一个 className，而 R1 按**单个字面量**"
+        "切分 ⇒ `cn(\"text-caption\", \"text-ink-400\")` 这种写法 R1、R2 **双双失明**"
+        "（实测 `lawyer/cases/[id]` 时间轴 11px 文字压白底 2.55:1，靠渲染级 T4 才抓到）。"
+        "⇒ 判据的切分单位必须等于**产物**的单位。**2026-10-29 实测**。"),
 }
 
 # ---------------------------------------------------------------------------
@@ -1978,18 +2130,31 @@ def judge_ratchet(g: StaticGate, rc: int, stdout: str) -> tuple[list[str], list[
 #       R8/R9 要 `cross` 口径的（`grade_badges`）—— 否则臂本身测不到想测的分支。
 # ---------------------------------------------------------------------------
 RATCHET_SELFTEST: tuple[tuple[str, str, str, int, str, bool], ...] = (
-    ("R1", "条数 == 冻结 ⇒ 通过（不报问题）", "verify_buttons.py", 1, "缺陷 10 条\n", False),
-    ("R2", "条数 > 冻结 ⇒ **必须红**（棘轮的本职）", "verify_buttons.py", 1, "缺陷 11 条\n", True),
-    ("R3", "条数 < 冻结 ⇒ 不红，只提示「可收紧」", "verify_buttons.py", 1, "缺陷 9 条\n", False),
+    # ⚠️ R1–R3 的夹具**绑在 `verify_buttons` 的 `count_max` 上**。冻结值沿革：
+    #    10（09-22）→ 5（10-10）→ **0（10-11，第 21 项余下 5 处已收口）**。
+    #    ⇒ 三档必须整体跟着冻结值走，否则 R1（==）与 R3（<）**同时假红**
+    #    （实测：只改冻结值不改夹具 ⇒ 自检报「运行器坏了」）。**改冻结值时必须同步这三行。**
+    # ⚠️ 冻结值到 0 后「`<` 档」**不存在**（条数不可能为负）⇒ R3 改为「== 0 ⇒ 无提示」
+    #    （与 R8/R9 在 0/0 冻结下的处理同款）。**别再去找 `缺陷 -1 条` 的夹具。**
+    # ⚠️ **rc 必须给 0**（冻结 `rc_max` 已由 1 收紧到 **0**）：R8/R9 踩过同一个坑 ——
+    #    rc 留 1 会让「rc 涨了」这条**先触发**，臂测到的就不是「条数」这一维（实测 R1/R3 假红）。
+    ("R1", "条数 == 冻结(0) ⇒ 通过（不报问题）", "verify_buttons.py", 0, "缺陷 0 条\n", False),
+    ("R2", "条数 > 冻结(0) ⇒ **必须红**（棘轮的本职）", "verify_buttons.py", 0, "缺陷 1 条\n", True),
+    ("R3", "条数 == 冻结(0) ⇒ 无「可收紧」提示（冻结 0 时无更小档）", "verify_buttons.py", 0,
+     "缺陷 0 条\n", False),
     ("R4", "**取不到条数** ⇒ **必须红**（这就是防假绿的那一臂）", "verify_buttons.py", 1,
      "输出格式整个换掉了，一个数字都没有\n", True),
     ("R5", "rc 涨了（0→1）⇒ **必须红**", "verify_design_tokens.py", 1, "", True),
     ("R6", "rc=2（环境问题）⇒ **不红**，但也不给结论", "verify_buttons.py", 2, "", False),
     ("R7", "rc=124（超时）⇒ **必须红**（超时当失败）", "verify_buttons.py", 124, "", True),
-    ("R8", "`cross` 口径：`✗` 行数涨了 ⇒ **必须红**", "verify_grade_badges.py", 1,
+    # ⚠️ R8/R9 的夹具**同时绑着 `grade_badges` 的 `rc_max` 与 `count_max`**（2026-09-27
+    #    两者都由 1/5 收紧到 **0/0**）：rc 必须给 0，否则「rc 涨了」这条**会先触发**，
+    #    于是臂测到的不是「条数」这一维（实测：rc 留 1 ⇒ R9 假红）。
+    #    ⇒ 两臂的 rc 都给 0，**只让条数变化**；**改冻结值时必须同步这两行**。
+    ("R8", "`cross` 口径：`✗` 行数涨了 ⇒ **必须红**", "verify_grade_badges.py", 0,
      "✗ a\n✗ b\n✗ c\n✗ d\n✗ e\n✗ f\n", True),
-    ("R9", "`cross` 口径：`✗` 行数未涨 ⇒ 通过", "verify_grade_badges.py", 1,
-     "✗ a\n✗ b\n✗ c\n✗ d\n✗ e\n", False),
+    ("R9", "`cross` 口径：`✗` 行数未涨 ⇒ 通过", "verify_grade_badges.py", 0,
+     "全部通过，没有红叉\n", False),
 )
 
 

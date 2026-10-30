@@ -121,6 +121,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port, base_path_of_base, strip_prefix  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 ROOT = HERE.parents[0]
@@ -1016,13 +1017,23 @@ def run_static(verbose: bool = True) -> tuple[list[str], list[str], int, list[st
     return problems, notes, judged, env
 
 
-FIRST_CASE_JS = r"""(() => {
-  const a = document.querySelector('a[href^="/cases/"]');
+_FIRST_CASE_TPL = r"""(() => {
+  const a = document.querySelector('a[href^="{BP}/cases/"]');
   if (a) return { href: a.getAttribute('href') };
   const tr = document.querySelector('tbody tr') || document.querySelector('[role="row"]');
   if (tr) { tr.click(); return { clicked: true }; }
   return {};
 })()"""
+
+
+def first_case_js(bp: str = "") -> str:
+    """把该端的 `basePath` 注入选择器（`bp=""` ⇒ 与改动前**逐字等价**）。
+
+    🚨 选择器**必须带前缀**：`basePath` 落地后 `next/link` 渲染出的 `href` 是
+    `/admin/cases/<id>`，裸 `a[href^="/cases/"]` **一个都匹配不到** ⇒ 探针把
+    「页面其实好好的」报成「取不到案件详情路径」（2026-10-10 实测）。
+    """
+    return _FIRST_CASE_TPL.replace("{BP}", bp)
 
 
 async def resolve_path(b: Browser, base: str, path: str) -> str:
@@ -1039,9 +1050,10 @@ async def resolve_path(b: Browser, base: str, path: str) -> str:
     """
     if "@first-case" not in path:
         return path
+    bp = base_path_of_base(base)
     await b.goto(f"{base}/cases", wait=1.6)
     await b.settle(extra=1.0)
-    r = await b.cdp.evaluate(FIRST_CASE_JS) or {}
+    r = await b.cdp.evaluate(first_case_js(bp)) or {}
     href = r.get("href")
     if not href and r.get("clicked"):
         # ⚠️ 这里**不能**用 `settle()`：客户端路由跳转（`router.push`）不产生导航请求，
@@ -1049,12 +1061,16 @@ async def resolve_path(b: Browser, base: str, path: str) -> str:
         # ⇒ 显式轮询，最多 6 秒。
         for _ in range(12):
             await asyncio.sleep(0.5)
-            href = await b.cdp.evaluate("location.pathname")
-            if href and href.startswith("/cases/") and href != "/cases":
+            raw = await b.cdp.evaluate("location.pathname")
+            # ⚠️ `location.pathname` **带** `basePath`（`/lawyer/cases/1`）⇒ 先剥再判；
+            #    不剥会永远判不中、白等满 6 秒（2026-10-10 同族实测）。
+            if raw and strip_prefix(bp, raw).startswith("/cases/"):
+                href = raw
                 break
-    if not href or not href.startswith("/cases/") or href == "/cases":
+    inner = strip_prefix(bp, href) if href else ""
+    if not inner.startswith("/cases/") or inner == "/cases":
         raise RuntimeError(f"{base}/cases 上取不到案件详情路径（动态路由测不到）")
-    return path.replace("@first-case", href.rsplit("/", 1)[-1])
+    return path.replace("@first-case", inner.rsplit("/", 1)[-1])
 
 
 async def run_render(only: str | None, sizes: dict[str, float],
@@ -1073,7 +1089,7 @@ async def run_render(only: str | None, sizes: dict[str, float],
     for app, cfg in APPS.items():
         if only and app != only:
             continue
-        base = f"http://localhost:{cfg['port']}"
+        base = base_for_port(cfg["port"])
         async with Browser(headless=True, width=1280, height=900) as b:
             try:
                 await b.cdp.send("Network.clearBrowserCookies")
@@ -1162,7 +1178,7 @@ async def dump(only: str | None) -> int:
     for app, cfg in APPS.items():
         if only and app != only:
             continue
-        base = f"http://localhost:{cfg['port']}"
+        base = base_for_port(cfg["port"])
         async with Browser(headless=True, width=1280, height=900) as b:
             try:
                 await b.cdp.send("Network.clearBrowserCookies")
@@ -1244,7 +1260,7 @@ async def why(app: str, path: str | None, needle: str) -> int:
         print(f"[env] 未知端 `{app}`（可选：{'/'.join(APPS)}）")
         return 2
     cfg = APPS[app]
-    base = f"http://localhost:{cfg['port']}"
+    base = base_for_port(cfg["port"])
     path = path or cfg["pages"][0]
     async with Browser(headless=True, width=1280, height=900) as b:
         try:

@@ -369,7 +369,7 @@ export default function AdminBillingPage() {
         )}
       </div>
 
-      <p className="-mt-3 text-caption text-ink-400">
+      <p className="-mt-3 text-caption text-ink-600">
         「工单金额合计」是后端对<strong>全部</strong>工单的统计（不受状态筛选影响）；
         「当前筛选金额」是本页对已筛出 {orders.length} 条工单求和，两者口径不同。
       </p>
@@ -430,7 +430,7 @@ export default function AdminBillingPage() {
                 </div>
                 <p className="num mt-2 text-caption text-ink-500">
                   已用 {q.used} / {q.limit}
-                  <span className="ml-2 text-ink-400">剩余 {q.remaining}</span>
+                  <span className="ml-2 text-ink-600">剩余 {q.remaining}</span>
                 </p>
               </div>
             ))}
@@ -459,7 +459,7 @@ export default function AdminBillingPage() {
               onChange={(e) => setPeriod(e.target.value)}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">当期（本月）</option>
@@ -479,7 +479,7 @@ export default function AdminBillingPage() {
               onChange={(e) => setStatus(e.target.value)}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">全部状态</option>
@@ -491,7 +491,7 @@ export default function AdminBillingPage() {
             </select>
           </FilterBar>
 
-          <p className="mt-2 text-caption text-ink-400">
+          <p className="mt-2 text-caption text-ink-600">
             后端 <code>GET /billing/work-orders</code> 返回全量裸数组（无分页），
             仅 <code>status</code> 为服务端参数；工单无时间字段对外暴露，故不显示时间。
           </p>
@@ -574,7 +574,7 @@ export default function AdminBillingPage() {
               )}
             </div>
 
-            <p className="flex items-start gap-1.5 text-caption text-ink-400">
+            <p className="flex items-start gap-1.5 text-caption text-ink-600">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               后端未提供工单详情端点，以上信息均来自列表行（
               <code>WorkOrderOut</code>），因此不包含创建/完成时间。

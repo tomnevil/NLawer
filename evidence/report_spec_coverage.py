@@ -269,6 +269,36 @@ EXCLUDE_RULES: tuple[tuple[str, str], ...] = (
     # **不是「要求什么」** —— B2a 的要求本身在 `verify_breakpoints.py` 的 docstring 里。
     ("deliverables/ui-design/im-cases-nav-exit-audit.md",
      "导航出口**裁定 + 落地记录**（要求身份在 `verify_breakpoints.py` 的 B2a）"),
+    # 2026-10-13：对比度专项的**裁定 + 施工记录**。同上一行的先例 ——
+    # 「要求什么」在 `verify_contrast.py` 的 T4（渲染级）与 `design-spec.md` §2.1 的用途列，
+    # 本文件是**决策留痕 + 施工记录**，不是新的要求来源。
+    ("deliverables/ui-design/contrast-ruling-2026-10-13.md",
+     "对比度专项**裁定 + 施工记录**（要求身份在 `verify_contrast.py` 的 T4）"),
+    # 2026-10-29：令牌档位专项的**裁定 + 施工记录**（已定稿，用户以 `cont` 采纳 ①A+②A）。
+    # 同 `contrast-ruling-2026-10-13.md` 的先例 ——「要求什么」在 `design-spec.md` §2.1/§2.3
+    # 与 `verify_contrast.py` 的 T4；本文件是**决策留痕 + 施工记录**，不是新的要求来源。
+    # ⚠️ 它**不是**未定稿草案，所以排除理由**不是**「草案不进分母」而是「记录族」。
+    ("deliverables/ui-design/ruling-token-tier-2026-10-29.md",
+     "令牌档位**裁定 + 施工记录**（要求身份在 `design-spec.md` §2.1/§2.3 与 `verify_contrast.py` 的 T4）"),
+    # 2026-10-29：Q14 扫盘逮到的 3 份未分类（**此前就在**，不是本轮新建；只是本轮第一次跑
+    # `run_ci_probes.run_all()` 才被看见 —— 平时只跑 `--self-test` 不会碰 Q14）。
+    # 三份都是「裁定材料 / 诊断记录」，要求身份都在别处 ⇒ 同 `contrast-ruling-*` 先例走记录族。
+    # ⚠️ 若任一份将来转成规范形态（例如 cjk-gap 选了「B 升门禁为判」并写进 design-spec），
+    #    **必须改判**并移入 `SPEC_FILES`。
+    ("deliverables/product-strategy/ruling-p2-pending-2026-10-17.md",
+     "P2 待拍板项**收口状态裁定**（要求身份在 `roadmap-update-pending-rulings-2026-09-22.md` "
+     "与 `design-audit.md` §16(12)）"),
+    ("deliverables/ui-design/ruling-cjk-gap-2026-10-17.md",
+     "`cjk-gap` **裁定材料**（钩子值的要求身份在 `design-spec.md` §3.3、判据在 "
+     "`verify_typography.py` 的 T4；覆盖率一项**只报不判**是既定裁定）"),
+    ("deliverables/ui-design/ci-browser-job-exit2-diagnosis-2026-10-29.md",
+     "CI `exit 2` **根因定论记录**（自陈「不是产品缺陷」，记的是 `basePath` 排查与复现脚本）"),
+    # 2026-10-30：非文本对比度专项。当日已定稿并施工（用户以 `cont` 采纳 ①A/②A/③A/④A）⇒
+    # 改判为「**裁定 + 施工记录**」（同 `contrast-ruling-*` 先例）——「要求什么」在
+    # `design-spec.md` 的 DataTable 功能行与本材料 §3 的数字；本文件是决策留痕，不是新的要求来源。
+    # ⚠️ 仅 §6-⑤（要不要建非文本判据）仍待拍板。
+    ("deliverables/ui-design/ruling-nontext-contrast-2026-10-30.md",
+     "非文本对比度**裁定 + 施工记录**（同日定稿；判据方向 §6-⑤ 待拍板）"),
     ("docs/", "运维文档"),
 )
 

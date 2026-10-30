@@ -69,6 +69,7 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 SAFE_ON = {"top": 47, "bottom": 34, "left": 0, "right": 0}
@@ -208,7 +209,7 @@ async def login(b: Browser, base: str, username: str) -> bool:
 
 async def measure_app(app: str, spec: dict) -> tuple[dict, dict] | None:
     """返回 (off 臂, on 臂) 两次测量；失败返回 None（环境问题）。"""
-    base = f"http://localhost:{spec['port']}"
+    base = base_for_port(spec["port"])
     sel = json.dumps(spec["content"]) if spec["content"] else json.dumps("__none__")
 
     async with Browser(headless=True, width=390, height=844, device_scale_factor=3) as b:

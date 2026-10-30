@@ -16,10 +16,12 @@ export interface ProvenanceBadgeProps {
   className?: string;
 }
 
+// 🚨 文字档按「叠在 `/15` 染色底上能否过 AA(4.5)」逐色算：verified/pending 的 `-600`
+//    只有 4.49 / 4.16 ⇒ 取 `-700`（5.91 / 5.93）；ai 的 `-600` 有 5.24 ⇒ 保持。
 const stateStyles: Record<ProvenanceState, string> = {
   ai: "bg-ai-500/15 text-ai-600 border-ai-500/30",
-  verified: "bg-verified-500/15 text-verified-600 border-verified-500/30",
-  pending: "bg-pending-500/15 text-pending-600 border-pending-500/30",
+  verified: "bg-verified-500/15 text-verified-700 border-verified-500/30",
+  pending: "bg-pending-500/15 text-pending-700 border-pending-500/30",
 };
 
 const sizeStyles: Record<string, string> = {
@@ -74,7 +76,7 @@ export const ProvenanceBadge: React.FC<ProvenanceBadgeProps> = ({
     stateStyles[state],
     sizeStyles[size],
     clickable &&
-      "cursor-pointer transition-colors duration-fast hover:brightness-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30",
+      "cursor-pointer transition-colors duration-fast hover:brightness-[0.97] focus-visible:outline-none focus-visible:shadow-focus",
     className
   );
 

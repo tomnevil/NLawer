@@ -134,13 +134,13 @@ export default function ImCaseDetailPage() {
               {caseStatusLabel(info.status)}
             </Badge>
             {info.grade && <Badge variant={GRADE_TONE[info.grade] ?? "neutral"}>等级 {info.grade}</Badge>}
-            <span className="num text-caption text-ink-400">{info.case_no}</span>
+            <span className="num text-caption text-ink-600">{info.case_no}</span>
           </div>
         </header>
 
         {/* ─────────────────────── 案件概要 ─────────────────────── */}
         <section className="mt-4 rounded-r3 border border-line bg-surface p-4">
-          <h2 className="text-caption font-medium uppercase tracking-wider text-ink-400">案件概要</h2>
+          <h2 className="text-caption font-medium uppercase tracking-wider text-ink-600">案件概要</h2>
           <dl className="mt-2 divide-y divide-line">
             <Row label="争议类型" value={info.dispute_type || "—"} />
             <Row label="标的额" value={fmtAmount(info.claim_amount)} mono />
@@ -160,7 +160,7 @@ export default function ImCaseDetailPage() {
         {/* ─────────────────────── 争议焦点 ─────────────────────── */}
         {info.focus && (
           <section className="mt-3 rounded-r3 border border-line bg-surface-subtle p-4">
-            <h2 className="text-caption font-medium uppercase tracking-wider text-ink-400">争议焦点</h2>
+            <h2 className="text-caption font-medium uppercase tracking-wider text-ink-600">争议焦点</h2>
             <p className="mt-1.5 text-body-sm text-ink-800">{info.focus}</p>
           </section>
         )}
@@ -213,7 +213,7 @@ export default function ImCaseDetailPage() {
                       >
                         {c.item}
                       </span>
-                      <span className="mt-0.5 block text-caption text-ink-400">
+                      <span className="mt-0.5 block text-caption text-ink-600">
                         {c.category}
                         {c.description ? ` · ${c.description}` : ""}
                       </span>
@@ -227,7 +227,7 @@ export default function ImCaseDetailPage() {
           {/* 已上传材料：与清单分开，因为「有清单」和「有文件」是两件事 */}
           {evidence.length > 0 && (
             <>
-              <h3 className="mt-4 px-0.5 text-caption font-medium uppercase tracking-wider text-ink-400">
+              <h3 className="mt-4 px-0.5 text-caption font-medium uppercase tracking-wider text-ink-600">
                 已上传材料（{evidence.length}）
               </h3>
               <ul className="mt-2 space-y-1.5">
@@ -238,7 +238,7 @@ export default function ImCaseDetailPage() {
                   >
                     <FileText className="h-4 w-4 shrink-0 text-ink-400" />
                     <span className="min-w-0 flex-1 truncate text-body-sm text-ink-700">{e.name}</span>
-                    <span className="shrink-0 text-caption text-ink-400">{e.category}</span>
+                    <span className="shrink-0 text-caption text-ink-600">{e.category}</span>
                   </li>
                 ))}
               </ul>

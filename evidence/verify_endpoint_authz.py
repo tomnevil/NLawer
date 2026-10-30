@@ -119,6 +119,11 @@ GATE_BASELINE: frozenset[str] = frozenset({
     "GET /api/v1/evidence/cases/{case_id}/missing",
     "GET /api/v1/evidence/cases/{case_id}/rounds",
     "GET /api/v1/evidence/cases/{case_id}/timeline",
+    # ↓ 2026-10-11 登记两条**已挂门控**的新写端点（门禁提示要求补登，防将来被摘掉无人发现）：
+    #   · decision = 团队可见授权审批（`case:assign`）
+    #   · dispatch = 派单（`case:assign`）
+    "POST /api/v1/cases/access-requests/{grant_id}/decision",
+    "POST /api/v1/cases/{case_id}/dispatch",
 })
 
 WRITE_VERBS = ("post", "put", "patch", "delete")

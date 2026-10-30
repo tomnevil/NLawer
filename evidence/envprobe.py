@@ -16,8 +16,19 @@ import json
 import os
 import pathlib
 import sqlite3
+import sys
 import urllib.request
 
+# 同目录模块。调用方（探针）通常已经 `sys.path.insert` 过 `evidence/`，
+# 这里再兜一次，保证本模块**单独被 import 时**也能解析。
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from approutes import app_url  # noqa: E402
+
+# 🚨 `ADMIN` 是 **CORS `Origin` 头**的值 ⇒ **只到端口、绝不含 `basePath`**：
+#    `Origin` 的语法是 `scheme://host[:port]`，**不含 path**；带上路径会让后端的
+#    CORS 白名单匹配不上 ⇒ 症状是「服务明明起着却跨源被拒」，而探针会把它读成**产品缺陷**。
+#    **页面导航**一律走 `app_url("admin", …)`。详见 `approutes` 的 docstring。
 ADMIN = "http://localhost:3002"
 BACKEND = "http://localhost:8001"
 
@@ -49,7 +60,7 @@ def http_get(url: str, timeout: float = 4.0) -> tuple[int, str]:
 def check_services() -> list[str]:
     """服务可达性。返回**问题列表**（空 = 都通）。"""
     problems: list[str] = []
-    for name, url in (("admin dev server (3002)", f"{ADMIN}/login"), ("backend (8001)", f"{BACKEND}/")):
+    for name, url in (("admin dev server (3002)", app_url("admin", "/login")), ("backend (8001)", f"{BACKEND}/")):
         try:
             st, _ = http_get(url)
             print(f"  [ ok ] {name}  HTTP {st}")

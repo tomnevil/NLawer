@@ -65,11 +65,12 @@ sys.path.insert(0, str(HERE.parents[0] / "backend"))
 # 🚨 **运行库定位抽到 `envprobe`**（2026-09-25）：本文件此前自带一份「按硬编码候选路径
 #    猜库」的实现 ⇒ 编排器用**隔离临时库**时必然猜错 ⇒ 造的数据进不了抽屉 ⇒ W4 rc=2。
 #    详见 `envprobe.resolve_live_db()` 的长注释。
+from approutes import app_base  # noqa: E402
 from envprobe import resolve_live_db  # noqa: E402
 
-WEB = "http://localhost:3000"
-LAWYER = "http://localhost:3001"
-ADMIN = "http://localhost:3002"
+WEB = app_base("web")
+LAWYER = app_base("lawyer")
+ADMIN = app_base("admin")
 API = "http://127.0.0.1:8001"
 
 WEB_USER, WEB_PWD = "ent_user", "Ent@12345"

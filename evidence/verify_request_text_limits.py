@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import ast
 import pathlib
+import re
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -176,6 +177,29 @@ def _model_files() -> list[pathlib.Path]:
     return list(dict.fromkeys(files))
 
 
+def _is_bounded(ann: str, val: str) -> bool:
+    """字段是否**取值/长度有界**。`val` 是 `Field(...)` 源码，`ann` 是类型注解源码。
+
+    🚨 **「有界」不等于「有 `max_length`」**（2026-10-11 修，判据自缺陷形状 ①）。
+
+    原判据只认 `max_length`（`if "max_length" in val`）⇒ 把**更强的约束**误报成无上限：
+    实测 `AccessRequestDecision.action`（`app/api/v1/cases.py:194`）写的是
+    `Field(..., pattern="^(approve|reject)$")` —— 白名单二选一，**比任何 `max_length` 都严**
+    （长度 ≤ 6 且取值受限），却被判成「新无上限自由文本 ⇒ 判红」。
+    这正是「只覆盖旧写法 ⇒ 改成新写法即反向误报」。
+
+    ⚠️ 只认「**上限类**」信号，与 `max_length` 语义**等价或更强**：
+    `min_length` 单独出现**不算**（只给下限不封顶，仍可传超长串）。
+    """
+    if "max_length" in val:
+        return True
+    if re.search(r"\bpattern\s*=", val):
+        return True
+    if "Literal[" in ann:
+        return True
+    return False
+
+
 def scan(models: set[str]) -> tuple[list[str], list[str], int, int]:
     """返回 (OPEN 字段, 全部请求体 str 字段, 模型数)。
 
@@ -201,12 +225,18 @@ def scan(models: set[str]) -> tuple[list[str], list[str], int, int]:
                 if not isinstance(st, ast.AnnAssign) or not isinstance(st.target, ast.Name):
                     continue
                 ann = ast.unparse(st.annotation)
-                if "str" not in ann:
+                # 🚨 2026-10-11 修：原判据只认注解里**含 `str`**（`if "str" not in ann`）
+                # ⇒ `Literal["ok","bad"]` 这种「str 子类型 + 取值域枚举」**整个被漏掉**，
+                # 于是它既不当 OPEN、也让自检 Q13 变成**常绿臂**（零判据：无论
+                # `_is_bounded` 怎么写都绿）。这正是「判据把自己算成证据」的形状。
+                # ⇒ 扫「str **或** Literal[」：Literal 是**有界**的（`_is_bounded` 会放行），
+                # 但它必须**进入扫描面**，否则「有界」这条判据永远碰不到它。
+                if "str" not in ann and "Literal[" not in ann:
                     continue
                 fid = f"{node.name}.{st.target.id}"
                 all_fields.append(fid)
                 val = ast.unparse(st.value) if st.value is not None else ""
-                if "max_length" in val:
+                if _is_bounded(ann, val):
                     continue
                 if (any(st.target.id.endswith(s) for s in CODE_SUFFIXES)
                         or st.target.id in CODE_EXACT):
@@ -270,6 +300,8 @@ def main() -> int:
 # 自检：**合成源码**，不读真实仓库 ⇒ 可进 CI 的 SELFTESTABLE。
 # ---------------------------------------------------------------------------
 SYN_SCHEMA = '''
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 class ComplaintCreate(BaseModel):
@@ -283,6 +315,15 @@ class NoteIn(BaseModel):
 
 class DocOut(BaseModel):
     title: str
+
+class DecisionIn(BaseModel):
+    # 🚨 判据自缺陷形状 ① 的反例（2026-10-11 补）：
+    # `pattern` 白名单 = 比 max_length **更强**的约束，不得被报成「无上限自由文本」。
+    action: str = Field(..., pattern="^(approve|reject)$")
+    # `Literal[...]` 注解 = 取值域枚举，同样有界。
+    verdict: Literal["ok", "bad"] = "ok"
+    # 对照臂：只给下限不封顶 ⇒ **仍应算 OPEN**（防「认了 min_length 就放行超长串」）。
+    comment: str = Field(..., min_length=3)
 '''
 
 #: 合成**端点**源码（自检 Q9/Q10 用）：一个真端点 + 一个内部辅助函数。
@@ -333,12 +374,12 @@ def run_self_test() -> int:
             (d / "y.py").write_text(SYN_API, encoding="utf-8")
             SCHEMAS = d
             API = d
-            open_f, all_f, n = scan({"ComplaintCreate", "NoteIn", "DocOut", "ApiOnlyIn"})
+            open_f, all_f, n = scan({"ComplaintCreate", "NoteIn", "DocOut", "ApiOnlyIn", "DecisionIn"})
             got_models = request_models()
     finally:
         SCHEMAS, API = saved, saved_api
 
-    check("Q1", "响应模型 `DocOut` 不收（类名以 Out 收尾）；其余 3 个都收", n, 3)
+    check("Q1", "响应模型 `DocOut` 不收（类名以 Out 收尾）；其余 4 个都收", n, 4)
     check("Q2", "有 `max_length` 的 `description` **不算** OPEN",
           "ComplaintCreate.description" in open_f, False)
     check("Q3", "代码型字段 `type` **不算** OPEN（防假红）",
@@ -357,13 +398,25 @@ def run_self_test() -> int:
           "NoteIn" in got_models, True)
     check("Q11", "🚨 定义在 `app/api/` 里的模型也要扫到（失真 ⑤：`scan()` 不能只扫 schemas）",
           "ApiOnlyIn.question" in open_f, True)
+    # —— 2026-10-11 新增：判据自缺陷形状 ①（只认 max_length ⇒ 把 pattern 误报）——
+    check("Q12", "🚨 `pattern=` 白名单是**更强**约束 ⇒ 不算 OPEN（否则反向误报）",
+          "DecisionIn.action" in open_f, False)
+    check("Q13", "`Literal[...]` 注解 = 取值域枚举 ⇒ 不算 OPEN",
+          "DecisionIn.verdict" in open_f, False)
+    check("Q14", "🚨 只给 `min_length` **不算有界**（只封下限，仍可传超长串）⇒ 仍算 OPEN",
+          "DecisionIn.comment" in open_f, True)
+    check("Q15", "`_is_bounded` 直测：`pattern` / `Literal` 为真、`min_length` 为假",
+          (_is_bounded("str", 'Field(..., pattern="^(a|b)$")'),
+           _is_bounded('Literal["ok"]', ""),
+           _is_bounded("str", "Field(..., min_length=3)")),
+          (True, True, False))
 
     if bad:
         print(f"\n自检失败 {len(bad)} 臂 ⇒ **探针坏了**（exit 2）")
         for b in bad:
             print(f"  - {b}")
         return 2
-    print("\n自检通过（11 臂）。")
+    print("\n自检通过（15 臂）。")
     return 0
 
 

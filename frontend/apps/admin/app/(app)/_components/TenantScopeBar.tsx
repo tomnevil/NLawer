@@ -228,7 +228,7 @@ export function TenantScopeBar() {
                     切换
                   </Button>
                 </div>
-                <p className="mt-1.5 text-caption text-ink-400">
+                <p className="mt-1.5 text-caption text-ink-600">
                   租户 ID 形如 <code className="num">firm_hlw</code>（律所）/
                   <code className="num">ent_acme</code>（企业）。
                 </p>
@@ -239,7 +239,7 @@ export function TenantScopeBar() {
                 做成一个「看起来很完整」的下拉框，但里面只有硬编码的几个
                 demo 租户，等于把「演示数据」伪装成「平台能力」。
               */}
-              <p className="flex items-start gap-1.5 text-caption text-ink-400">
+              <p className="flex items-start gap-1.5 text-caption text-ink-600">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   后端<strong className="font-medium">未提供租户列表接口</strong>

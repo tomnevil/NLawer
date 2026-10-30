@@ -134,12 +134,9 @@ export const ACTIVE_CASE_STATUSES: readonly string[] = [
   "IN_REVIEW",
 ];
 
-export const GRADE_TONE: Record<string, BadgeProps["variant"]> = {
-  S: "danger",
-  A: "pending",
-  B: "info",
-  C: "neutral",
-};
+// §2.4 等级 → 徽章变体映射的**唯一来源**在 `@nlaw/ui`（`src/lib/gradeTone.ts`）；
+// 这里只做转发，避免在 im 端再落一份定义（此前共 6 份，`packages/ui` 0 份）。
+export { GRADE_TONE } from "@nlaw/ui";
 
 export const INTENT_LABEL: Record<string, string> = {
   CONSULT: "咨询",

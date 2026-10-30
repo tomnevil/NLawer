@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Archive, ClipboardCheck, FolderOpen, Inbox, RefreshCw } from "lucide-react";
 import { authed } from "@nlaw/sdk";
-import { Badge, EmptyState, KpiCard, Skeleton, Spinner, cn, displayName, useSession } from "@nlaw/ui";
+import { Badge, Button, EmptyState, KpiCard, Skeleton, Spinner, cn, displayName, useSession } from "@nlaw/ui";
 
 /* ============================================================================
  * 律师工作台（首页）
@@ -169,19 +169,10 @@ export default function LawyerHome() {
             接单 → 办案 → 送审 → 归档，全流程留痕
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading}
-          className={cn(
-            "flex h-9 items-center gap-1.5 rounded-r2 border border-line px-3",
-            "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-            "disabled:opacity-50"
-          )}
-        >
+        <Button variant="outline" type="button" onClick={() => void load()} disabled={loading}>
           {loading ? <Spinner size="sm" label={null} /> : <RefreshCw className="h-4 w-4" />}
           刷新
-        </button>
+        </Button>
       </header>
 
       {error && (
@@ -219,7 +210,7 @@ export default function LawyerHome() {
               className={cn(
                 "rounded-r3 text-left",
                 "transition-transform duration-fast ease-out hover:-translate-y-0.5",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
+                "focus-visible:outline-none focus-visible:shadow-focus"
               )}
             >
               <KpiCard
@@ -270,7 +261,7 @@ export default function LawyerHome() {
                 className={cn(
                   "flex items-center gap-3.5 rounded-r3 border border-line bg-surface p-4 text-left",
                   "transition-colors duration-fast hover:border-brand-300 hover:bg-surface-hover",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
+                  "focus-visible:outline-none focus-visible:shadow-focus"
                 )}
               >
                 {/* 图标块用令牌实底，不再用渐变（v2 已废弃渐变手法） */}

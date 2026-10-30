@@ -109,7 +109,7 @@ function errText(e: unknown): string {
 
 const SELECT_CLS = cn(
   "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+  "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus"
 );
 
 export default function ReviewsPage() {
@@ -279,7 +279,7 @@ export default function ReviewsPage() {
               {OPEN_STATUSES.includes(row.status) ? "去处理" : "查看"}
             </Button>
           ) : (
-            <span className="text-caption text-ink-400">无关联案件</span>
+            <span className="text-caption text-ink-600">无关联案件</span>
           ),
       },
     ],
@@ -297,19 +297,10 @@ export default function ReviewsPage() {
             L1 AI 自检 / L2 律师复核 / L3 合伙人终审 · 全程留痕 · 未确认不可定稿
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading}
-          className={cn(
-            "flex h-9 items-center gap-1.5 rounded-r2 border border-line px-3",
-            "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-            "disabled:opacity-50"
-          )}
-        >
+        <Button variant="outline" type="button" onClick={() => void load()} disabled={loading}>
           {loading ? <Spinner size="sm" label={null} /> : <RefreshCw className="h-4 w-4" />}
           刷新
-        </button>
+        </Button>
       </header>
 
       <FilterBar

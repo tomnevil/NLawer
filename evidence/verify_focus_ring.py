@@ -105,6 +105,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port, base_path_of_base, strip_prefix  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 ROOT = HERE.parents[0]
@@ -294,6 +295,16 @@ RING_C_RE = re.compile(
 # 与 `focus*:ring` **同行**但**不带前缀**的裸环色 ⇒ 只报（可能是被漏判的焦点环，
 # 也可能是同元素上的选中态，判不了 ⇒ 不进判据，只让覆盖率缺口可见）。
 BARE_C_RE = re.compile(r"(?<![\w:-])(ring-(?!inset(?![\w-])|offset-)[A-Za-z][\w-]*(?:/\d+)?)")
+# 🚨 `shadow-focus` 的**调用点**判定：**必须允许变体前缀**。
+#    规范用法就是 `focus:shadow-focus` / `focus-visible:shadow-focus`（令牌只在获得焦点时
+#    才该出现）；原正则要求 `shadow-focus` 前后是空白/引号 ⇒ 前缀那个 `:` 让它
+#    **永远匹配不到**（2026-09-27 实测：按规范把 48 处换成 `focus:shadow-focus` 之后，
+#    它仍报「调用点 0 处」⇒ 门禁自身缺口，会把**已合规**的实现判红）。
+#    与 F3/F4 的 `(?:focus|focus-visible|focus-within):` 前缀口径对齐 —— 同一个判据里
+#    两套口径属实现疏漏。⚠️ 提为常量是为了**消掉两处副本**（另一处曾在 `self_test` 里
+#    各写一份，改一处忘一处就会「自检绿、实测红」）。
+SHADOW_FOCUS_RE = re.compile(
+    r"(?:^|[\s\"'`])(?:[\w-]+:)*shadow-focus(?:[\s\"'`]|$)")
 
 
 def source_files() -> list[pathlib.Path]:
@@ -334,7 +345,7 @@ def scan_rings() -> tuple[dict[str, list[str]], dict[str, list[str]], int, list[
             if re.search(r"(?:focus|focus-visible|focus-within):ring", line):
                 for m in BARE_C_RE.finditer(line):
                     bare.append(f"{m.group(1)} @ {rel}:{i}")
-            if re.search(r"(?:^|[\s\"'`])shadow-focus(?:[\s\"'`]|$)", line):
+            if SHADOW_FOCUS_RE.search(line):
                 focus_shadow += 1
     return widths, colors, focus_shadow, bare
 
@@ -425,7 +436,9 @@ def judge_uniform(widths: dict[str, list[str]], colors: dict[str, list[str]],
             problems.append(f"[F3] 焦点环环宽 `{tok}` = **{px:g}px**，规范是 **{SPEC_RING_W:g}px**"
                             f"（{len(widths[tok])} 处）")
     else:
-        notes.append("[F3] 源码里一个焦点环宽度工具类都没扫到 ⇒ 覆盖率 0")
+        notes.append("[F3] 源码里没有 `focus*:ring-*` 宽度工具类"
+                     "（**全站改用 `shadow-focus` 令牌时属预期**：环宽/环色被令牌封装，"
+                     "由 F1/F2 判令牌、F5 判调用点；覆盖率由令牌调用点计入）")
     unknown = [t for t, p in width_px.items() if p is None]
     if unknown:
         notes.append("[F3] 认不出宽度的环宽类（只报）：" + "、".join(f"`{t}`" for t in unknown))
@@ -456,6 +469,11 @@ def judge_uniform(widths: dict[str, list[str]], colors: dict[str, list[str]],
                      + ("…" if len(bare) > 6 else ""))
 
     # ---- F5 规范令牌有调用点 ----
+    # 🚨 覆盖率**必须**把令牌调用点算进去：全站改用 `shadow-focus` 之后 `focus:ring-*`
+    #    一个不剩 ⇒ 旧口径算出 `cov == 0` ⇒ `summary_exit` 判「覆盖率 0」**exit 2
+    #    （环境问题）**，于是**完全合规被报成「没测成」**（2026-09-27 实测：48 处按规范
+    #    改完后 exit 2）。令牌调用点本身就是覆盖率 —— 它证明「这条判据有东西可判」。
+    cov += focus_shadow
     if focus_shadow == 0:
         problems.append("[F5] 规范焦点环令牌 `shadow-focus` **调用点 0 处**"
                         " —— preset 里定义了 `0 0 0 3px var(--focus-ring)`，却没人用它")
@@ -841,8 +859,8 @@ async def login(b: Browser, base: str, username: str) -> bool:
     return "/login" not in (await b.cdp.evaluate("location.href") or "")
 
 
-FIRST_CASE_JS = r"""(() => {
-  const a = document.querySelector('a[href^="/cases/"]');
+_FIRST_CASE_TPL = r"""(() => {
+  const a = document.querySelector('a[href^="{BP}/cases/"]');
   if (a) return { href: a.getAttribute('href') };
   const tr = document.querySelector('tbody tr') || document.querySelector('[role="row"]');
   if (tr) { tr.click(); return { clicked: true }; }
@@ -850,24 +868,39 @@ FIRST_CASE_JS = r"""(() => {
 })()"""
 
 
+def first_case_js(bp: str = "") -> str:
+    """把该端的 `basePath` 注入选择器（`bp=""` ⇒ 与改动前**逐字等价**）。
+
+    🚨 选择器**必须带前缀**：`basePath` 落地后 `next/link` 渲染出的 `href` 是
+    `/admin/cases/<id>`，而裸 `a[href^="/cases/"]` **一个都匹配不到** ⇒ 探针把
+    「页面其实好好的」报成「取不到案件详情路径」（2026-10-10 实测，同族三条探针栽过）。
+    """
+    return _FIRST_CASE_TPL.replace("{BP}", bp)
+
+
 async def resolve_path(b: Browser, base: str, path: str) -> str:
     """`@first-case` → 真实 id（照搬 `verify_runtime_health.py` + 一条点击回退）。"""
     if "@first-case" not in path:
         return path
+    bp = base_path_of_base(base)
     await b.goto(f"{base}/cases", wait=1.6)
     await b.settle(extra=1.0)
-    r = await b.cdp.evaluate(FIRST_CASE_JS) or {}
+    r = await b.cdp.evaluate(first_case_js(bp)) or {}
     href = r.get("href")
     if not href and r.get("clicked"):
         # `router.push` 不产生导航请求 ⇒ 不能用 `settle()`，必须显式轮询
         for _ in range(12):
             await asyncio.sleep(0.5)
-            href = await b.cdp.evaluate("location.pathname")
-            if href and href.startswith("/cases/") and href != "/cases":
+            raw = await b.cdp.evaluate("location.pathname")
+            # ⚠️ 浏览器里的 `location.pathname` **带** `basePath`（`/admin/cases/1`）
+            #    ⇒ 先剥前缀再判形态；不剥会**永远**判不中、白等满 6 秒。
+            if raw and strip_prefix(bp, raw).startswith("/cases/"):
+                href = raw
                 break
-    if not href or not href.startswith("/cases/") or href == "/cases":
+    inner = strip_prefix(bp, href) if href else ""
+    if not inner.startswith("/cases/") or inner == "/cases":
         raise RuntimeError(f"{base}/cases 上取不到案件详情路径（动态路由测不到）")
-    return path.replace("@first-case", href.rsplit("/", 1)[-1])
+    return path.replace("@first-case", inner.rsplit("/", 1)[-1])
 
 
 def run_static(verbose: bool = True) -> tuple[list[str], list[str], int]:
@@ -916,7 +949,7 @@ async def run_render(only: str | None, verbose: bool = True
     for app, cfg in APPS.items():
         if only and app != only:
             continue
-        base = f"http://localhost:{cfg['port']}"
+        base = base_for_port(cfg["port"])
         async with Browser(headless=True, width=1280, height=900) as b:
             try:
                 await b.cdp.send("Network.clearBrowserCookies")
@@ -973,7 +1006,7 @@ async def why(app: str, path: str | None, needle: str) -> int:
         print(f"[env] 未知端 `{app}`（可选：{'/'.join(APPS)}）")
         return 2
     cfg = APPS[app]
-    base = f"http://localhost:{cfg['port']}"
+    base = base_for_port(cfg["port"])
     path = path or cfg["pages"][0]
     async with Browser(headless=True, width=1280, height=900) as b:
         try:
@@ -1059,7 +1092,7 @@ def _scan_text(text: str) -> tuple[dict[str, list[str]], dict[str, list[str]],
         if re.search(r"(?:focus|focus-visible|focus-within):ring", line):
             for m in BARE_C_RE.finditer(line):
                 bare.append(f"{m.group(1)} @ F:{i}")
-        if re.search(r"(?:^|[\s\"'`])shadow-focus(?:[\s\"'`]|$)", line):
+        if SHADOW_FOCUS_RE.search(line):
             n += 1
     return widths, colors, n, bare
 
@@ -1152,6 +1185,21 @@ def self_test() -> int:
     arm("U3 环宽 2px ≠ 3px ⇒ 红", any("F3" in x for x in p), f"→ {p}")
     arm("U4 环色 30/40/25% 不统一 ⇒ 红", any("F4" in x for x in p), f"→ {p}")
     arm("U5 无 `shadow-focus` 调用点 ⇒ 红", any("F5" in x for x in p), f"→ {p}")
+    # 🚨 U5b/U5c/U5d：**变体前缀**形式必须被计数（2026-09-27 新增）。
+    #    这是上面那个门禁缺口本身的回归臂 —— 只测裸形式（U1）证明不了
+    #    「规范用法 `focus:shadow-focus` 会被算作调用点」，而实测中它曾被漏计。
+    _n = _scan_text('className="focus-visible:shadow-focus"\n')[2]
+    arm("U5b `focus-visible:shadow-focus` 必须计为调用点", _n == 1, f"→ {_n}")
+    _n = _scan_text('className="focus:shadow-focus"\n')[2]
+    arm("U5c `focus:shadow-focus` 必须计为调用点", _n == 1, f"→ {_n}")
+    _n = _scan_text('className="focus:ring-2 focus:ring-brand-500/30"\n')[2]
+    arm("U5d 没有 `shadow-focus` ⇒ 计数 0（阴性对照）", _n == 0, f"→ {_n}")
+    # 🚨 U8：**全站改用令牌**（一个 `focus:ring-*` 都不剩）⇒ 覆盖率不得为 0。
+    #    否则 `summary_exit` 判 exit 2「环境问题」，把**合规**报成**没测成**（2026-09-27 实测）。
+    _w8, _c8, _fs8, _b8 = _scan_text('className="focus-visible:shadow-focus"\n')
+    _p8, _notes8, _cov8 = judge_uniform(_w8, _c8, _fs8, _b8)
+    arm("U8 只用令牌（无 ring-*）⇒ 绿且覆盖率 > 0",
+        _p8 == [] and _cov8 > 0, f"→ {_p8} cov={_cov8}")
     # 危险态：正常环取规范值 + 有 `shadow-focus` ⇒ 期望**全绿**（危险态被排除）
     w2, c2, _, _ = _scan_text(
         'className="focus:ring-[3px] focus:ring-brand-500/22 shadow-focus"\n'

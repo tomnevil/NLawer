@@ -22,17 +22,21 @@ im 的 dev server 之所以正常，是因为**启动命令里 export 了该变�
 > 这与 `evidence/README.md` 里「源码里写了 ≠ 运行时生效」是同一族：
 > 这里更进一步——**「构建成功」≠「产物能用」**。
 
-## 判据
+## 判据（**两条**）
 
-对每一端：从 `.env.local` 读出期望基址 ⇒ 断言它在 `.next/static/chunks` 里**出现**。
+1. **值本身对不对**：`.env.local` 的基址**不得等于** SDK 兜底串（`SDK_FALLBACK`）。
+   🚨 **2026-10-10 补**：少了这一条，判据 2 的**期望值取自被测对象本身** ⇒
+   四端 `.env.local` 被写成 `:8000` 时它照旧 `exit 0`（见 `is_sdk_fallback` 的说明）。
+2. **有没有烘进去**：断言该基址在 `.next/static/chunks` 里**出现**。
 
 ⚠️ **不能反过来断言「`localhost:8000` 不出现」**：实测四端**正确的**产物里
 都含 `localhost:8000`（SDK 那个字面量兜底串被 minifier 保留了）。
-「兜底串在」不是缺陷信号，「**期望值在**」才是。
+「兜底串在」不是缺陷信号，「**期望值在**」才是 —— 判据 1 判的是 `.env.local` 那一侧。
 
 ## 退出码
 
-`0` 通过 / `1` 产品缺陷（缺 `.env.local` 或产物没烘进去）/ `2` 环境问题（该端还没构建）
+`0` 通过 / `1` 产品缺陷（缺 `.env.local`、**值等于 SDK 兜底串**、或产物没烘进去）/
+`2` 环境问题（该端还没构建）
 
 用法：
     python evidence/verify_api_base_baked.py
@@ -69,6 +73,27 @@ FRONTEND = HERE.parent / "frontend"
 APPS = ("web", "lawyer", "admin", "im")
 ENV_KEY = "NEXT_PUBLIC_API_BASE"
 
+#: `packages/sdk/src/index.ts` 里的兜底串。**它必须与 SDK 里那一行保持一致**。
+SDK_FALLBACK = "http://localhost:8000"
+
+
+def is_sdk_fallback(base: str) -> bool:
+    """`.env.local` 的值是否**恰好等于** SDK 兜底串。
+
+    🚨 **为什么必须单独判这一条**（2026-10-10 实测）：
+
+    本探针的判据是「从 `.env.local` 读期望值 ⇒ 断言它出现在产物里」——
+    **期望值取自被测对象本身**。若 `.env.local` **自己**写的就是兜底串，
+    那么「烘进去了」与「根本没烘、只剩兜底串」在产物里**完全同形**
+    （兜底串在**正确**产物里也照留，见文件头那条边界）⇒ **判据恒绿**。
+
+    实测：四端 `.env.local` 被写成 `:8000`（后端在 `:8001`，
+    `ci.yml` 播种的也是 `:8001`），而本探针照旧 `exit 0`。
+    这与「判据把自己算成证据」同族（`verify_component_wiring.count_equivalent`
+    未排除组件自己的定义文件）。
+    """
+    return host_port(base) == host_port(SDK_FALLBACK)
+
 
 def expected_base(app: str) -> str | None:
     """从 `apps/<app>/.env.local` 读期望基址；文件缺失或没有该键 ⇒ None。"""
@@ -104,15 +129,40 @@ def count_in_chunks(app: str, needle: str) -> int:
 
 
 def self_test() -> int:
-    """用**归档的真实坏产物**证明这条门禁会红。
+    """两条自检：
 
-    比「临时删掉 .env.local 再重建」安全得多，而且证据更硬：
-    这份产物正是当初**通过了我全部旧门禁**的那一份。
+    ① **纯函数臂**（合成夹具，不依赖仓库里任何产物 ⇒ **永远可跑**）：
+       `.env.local` 的值等于 SDK 兜底串时，`is_sdk_fallback` 必须判 True。
+       —— 2026-10-10 补，起因是「**期望值取自被测对象**」这处盲区。
+    ② **归档的真实坏产物**：证明判据「期望值必须出现」真的会红。
+       需要 `frontend/_prev_build/im-prod-build-*`；**该目录不在仓库里时本组无法执行**
+       ⇒ 退 2（不许静默当成通过）。
     """
-    print("── 自检：拿归档的「坏产物」验证这条门禁真的会红 ──\n")
+    # —— ① 纯函数臂（**先跑**：② 依赖归档目录，缺了就整组跳过）——
+    print("── 自检 ①：`.env.local` 的值等于 SDK 兜底串 ⇒ **必须判缺陷** ──\n")
+    arms_bad = 0
+    for key, val, expect in (
+        ("S1", "http://localhost:8001", False),
+        ("S2", "http://localhost:8000", True),
+        ("S3", "http://localhost:8000/", True),
+    ):
+        got = is_sdk_fallback(val)
+        ok = got == expect
+        print(f"  [{key}] `.env.local` = `{val}` ⇒ 判为兜底串 {got}"
+              f"（期望 {expect}） {'✓' if ok else '✗'}")
+        if not ok:
+            arms_bad += 1
+    if arms_bad:
+        print(f"\n  ✗ 自检 ① 失败 {arms_bad} 臂 ⇒ 工具坏了（退 2）")
+        return 2
+    print("\n  ✓ 自检 ① 通过：`:8001` 与兜底串 `:8000` 被正确区分")
+
+    # —— ② 归档的真实坏产物 ——
+    print("\n── 自检 ②：拿归档的「坏产物」验证「期望值必须出现」真的会红 ──\n")
     cands = sorted(FRONTEND.glob("_prev_build/im-prod-build-*"))
     if not cands:
-        print("  ✗ 找不到归档产物 `_prev_build/im-prod-build-*` ⇒ 环境问题（退 2）")
+        print("  ⚠️ 找不到归档产物 `frontend/_prev_build/im-prod-build-*` ⇒ 本组**未能执行**")
+        print("     （环境问题 ⇒ 退 2。**不许静默当成通过**）")
         return 2
 
     bad = 0
@@ -166,6 +216,14 @@ def main() -> int:
             continue
 
         needle = host_port(base)
+        if is_sdk_fallback(base):
+            print(f"  {app:<7}  期望 {needle:<18} **等于 SDK 兜底串**")
+            defects.append(
+                f"{app}: `apps/{app}/.env.local` 的值就是 SDK 兜底串 `{SDK_FALLBACK}` ⇒ "
+                f"本判据**无法与「根本没烘进去」区分**（兜底串在正确产物里也照留 ⇒ 恒绿）；"
+                f"且本仓库后端在 **:8001**（`ci.yml` 播种的也是 8001）"
+            )
+            continue
         n = count_in_chunks(app, needle)
         if n < 0:
             print(f"  {app:<7}  期望 {needle:<18} 产物未构建（跳过）")

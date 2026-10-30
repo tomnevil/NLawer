@@ -208,7 +208,7 @@ export default function AdminDispatchesPage() {
           row.lawyer_id ? (
             <span className="num">#{row.lawyer_id}</span>
           ) : (
-            <span className="text-caption text-ink-400">待分配</span>
+            <span className="text-caption text-ink-600">待分配</span>
           ),
       },
       {
@@ -349,7 +349,7 @@ export default function AdminDispatchesPage() {
         )}
       </div>
 
-      <p className="-mt-3 text-caption text-ink-400">
+      <p className="-mt-3 text-caption text-ink-600">
         「抢单池」来自 <code>GET /dispatches/pool</code>，口径是
         <strong className="font-normal">「待接单 且（未指定律师 或 POOL 模式）」</strong>
         ，与「待接单」不是同一集合，两者数字不同是正常的。
@@ -378,7 +378,7 @@ export default function AdminDispatchesPage() {
               onChange={(e) => resetTo(() => setStatus(e.target.value))}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">全部状态</option>
@@ -398,7 +398,7 @@ export default function AdminDispatchesPage() {
               onChange={(e) => resetTo(() => setMode(e.target.value))}
               className={cn(
                 "h-9 rounded-r2 border border-line bg-surface px-2.5 text-body-sm text-ink-800",
-                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+                "transition-colors duration-fast focus:border-brand-400 focus:outline-none focus:shadow-focus",
               )}
             >
               <option value="">全部方式</option>
@@ -410,7 +410,7 @@ export default function AdminDispatchesPage() {
             </select>
           </FilterBar>
 
-          <p className="mt-2 text-caption text-ink-400">
+          <p className="mt-2 text-caption text-ink-600">
             <code>status</code> 与 <code>mode</code> 均为<strong className="font-normal">服务端</strong>
             参数；派单无时间字段对外暴露，故不显示时间。
           </p>
@@ -438,7 +438,7 @@ export default function AdminDispatchesPage() {
         {total > 0 && (
           <div className="border-t border-line px-4 py-3">
             {lowerBound && (
-              <p className="mb-2 text-caption text-ink-400">
+              <p className="mb-2 text-caption text-ink-600">
                 匹配派单超过计数上限，总数显示为 <span className="num">{total}+</span>（下界）。
               </p>
             )}
@@ -505,7 +505,7 @@ export default function AdminDispatchesPage() {
               )}
             </div>
 
-            <p className="text-caption text-ink-400">
+            <p className="text-caption text-ink-600">
               后端无派单详情端点，以上信息来自列表行（<code>DispatchOut</code>），
               因此不包含创建/接单时间。
             </p>

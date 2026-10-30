@@ -139,7 +139,7 @@ function FindingCard({
         onClick={onLocate}
         className={cn(
           "flex w-full items-start gap-2 rounded-r1 text-left",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
+          "focus-visible:outline-none focus-visible:shadow-focus"
         )}
       >
         <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
@@ -244,7 +244,7 @@ function FindingCard({
           </Button>
         </div>
       ) : (
-        <p className="mt-2.5 text-caption text-ink-400">
+        <p className="mt-2.5 text-caption text-ink-600">
           本条未返回可直接采纳的改写文本，无法一键采纳。
         </p>
       )}

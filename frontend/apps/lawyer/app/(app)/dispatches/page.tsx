@@ -12,16 +12,15 @@ import {
   Pagination,
   Skeleton,
   Spinner,
-  cn,
+  GRADE_TONE,
   useToast,
-  type BadgeProps,
   type DataTableColumn,
 } from "@nlaw/ui";
 
 /* ============================================================================
  * 派单池（待接案件）
  * ----------------------------------------------------------------------------
- * GET  /api/v1/dispatches/pool?page&page_size  -> **Page<DispatchOut>**
+ * GET  /api/v1/dispatches/pool?page&page_size  -> **Page<PoolItemOut>**
  * POST /api/v1/dispatches/{id}/accept          -> 接单
  *
  * ⚠️ 这里曾有一个 P0 级缺陷：旧实现写成
@@ -30,11 +29,29 @@ import {
  * 于是 `items.map(...)` 抛 `TypeError: items.map is not a function`，
  * **整个派单池页面白屏**——律师端最核心的「接单」入口完全不可用。
  *
- * ⚠️ 另一个契约事实：`DispatchOut` 只有
+ * ⚠️ 契约事实（2026-10-10 改）：`DispatchOut` 只有
  *     `{id, case_id, lawyer_id, mode, status, score, reason}`，
- * **没有 `case_title` 也没有 `grade`**。旧实现读的 `d.case_title` / `d.grade`
- * 恒为 `undefined`，所以卡片永远只显示「案件 #12」。
- * 案件标题必须按 `case_id` 回查 `GET /api/v1/cases/{id}` 才能拿到。
+ * **没有 `case_title` 也没有 `grade`**。
+ *
+ * 曾经的做法是「按 `case_id` 逐条回查 `GET /api/v1/cases/{id}` 拿标题」，
+ * 但该做法在 **P2-10（2026-09-29）之后结构上不可能成立**：
+ * 池子按**租户**取，而案件详情按**承办人**鉴权（律师只能读本人承办，
+ * 否则需有效团队授权，无权按「不存在」处理）⇒ 池内案件对**任何**律师
+ * 都读不到 ⇒ 派单池永远只显示「案件 #N」，律师看不到标题/等级/标的，
+ * 无法决定要不要接单。
+ *
+ * 现在摘要由**服务端在同一租户内内联**（`case_brief`，见
+ * `backend/app/schemas/case.py::CaseBriefOut`）。相比逐条回查：
+ *   ① 不再需要放宽案件详情的归属鉴权（P2-10 原则不动）；
+ *   ② `page_size` 次往返压成 1 次（默认 20 条时省掉 20 个请求）。
+ * ⚠️ `case_brief` 是**服务端定义的白名单投影**，字段集与下面 `CaseBrief`
+ *    一一对应（`backend/tests/test_dispatch_pool_brief.py::T2` 守着）。
+ *    要加字段必须两边同时改。
+ *
+ * ⚠️ **进入案件详情的唯一入口是「接单成功后」**（2026-10-11）：
+ *    池内案件在 `GET /cases/{id}` 上**必然 404**（池按**租户**取、详情按
+ *    **承办人**鉴权，而池内案件 `Case.lawyer_id IS NULL`）。所以行内刻意
+ *    不可点 —— 接单前只给摘要，接单成功后才 `router.push` 到详情。
  * ========================================================================== */
 
 interface DispatchRow {
@@ -45,8 +62,11 @@ interface DispatchRow {
   status: string;
   score?: number | null;
   reason?: string | null;
+  /** 服务端内联的案件摘要。`null` = 该案件不在本租户（脏数据），页面按降级显示。 */
+  case_brief?: CaseBrief | null;
 }
 
+/** 与 `backend/app/schemas/case.py::CaseBriefOut` 的字段集**精确对应**。 */
 interface CaseBrief {
   id: number;
   case_no: string;
@@ -72,13 +92,6 @@ const MODE_LABEL: Record<string, string> = {
   POOL: "律师抢单",
 };
 
-const GRADE_TONE: Record<string, BadgeProps["variant"]> = {
-  S: "danger",
-  A: "pending",
-  B: "info",
-  C: "neutral",
-};
-
 function errText(e: unknown): string {
   if (e instanceof ApiError) return e.message;
   if (e instanceof Error) return e.message;
@@ -95,7 +108,6 @@ export default function DispatchesPage() {
   const { addToast } = useToast();
 
   const [rows, setRows] = useState<DispatchRow[]>([]);
-  const [briefs, setBriefs] = useState<Record<number, CaseBrief>>({});
   const [total, setTotal] = useState(0);
   const [isLowerBound, setIsLowerBound] = useState(false);
   const [page, setPage] = useState(1);
@@ -108,30 +120,18 @@ export default function DispatchesPage() {
     setLoading(true);
     setError(null);
     try {
+      /* 摘要由服务端内联在 `case_brief` 里——**不要**再逐条回查
+       * `GET /api/v1/cases/{id}`：那条路在 P2-10 之后对池内案件必然 404
+       * （池按租户取、详情按承办人鉴权），且会产生 page_size 个额外请求。 */
       const p = await authed<Paged<DispatchRow>>(
         `/api/v1/dispatches/pool?page=${page}&page_size=${pageSize}`
       );
-      const items = p.items ?? [];
-      setRows(items);
+      setRows(p.items ?? []);
       setTotal(p.total ?? 0);
       setIsLowerBound(Boolean(p.total_is_lower_bound));
-
-      /* 标题/等级只能按 case_id 回查。
-       * 用 `allSettled`：某一条案件读不到（例如刚被他人接走、或已越权）时，
-       * 其余行仍应正常渲染，不能因为一条失败让整页空白。
-       * 并发数受 page_size 约束（默认 20），不会放大。 */
-      const results = await Promise.allSettled(
-        items.map((d) => authed<CaseBrief>(`/api/v1/cases/${d.case_id}`))
-      );
-      const map: Record<number, CaseBrief> = {};
-      results.forEach((r, i) => {
-        if (r.status === "fulfilled" && r.value) map[items[i].case_id] = r.value;
-      });
-      setBriefs(map);
     } catch (e) {
       setError(errText(e));
       setRows([]);
-      setBriefs({});
       setTotal(0);
     } finally {
       setLoading(false);
@@ -147,13 +147,18 @@ export default function DispatchesPage() {
       setAccepting(row.id);
       try {
         await authed(`/api/v1/dispatches/${row.id}/accept`, { method: "POST" });
-        const title = briefs[row.case_id]?.title;
+        const title = row.case_brief?.title;
         addToast({
           type: "success",
           title: "接单成功",
           message: title ? `《${title}》已进入你的案件列表` : undefined,
         });
+        /* 先刷新列表（该行已不属于池子），再进详情。
+         * 接单后案件归你承办（`case.lawyer_id = 你`）⇒ 此刻详情**才**可读。
+         * 这是本页**唯一**进入案件详情的入口 —— 池内行刻意不可点，
+         * 因为池内案件对任何律师都读不到（见 `columns` 里的注释）。 */
         await load();
+        router.push(`/cases/${row.case_id}`);
       } catch (e) {
         // 并发抢单失败（已被他人接走）是高频且正常的情况，如实提示而非笼统报错
         addToast({ type: "error", title: "接单失败", message: errText(e) });
@@ -162,7 +167,7 @@ export default function DispatchesPage() {
         setAccepting(null);
       }
     },
-    [addToast, briefs, load]
+    [addToast, load, router]
   );
 
   const columns: DataTableColumn<DispatchRow>[] = useMemo(
@@ -172,16 +177,24 @@ export default function DispatchesPage() {
         header: "案件",
         mobile: "primary",
         render: (_v: number, row) => {
-          const b = briefs[row.case_id];
+          const b = row.case_brief;
+          /* ⚠️ 这里**刻意不是**链接（2026-10-11 改）。
+           *
+           * 池内案件在 `GET /cases/{id}` 上**必然 404**：池子按**租户**取，
+           * 案件详情按**承办人**鉴权（P2-10）—— 池内案件还没有承办人
+           * （`Case.lawyer_id IS NULL`），所以对**任何**律师都读不到。
+           * 旧实现把它渲染成 `<button onClick={router.push}>`，点进去是整页
+           * 「案件不存在」错误态（详情页 `loadCase` 一失败即整页报错）。
+           *
+           * 而池内案件本来也**没有**详情可给：时间线 / 材料 / 文书都是
+           * **接单之后**才产生的。⇒ 接单前只给摘要（服务端内联的白名单投影
+           * `case_brief`），进入详情的入口放在**接单成功后**（见 `accept`）。
+           */
           return (
-            <button
-              type="button"
-              onClick={() => router.push(`/cases/${row.case_id}`)}
-              className="flex min-w-0 items-start gap-2 text-left"
-            >
+            <span className="flex min-w-0 items-start gap-2 text-left">
               <Inbox className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" aria-hidden />
               <span className="min-w-0">
-                <span className="block truncate font-medium text-ink-900 transition-colors duration-fast hover:text-link">
+                <span className="block truncate font-medium text-ink-900">
                   {b?.title ?? `案件 #${row.case_id}`}
                 </span>
                 <span className="num mt-0.5 block truncate text-caption text-ink-500">
@@ -189,7 +202,7 @@ export default function DispatchesPage() {
                   {b?.focus ? ` · ${b.focus}` : ""}
                 </span>
               </span>
-            </button>
+            </span>
           );
         },
       },
@@ -200,7 +213,7 @@ export default function DispatchesPage() {
         width: "84px",
         mobile: "normal",
         render: (_v: unknown, row) => {
-          const g = briefs[row.case_id]?.grade;
+          const g = row.case_brief?.grade;
           return g ? (
             <Badge variant={GRADE_TONE[g] ?? "neutral"} size="sm">
               {g} 级
@@ -214,7 +227,7 @@ export default function DispatchesPage() {
         key: "dispute_type",
         header: "争议类型",
         mobile: "normal",
-        render: (_v: unknown, row) => briefs[row.case_id]?.dispute_type ?? <span className="text-ink-400">—</span>,
+        render: (_v: unknown, row) => row.case_brief?.dispute_type ?? <span className="text-ink-400">—</span>,
       },
       {
         key: "claim_amount",
@@ -222,7 +235,7 @@ export default function DispatchesPage() {
         align: "right",
         numeric: true,
         mobile: "normal",
-        render: (_v: unknown, row) => fmtAmount(briefs[row.case_id]?.claim_amount),
+        render: (_v: unknown, row) => fmtAmount(row.case_brief?.claim_amount),
       },
       {
         key: "mode",
@@ -253,7 +266,7 @@ export default function DispatchesPage() {
         ),
       },
     ],
-    [briefs, accepting, accept, router]
+    [accepting, accept]
   );
 
   const countText = isLowerBound ? `${total}+ 件` : `${total} 件`;
@@ -267,19 +280,10 @@ export default function DispatchesPage() {
             待接案件 · 系统派单 / 指定律师 / 律师抢单 · 先到先得
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading}
-          className={cn(
-            "flex h-9 items-center gap-1.5 rounded-r2 border border-line px-3",
-            "text-body-sm text-ink-600 transition-colors duration-fast hover:bg-surface-hover",
-            "disabled:opacity-50"
-          )}
-        >
+        <Button variant="outline" type="button" onClick={() => void load()} disabled={loading}>
           {loading ? <Spinner size="sm" label={null} /> : <RefreshCw className="h-4 w-4" />}
           刷新
-        </button>
+        </Button>
       </header>
 
       {error ? (

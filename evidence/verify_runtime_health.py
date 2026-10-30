@@ -50,6 +50,7 @@ HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
+from approutes import base_for_port, base_path_of_base  # noqa: E402
 from cdp import Browser  # noqa: E402
 
 # ── 被测范围 ────────────────────────────────────────────────────────
@@ -228,8 +229,12 @@ async def resolve_path(b: Browser, base: str, path: str) -> str:
     if "@first-case" not in path:
         return path
     await visit(b, f"{base}/cases")
+    # 🚨 选择器**必须带 `basePath`**（同 `verify_mobile_375.py`）：
+    #    `next/link` 渲染出的 `href` 是带前缀的（`/im/cases/123`），
+    #    裸 `a[href^="/cases/"]` 一个都匹配不到 ⇒ 假报「环境问题」。
+    bp = base_path_of_base(base)
     href = await b.cdp.evaluate(
-        "(() => { const a = document.querySelector('a[href^=\"/cases/\"]');"
+        f"(() => {{ const a = document.querySelector('a[href^=\"{bp}/cases/\"]');"
         " return a ? a.getAttribute('href') : null; })()"
     )
     if not href:
@@ -238,7 +243,7 @@ async def resolve_path(b: Browser, base: str, path: str) -> str:
 
 
 async def probe_app(app: str, spec: dict, self_test: bool = False) -> dict:
-    base = f"http://localhost:{spec['port']}"
+    base = base_for_port(spec["port"])
     out: dict[str, dict] = {}
 
     async with Browser(headless=True, width=1280, height=900, device_scale_factor=1) as b:

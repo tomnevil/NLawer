@@ -50,9 +50,11 @@ export interface CitationPanelProps {
   className?: string;
 }
 
+// 🚨 文字档按「叠在 `/15` 染色底上能否过 AA(4.5)」逐色算：verified/pending 的 `-600`
+//    只有 4.49 / 4.16 ⇒ 取 `-700`（5.91 / 5.93）；danger 的 `-600` 有 4.88 ⇒ 保持。
 const STATUS_META: Record<CitationStatus, { label: string; cls: string }> = {
-  "in-force": { label: "现行有效", cls: "bg-verified-500/15 text-verified-600 border-verified-500/30" },
-  amended: { label: "已修订", cls: "bg-pending-500/15 text-pending-600 border-pending-500/30" },
+  "in-force": { label: "现行有效", cls: "bg-verified-500/15 text-verified-700 border-verified-500/30" },
+  amended: { label: "已修订", cls: "bg-pending-500/15 text-pending-700 border-pending-500/30" },
   repealed: { label: "已废止", cls: "bg-danger-500/15 text-danger-600 border-danger-500/30" },
   // 类案 / 内部知识：不适用时效判定，用中性色明确「这是参考而非依据」
   reference: { label: "参考资料", cls: "bg-surface-subtle text-ink-600 border-line" },

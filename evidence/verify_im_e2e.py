@@ -37,13 +37,22 @@ import asyncio
 import pathlib
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "backend"))
 
-IM = "http://localhost:3003"
+from approutes import app_base, base_path_of_base, strip_prefix  # noqa: E402
+
+IM = app_base("im")
+#: 本端的 `basePath`（`/im`）。I3 必须断言「地址栏**仍在本端前缀下**」——
+#: 只比「应用内路径 == `/chat`」不够：`"/chat" in url` 这种**子串**断言对
+#: `/chat`（404）与 `/im/chat`（200）**都成立** ⇒ **假绿**
+#: （2026-10-10 实测：它把 `chat/page.tsx` 里 `replaceState(null,"","/chat")`
+#: 造成的「刷新即 404」整个放过去了）。
+IM_BP = base_path_of_base(IM)
 API = "http://127.0.0.1:8001"
 USER = "client"
 PWD = "Client@12345"
@@ -137,7 +146,16 @@ async def run(full: bool = True, shot: bool = False) -> int:
                  "click_text 未命中任何元素 ⇒ 聊天入口缺失或选择器失效 → exit 2")
             print("❌ 环境：im「向 AI 提问」入口未找到（可能页面结构变更）→ exit 2", file=sys.stderr)
             raise SystemExit(2)
-        step("I3 点「向 AI 提问」跳转到 /chat", "/chat" in url, url)
+        # 🚨 **两条都成立**才算过，缺一条就会漏掉一类真缺陷：
+        #   ① **应用内路径** == `/chat`（剥掉 `basePath` 再比 —— 不剥会把**对的**判红，
+        #      浏览器里 `location.pathname` 本来就是 `/im/chat`）；
+        #   ② 原路径**确实带**本端前缀（`path.startswith("/im/")`）——
+        #      ② 是防「地址栏被改写成 404 路径」的那一条，**子串断言给不出它**。
+        path = urllib.parse.urlsplit(url).path
+        inner = strip_prefix(IM_BP, path)
+        step("I3 点「向 AI 提问」跳转到 /chat",
+             inner == "/chat" and path.startswith(IM_BP + "/"),
+             f"应用内路径={inner!r} 浏览器路径={path!r}")
 
         if shot:
             await b.screenshot(HERE / "im_e2e.png")

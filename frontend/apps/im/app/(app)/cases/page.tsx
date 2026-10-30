@@ -139,7 +139,7 @@ export default function ImCasesPage() {
                 （它只扫「有 svg 且无可见文字」的图标按钮）。 */}
             <Link
               href="/chat#new"
-              className="shrink-0 text-label font-medium text-brand-600 hover:text-brand-700"
+              className="shrink-0 text-label font-medium text-link hover:text-link-hover"
             >
               发起咨询
             </Link>
@@ -162,13 +162,19 @@ export default function ImCasesPage() {
                 onClick={() => setGroup(g.key)}
                 className={
                   "min-h-tap rounded-r2 border px-3 text-body-sm transition-colors duration-fast " +
+                  /* 激活态用**角色令牌** `text-link`（= `--link`，随档位解析）而不是 `brand-600`：
+                     深色档 `--brand-600` 是「主按钮填充色」（配白字 5.4:1），当**文本色**落在深色底上
+                     只有 3.05:1（T4 实测）⇒ 与 E 类同因同修（见 contrast-ruling-2026-10-13.md §三 E）。
+                     描边一并从 `border-brand-600` 改 `border-brand-500`：深色档 `#3A63B0` 对
+                     `bg-brand-50 #10203A` 仅 2.81:1（WCAG 1.4.11 非文本对比度要求 ≥3:1）。
+                     ⚠️ 1.4.11 **本轮无判据**（T4 只管文本）⇒ 这是顺手修，不是「测过了」。 */
                   (on
-                    ? "border-brand-600 bg-brand-50 font-medium text-brand-600"
+                    ? "border-brand-500 bg-brand-50 font-medium text-link"
                     : "border-line bg-surface text-ink-600 hover:bg-surface-hover")
                 }
               >
                 {g.label}
-                {!loading && <span className="num ml-1.5 text-caption text-ink-400">{counts[g.key]}</span>}
+                {!loading && <span className="num ml-1.5 text-caption text-ink-600">{counts[g.key]}</span>}
               </button>
             );
           })}
@@ -222,7 +228,7 @@ export default function ImCasesPage() {
                           </Badge>
                         )}
                       </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-400">
+                      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-600">
                         <span className="num">{c.case_no}</span>
                         {c.dispute_type && <span>{c.dispute_type}</span>}
                         {c.claim_amount != null && (
@@ -244,7 +250,7 @@ export default function ImCasesPage() {
 
           {/* 取回条数不足 total 时如实说明，不假装已经看全 */}
           {!loading && !error && total > cases.length && (
-            <p className="mt-3 text-caption text-ink-400">
+            <p className="mt-3 text-caption text-ink-600">
               已显示最近 {cases.length} 件，共 {total} 件。
             </p>
           )}

@@ -27,14 +27,18 @@ export interface KpiCardProps {
   className?: string;
 }
 
+// 🚨 文字档**不统一**，按「叠在 `/15` 染色底上能否过 AA(4.5)」逐个算出来的：
+//    verified / pending / gold 的 `-600` 在染色底上只有 4.49 / 4.16 / 3.64 ⇒ 必须取 `-700`
+//    （5.91 / 5.93 / 5.31）；danger / info / ai 的 `-600` 本身就有 4.88 / 5.08 / 5.24 ⇒ 保持。
+//    ⚠️ 别「统一成 -700」也別「统一成 -600」—— 两个方向都有反例（令牌注释的 6.0:1 是**白底**值）。
 const toneStyles: Record<KpiTone, { bg: string; text: string }> = {
   brand: { bg: "bg-brand-500/15", text: "text-link" },
-  verified: { bg: "bg-verified-500/15", text: "text-verified-600" },
-  pending: { bg: "bg-pending-500/15", text: "text-pending-600" },
+  verified: { bg: "bg-verified-500/15", text: "text-verified-700" },
+  pending: { bg: "bg-pending-500/15", text: "text-pending-700" },
   danger: { bg: "bg-danger-500/15", text: "text-danger-600" },
   info: { bg: "bg-info-500/15", text: "text-info-600" },
   ai: { bg: "bg-ai-500/15", text: "text-ai-600" },
-  gold: { bg: "bg-gold-500/15", text: "text-gold-600" },
+  gold: { bg: "bg-gold-500/15", text: "text-gold-700" },
 };
 
 /**
@@ -76,7 +80,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           <span
             className={cn(
               "rounded-r1 px-2 py-0.5 text-label font-medium",
-              isPositive ? "bg-verified-500/15 text-verified-600" : "bg-danger-500/15 text-danger-600"
+              isPositive ? "bg-verified-500/15 text-verified-700" : "bg-danger-500/15 text-danger-600"
             )}
           >
             {isPositive ? "↑" : "↓"} {Math.abs(change)}%

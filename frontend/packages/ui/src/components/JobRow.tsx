@@ -59,7 +59,7 @@ export const JobRow: React.FC<JobRowProps> = ({ job, onRetry, onOpen, className 
         <span className="truncate text-body-sm font-medium text-ink-800">
           {jobTypeLabel(job.job_type)}
         </span>
-        <span className="shrink-0 text-caption text-ink-400">#{job.id}</span>
+        <span className="shrink-0 text-caption text-ink-600">#{job.id}</span>
       </div>
 
       <StageProgress stage={stage} progress={job.progress ?? 0} className="mt-2" />

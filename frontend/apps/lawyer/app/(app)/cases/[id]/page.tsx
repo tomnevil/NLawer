@@ -32,6 +32,7 @@ import {
   EmptyState,
   MobileActionBar,
   ProvenanceBadge,
+  ProvenanceBlock,
   ProvenanceLegend,
   Skeleton,
   Spinner,
@@ -40,6 +41,7 @@ import {
   useSession,
   useSyncQueueOptional,
   useToast,
+  GRADE_TONE,
   type BadgeProps,
   type CapturedFile,
   type ProvenanceState,
@@ -231,13 +233,6 @@ const CASE_STATUS_TONE: Record<string, BadgeProps["variant"]> = {
   ARCHIVED: "neutral",
   CLOSED: "neutral",
   VOIDED: "danger",
-};
-
-const GRADE_TONE: Record<string, BadgeProps["variant"]> = {
-  S: "danger",
-  A: "pending",
-  B: "info",
-  C: "neutral",
 };
 
 /** `ReviewStatus` 六态（小写，见 `app/models/enums.py`）。 */
@@ -1091,12 +1086,15 @@ export default function CaseDetailPage() {
                 className={cn(
                   "relative whitespace-nowrap px-3 pb-2.5 pt-1 text-body-sm font-medium",
                   "transition-colors duration-fast",
-                  tab === t.key ? "text-brand-700" : "text-ink-500 hover:text-ink-900"
+                  // 🚨 用角色令牌 `text-link`，**不要**写 `text-brand-700`：深色档
+                  //    `--brand-700` 仍是 #274C93（浅色档值）⇒ 深色底只有 **1.94:1**。
+                  //    深色 `--link` = #8AA8E0（6.67:1）。同 web/compliance 芯片，2026-10-29。
+                  tab === t.key ? "text-link" : "text-ink-500 hover:text-ink-900"
                 )}
               >
                 {t.label}
                 {t.count !== undefined && (
-                  <span className="num ml-1 text-caption text-ink-400">{t.count}</span>
+                  <span className="num ml-1 text-caption text-ink-600">{t.count}</span>
                 )}
                 {tab === t.key && (
                   <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-t bg-brand-600" />
@@ -1210,7 +1208,7 @@ export default function CaseDetailPage() {
                 <button
                   type="button"
                   onClick={() => setTab("evidence")}
-                  className="text-caption text-brand-600 hover:text-brand-700"
+                  className="text-caption text-link hover:text-link-hover"
                 >
                   全部 {evidence.length} 份 →
                 </button>
@@ -1292,7 +1290,11 @@ function StageBar({ status, index }: { status: string; index: number }) {
               <div
                 className={cn(
                   "text-center text-caption",
-                  done || current ? "font-medium text-ink-700" : "text-ink-400"
+                  // 🚨 未到达的步骤用 `text-ink-500`（muted 文本档），**不要**用 `text-ink-400`：
+                  //    ink-400 是**非文本**档（图标/占位符），11px 文字压白底只有 **2.55:1**
+                  //    （2026-10-29 渲染实测 7 条）。ink-500 = 5.47:1，仍明显弱于已完成档
+                  //    ink-700 的 11.32:1 ⇒ 层级不变。
+                  done || current ? "font-medium text-ink-700" : "text-ink-500"
                 )}
               >
                 {s.label}
@@ -1388,25 +1390,30 @@ function AnalysisTab({
 
   return (
     <div className="space-y-3">
-      {/* 责任边界横幅：分析级，不是分段级 */}
-      <div className="flex items-start gap-2.5 rounded-r3 border border-dashed border-ai-500/30 bg-ai-500/10 px-3.5 py-2.5">
-        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-ai-600" aria-hidden />
-        <p className="text-body-sm text-ai-600">
-          以下六段内容由
-          <b className="mx-1">AI 生成</b>
-          （版本 v{analysis.version}），律师可逐段核对后提交复核。
-          {analysis.iteration_notes && analysis.iteration_notes.length > 0 && (
-            <span className="ml-1">
-              已按律师批注迭代 {analysis.iteration_notes.length} 次。
-            </span>
-          )}
-          {analysis.forced_hits && analysis.forced_hits.length > 0 && (
-            <span className="ml-1 font-medium">
-              命中 {analysis.forced_hits.length} 项强制复核场景，要求 {analysis.required_level} 复核。
-            </span>
-          )}
-        </p>
-      </div>
+      {/* 责任边界横幅：分析级，不是分段级。
+          §5「AI 生成」内容段：装饰改由 `ProvenanceBlock` 提供（紫色**虚线上边框** + 浅紫底）；
+          此前内联的是**四边**虚线，§5 规定的是**上边框**虚线
+          （`design-audit.md` #23 / 第 9 项）。`hideBadge` 保留原有的 Sparkles + 文案行。 */}
+      <ProvenanceBlock state="ai" hideBadge className="rounded-r3 px-3.5 py-2.5">
+        <div className="flex items-start gap-2.5">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-ai-600" aria-hidden />
+          <p className="text-body-sm text-ai-600">
+            以下六段内容由
+            <b className="mx-1">AI 生成</b>
+            （版本 v{analysis.version}），律师可逐段核对后提交复核。
+            {analysis.iteration_notes && analysis.iteration_notes.length > 0 && (
+              <span className="ml-1">
+                已按律师批注迭代 {analysis.iteration_notes.length} 次。
+              </span>
+            )}
+            {analysis.forced_hits && analysis.forced_hits.length > 0 && (
+              <span className="ml-1 font-medium">
+                命中 {analysis.forced_hits.length} 项强制复核场景，要求 {analysis.required_level} 复核。
+              </span>
+            )}
+          </p>
+        </div>
+      </ProvenanceBlock>
 
       <CollapseGroup
         accordion={false}
@@ -1420,7 +1427,9 @@ function AnalysisTab({
             icon={s.icon}
             title={
               <span className="flex items-center gap-2.5">
-                <span className="num grid h-5 w-5 shrink-0 place-items-center rounded-r1 border border-brand-100 bg-brand-50 text-caption font-semibold text-brand-700">
+                {/* 🚨 `text-link` 而非 `text-brand-700`：深色 `--brand-50` 底是 #10203A，
+                    而 `--brand-700` 仍是 #274C93 ⇒ 1.97:1；`--link` 深色 #8AA8E0 ⇒ 6.79:1。 */}
+                <span className="num grid h-5 w-5 shrink-0 place-items-center rounded-r1 border border-brand-100 bg-brand-50 text-caption font-semibold text-link">
                   {s.n}
                 </span>
                 <span>{s.title}</span>
@@ -1549,7 +1558,7 @@ function SectionBody({
             <li key={c.citation_id ?? i} className="rounded-r2 border border-line bg-surface-subtle p-3">
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <span className="num text-caption text-ink-500">{c.case_no ?? "—"}</span>
-                {c.court && <span className="text-caption text-ink-400">{c.court}</span>}
+                {c.court && <span className="text-caption text-ink-600">{c.court}</span>}
               </div>
               <p className="mt-0.5 text-body-sm font-medium text-ink-800">{c.title ?? "—"}</p>
               {c.holding && (
@@ -1610,7 +1619,7 @@ function SectionBody({
 }
 
 function Placeholder() {
-  return <p className="text-body-sm text-ink-400">该段暂无内容。</p>;
+  return <p className="text-body-sm text-ink-600">该段暂无内容。</p>;
 }
 
 /**

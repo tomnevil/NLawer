@@ -125,7 +125,7 @@ export default function ImMePage() {
         </section>
 
         {/* ─────────────────────── 设置 ─────────────────────── */}
-        <h2 className="mt-5 px-0.5 text-caption font-medium uppercase tracking-wider text-ink-400">
+        <h2 className="mt-5 px-0.5 text-caption font-medium uppercase tracking-wider text-ink-600">
           设置
         </h2>
 
@@ -141,7 +141,7 @@ export default function ImMePage() {
               <Moon className="h-4 w-4 shrink-0 text-ink-500" />
             )}
             <span className="flex-1 text-body-sm text-ink-800">外观</span>
-            <span className="text-caption text-ink-400">
+            <span className="text-caption text-ink-600">
               {theme === "dark" ? "深色" : "浅色"}
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
@@ -168,7 +168,7 @@ export default function ImMePage() {
           退出登录
         </button>
 
-        <p className="mt-5 text-center text-caption leading-relaxed text-ink-400">
+        <p className="mt-5 text-center text-caption leading-relaxed text-ink-600">
           律小智 · AI 生成内容仅供参考
           <br />
           不构成正式法律意见

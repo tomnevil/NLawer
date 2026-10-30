@@ -45,6 +45,10 @@ BASELINE_AUDITED = {
     "analyses.update_analysis",
     "archives.archive_case",
     "archives.export_hearing_pack",
+    # 2026-10-12 补：团队可见授权（跨律师读客户案情）的申请与审批
+    # —— 授权行只记最终态，审计行才是追加式账本。棘轮据此**收紧**。
+    "cases.create_access_request",
+    "cases.decide_access_request",
     "cases.dispatch_case",
     "compliance.create_scan",
     "dispatches.accept_dispatch",

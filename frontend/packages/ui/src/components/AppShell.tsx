@@ -540,7 +540,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 className={cn(
                   "h-9 w-56 rounded-r2 border border-line bg-surface-subtle pl-8 pr-14 text-body-sm text-ink-800 lg:w-72",
                   "placeholder:text-ink-400 transition-colors duration-fast",
-                  "focus:border-brand-400 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                  "focus:border-brand-400 focus:bg-surface focus:outline-none focus:shadow-focus"
                 )}
               />
               <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-r1 border border-line bg-surface px-1.5 py-0.5 text-caption text-ink-500">

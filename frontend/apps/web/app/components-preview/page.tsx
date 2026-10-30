@@ -234,7 +234,7 @@ function Panel({
     <div className={`rounded-r3 border border-line bg-surface p-4 ${className ?? ""}`}>
       <div className="mb-3 flex flex-wrap items-baseline gap-x-2">
         <h3 className="text-label font-medium text-ink-800">{title}</h3>
-        {hint && <span className="text-caption text-ink-400">{hint}</span>}
+        {hint && <span className="text-caption text-ink-600">{hint}</span>}
       </div>
       {children}
     </div>
@@ -524,7 +524,7 @@ export default function ComponentsPreviewPage() {
                   <div key={key}>
                     <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2">
                       <span className="text-label font-medium text-ink-800">{name}</span>
-                      <span className="text-caption text-ink-400">{note}</span>
+                      <span className="text-caption text-ink-600">{note}</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {[50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) => (
@@ -535,7 +535,7 @@ export default function ComponentsPreviewPage() {
                             style={{ backgroundColor: `rgb(var(--${key}-${step}))` }}
                             title={`--${key}-${step}`}
                           />
-                          <span className="num text-caption text-ink-400">{step}</span>
+                          <span className="num text-caption text-ink-600">{step}</span>
                         </div>
                       ))}
                     </div>
@@ -553,7 +553,7 @@ export default function ComponentsPreviewPage() {
                         className="h-12 w-12 border border-line bg-surface-subtle"
                         style={{ borderRadius: `var(--${r})` }}
                       />
-                      <span className="text-caption text-ink-400">{r}</span>
+                      <span className="text-caption text-ink-600">{r}</span>
                     </div>
                   ))}
                 </div>
@@ -566,7 +566,7 @@ export default function ComponentsPreviewPage() {
                         className="h-12 w-12 rounded-r2 bg-surface"
                         style={{ boxShadow: `var(--${s})` }}
                       />
-                      <span className="text-caption text-ink-400">{s}</span>
+                      <span className="text-caption text-ink-600">{s}</span>
                     </div>
                   ))}
                 </div>
@@ -868,7 +868,7 @@ export default function ComponentsPreviewPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <Panel title="折叠面板" hint="手风琴模式，同时只展开一个">
                 <CollapseGroup className="rounded-r2 border border-line">
-                  <CollapsePanel title="当事人信息" defaultOpen badge={<Badge variant="ink">必填</Badge>}>
+                  <CollapsePanel title="当事人信息" defaultOpen badge={<Badge variant="neutral">必填</Badge>}>
                     <div className="space-y-2 text-body-sm text-ink-700">
                       <p>张某 · 男 · 1988 年生</p>
                       <p className="num">身份证 1101**********1234</p>
@@ -898,7 +898,7 @@ export default function ComponentsPreviewPage() {
             </div>
           </Section>
 
-          <footer className="border-t border-line pt-6 text-caption text-ink-400">
+          <footer className="border-t border-line pt-6 text-caption text-ink-600">
             律小智 · 设计系统 v2「墨与纸」 · 阶段二组件预览 · 本页内容均为演示数据
           </footer>
         </div>

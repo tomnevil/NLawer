@@ -60,6 +60,57 @@ async def _already_seeded(session, tenant_id: str, prefix: str) -> bool:
     return row is not None
 
 
+def _assert_pool_invariant(dispatch_specs) -> None:
+    """抢单池不变量：进池的案件必须**既没有承办人、也处于待派单态**。
+
+    ## 为什么要在播种期断言
+
+    抢单池的口径是「**待接单 ∩ 未指定律师**」（`deliverables/ui-design/
+    admin-gap-analysis.md` 的「抢单池口径」一行）。而本模块的两张表
+    （`case_specs` / `dispatch_specs`）是**手工维护**的，极易漂移 ——
+    2026-10-10 查清的缺陷就是如此：`HLW-DEMO-0004` 被预指派了 `wang`、
+    `0010` 被预指派了 `zhao`，而两条派单都进了池。
+
+    后果不是「数据难看」，而是它**掩盖了一个真实缺陷**：
+
+    * `GET /dispatches/pool` 按**租户**取（池内案件对全所律师可见）；
+    * `GET /cases/{id}` 按**承办人**鉴权（P2-10，无权按「不存在」处理）。
+
+    ⇒ 池内案件一旦带上 `Case.lawyer_id`，就只对该一人可见、其余律师读到 404；
+    而**不**带 `lawyer_id` 时所有人都读不到 —— 前端那条「按 `case_id` 回查标题」
+    在 P2-10 之后结构上不可能成立（现改为服务端内联摘要，见
+    `app/api/v1/dispatches.py::_briefs_for`）。池内案件的可见性来自**池子**这个
+    通道，与 `lawyer_id` 无关。
+    ⇒ 断言放在**源头**，让漂移在播种时就炸，而不是靠人眼比对两张表。
+
+    ⚠️ 池的谓词**照抄** `grab_pool`：`status == PENDING and (lawyer_id IS NULL or mode == POOL)`。
+    """
+    bad_lawyer: list[str] = []
+    bad_status: list[str] = []
+    for case, lawyer, mode, status in dispatch_specs:
+        in_pool = status == DispatchStatus.PENDING and (
+            lawyer is None or mode == DispatchMode.POOL
+        )
+        if not in_pool:
+            continue
+        if case.lawyer_id is not None:
+            bad_lawyer.append(case.case_no)
+        if case.status != CaseStatus.PENDING_DISPATCH:
+            bad_status.append(f"{case.case_no}({case.status})")
+    problems: list[str] = []
+    if bad_lawyer:
+        problems.append(f"池内案件被预指派了承办人：{bad_lawyer}")
+    if bad_status:
+        problems.append(f"池内案件不在待派单态：{bad_status}")
+    if problems:
+        raise RuntimeError(
+            "抢单池不变量被破坏 —— " + "；".join(problems) + "。"
+            "池内案件必须 lawyer_id IS NULL 且 status=PENDING_DISPATCH"
+            "（口径：待接单 ∩ 未指定律师）。要演示「预指派待接受」，"
+            "请用 mode=DESIGNATED + Dispatch.lawyer_id —— 它不会进池。"
+        )
+
+
 # ── 演示分析引用的「库内可验证」映射 ────────────────────────────────────
 #
 # 🚨 原则（与第十四轮合同审查一致）：**引用必须库内可验证，否则不显示引用**。
@@ -175,17 +226,24 @@ async def _seed_firm(session, users: dict) -> dict:
     firm = users.get("firm_admin")
 
     # 案件：覆盖各状态，律师端“我的案件”按 lawyer_id 过滤可见
+    #
+    # ⚠️ `lawyer` 一列为 `None` 的案件是**抢单池**案件：它们还没有承办人。
+    #    这是**必须**的 —— 池子按租户取、案件详情按承办人鉴权（P2-10），
+    #    给池内案件填承办人会让池子只对那一个人可见（其余律师 404）。
+    #    ⇒ `_assert_pool_invariant` 在下面显式断言，漂移会在播种期就炸。
     case_specs = [
         ("HLW-DEMO-0001", "劳动争议仲裁申请书代写", wang, CaseStatus.ACCEPTED, CaseGrade.B, IntentType.DOCUMENT, "劳动争议", 80000.0, 2, 0),
         ("HLW-DEMO-0002", "劳动合同解除经济补偿核算", li, CaseStatus.IN_REVIEW, CaseGrade.A, IntentType.CALCULATION, "劳动争议", 120000.0, 3, 1),
         ("HLW-DEMO-0003", "买卖合同违约追责", li, CaseStatus.DISPATCHED, CaseGrade.B, IntentType.CONSULT, "合同纠纷", 250000.0, 1, 0),
-        ("HLW-DEMO-0004", "房屋租赁合同纠纷咨询", wang, CaseStatus.PENDING_DISPATCH, CaseGrade.C, IntentType.CONSULT, "租赁合同", 30000.0, 1, 0),
+        # 抢单池：无承办人、待派单（2026-10-11 修正：原为 `wang`，与 POOL 派单矛盾）
+        ("HLW-DEMO-0004", "房屋租赁合同纠纷咨询", None, CaseStatus.PENDING_DISPATCH, CaseGrade.C, IntentType.CONSULT, "租赁合同", 30000.0, 1, 0),
         ("HLW-DEMO-0005", "离婚财产分割协议", zhao, CaseStatus.CONFIRMED, CaseGrade.A, IntentType.DOCUMENT, "婚姻家庭", 500000.0, 2, 1),
         ("HLW-DEMO-0006", "法定继承纠纷咨询", zhao, CaseStatus.ACCEPTED, CaseGrade.B, IntentType.CONSULT, "继承纠纷", 0.0, 1, 0),
         ("HLW-DEMO-0007", "交通事故人身损害赔偿", wang, CaseStatus.ARCHIVED, CaseGrade.C, IntentType.CALCULATION, "交通事故", 60000.0, 2, 0),
         ("HLW-DEMO-0008", "工伤待遇赔偿争议", wang, CaseStatus.CLOSED, CaseGrade.B, IntentType.CALCULATION, "劳动争议", 180000.0, 3, 0),
         ("HLW-DEMO-0009", "科技公司股权架构设计", firm, CaseStatus.DISPATCHED, CaseGrade.S, IntentType.ENTRUST, "公司合规", 0.0, 2, 1),
-        ("HLW-DEMO-0010", "商业秘密保护合规咨询", zhao, CaseStatus.INTAKE, CaseGrade.C, IntentType.CONSULT, "知识产权", 0.0, 1, 0),
+        # 抢单池：无承办人、待派单（2026-10-11 修正：原为 `zhao` + `INTAKE`，两处都与 POOL 派单矛盾）
+        ("HLW-DEMO-0010", "商业秘密保护合规咨询", None, CaseStatus.PENDING_DISPATCH, CaseGrade.C, IntentType.CONSULT, "知识产权", 0.0, 1, 0),
     ]
     cases: dict[str, Case] = {}
     for no, title, lawyer, status, grade, intent, disp, claim, urg, formal in case_specs:
@@ -209,6 +267,12 @@ async def _seed_firm(session, users: dict) -> dict:
         cases[no] = c
 
     # 派单：抢单池（PENDING / lawyer_id=None）与已派单待接/已接
+    #
+    # ⚠️ 抢单池那两条（0004 / 0010）的 `lawyer` 必须是 `None`：池的语义是
+    #    「待接单 ∩ **未指定律师**」（见 `_assert_pool_invariant`）。
+    #    要演示「预指派给某人、等他接受」，正确写法是
+    #    `mode=DESIGNATED` + `lawyer=<该律师>` —— 它**不会**进 `grab_pool`
+    #    （谓词 `or_(lawyer_id IS NULL, mode == POOL)` 会把它排掉）。
     dispatch_specs = [
         (cases["HLW-DEMO-0003"], li, DispatchMode.AUTO, DispatchStatus.ACCEPTED),
         (cases["HLW-DEMO-0004"], None, DispatchMode.POOL, DispatchStatus.PENDING),
@@ -229,6 +293,9 @@ async def _seed_firm(session, users: dict) -> dict:
                 reason="演示数据：按专业领域匹配" if status == DispatchStatus.ACCEPTED else None,
             )
         )
+
+    # 源头自检：池内案件不得带承办人 / 不得离开待派单态（见函数 docstring）
+    _assert_pool_invariant(dispatch_specs)
 
     # 复核任务
     #
