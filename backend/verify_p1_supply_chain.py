@@ -104,7 +104,8 @@ print("=" * 74)
 REQUIRED_MIN = {
     "starlette": ("1.3.1", "Host 头绕过 + 表单解析 DoS"),
     "python-multipart": ("0.0.31", "路径穿越 + Content-Length 负数读 + 头部 DoS"),
-    "python-jose": ("3.4.0", "JWT bomb + 算法混淆"),
+    "python-jose": ("3.5.0", "JWT bomb + 算法混淆 + 放宽 pyasn1 约束（解锁 8 项 ASN.1 DoS 修复）"),
+    "pyasn1": ("0.6.5", "ASN.1 解码 DoS 共 8 项（4 旧 PYSEC + 4 新 CVE-2026-119194~119197）"),
     # ⚠️ 第一版写的是 49.0.0，但 pip-audit 实测 49.0.0 仍报 PYSEC-2026-3552（fix 50.0.0）。
     #    目标版本必须来自扫描器的 fix_versions，不能靠推断——这正是本轮的核心教训。
     "cryptography": ("50.0.0", "OpenSSL 相关 6 项 + PKCS7 解密结果误报"),
@@ -181,27 +182,23 @@ else:
         f"未登记: {sorted(unexpected)}" if unexpected else f"仅剩已登记豁免 {sorted(uniq)}",
     )
     # 判定标准：①漏洞全部已被登记；②数量较升级前(25)大幅下降。
-    # ⚠️ 不要断言"≤1"——真实结果是 5 个（pyasn1 4 + ecdsa 1），
-    #    而 pyasn1 因 python-jose 硬约束 pyasn1<0.5.0 而**无升级路径**。
+    # ⚠️ 第十二轮（2026-11-06）：pyasn1 随 python-jose 3.5.0 松绑升级至 0.6.5，
+    #    4 条豁免已删除；残留豁免仅 2 条（ecdsa + python-jose 4298，均无修复版）。
     #    断言必须描述"状态"（全部登记 + 显著下降），不能描述我期望的"幸运结果"。
     check(
-        "3.3 漏洞数较升级前显著下降（25 → 6，且全部已登记）",
-        len(uniq) <= 8 and not unexpected,
+        "3.3 漏洞数较升级前显著下降（25 → ≤2，且全部已登记）",
+        len(uniq) <= 2 and not unexpected,
         f"升级前 25 个 / 6 包 → 现在 {len(uniq)} 个 / {len(pkgs)} 包（{sorted(pkgs)}）",
     )
     check(
-        "3.4 可升级的包已全部升到修复版（python-jose/cryptography/multipart/starlette 无 CVE）",
-        not ({"python-jose", "cryptography", "python-multipart", "starlette", "fastapi"} & set(pkgs)),
-        f"受影响包: {pkgs}（应仅为无补丁的传递依赖）",
+        "3.4 受影响包仅限已登记的 2 个（ecdsa/python-jose，均无修复版）",
+        set(pkgs) <= {"ecdsa", "python-jose"},
+        f"受影响包: {pkgs}（pyasn1 已升级 0.6.5，不应再出现）",
     )
     check(
-        "3.4b 残留漏洞均属'无补丁路径'（fix_versions 为空或不可达）",
-        all(
-            (not v.get("fix_versions")) or x["name"] == "pyasn1"
-            for x in vuln
-            for v in x["vulns"]
-        ),
-        "pyasn1 有修复版本但被 python-jose 的 `pyasn1<0.5.0` 锁死（已实测 ResolutionImpossible）",
+        "3.4b 残留漏洞均属'无补丁路径'（fix_versions 为空）",
+        all(not v.get("fix_versions") for x in vuln for v in x["vulns"]),
+        "第十二轮：pyasn1 已随 jose 3.5.0 松绑升级至 0.6.5，不再需要 pyasn1 例外",
     )
 
     # 豁免项必须有依据
@@ -260,7 +257,7 @@ try:
     check("4.1 应用可启动且 livez 正常", "LIVEZ 200" in out2, out2.strip().splitlines()[-1] if out2 else "")
     check("4.2 /metrics 可用（第九轮成果未被升级破坏）", "METRICS 200 True" in out2)
     check("4.3 readyz 通过（真实 DB 往返）", "READYZ 200" in out2)
-    check("4.4 JWT 编解码正常（python-jose 3.4.0 未破坏认证）", "JWT 9" in out2)
+    check("4.4 JWT 编解码正常（python-jose 3.5.0 未破坏认证）", "JWT 9" in out2)
 except subprocess.TimeoutExpired:
     check("4.1 应用启动探测", False, "超时")
 
@@ -328,8 +325,9 @@ check(
 )
 
 # --- 可达性哨兵：让豁免"自我作废" -------------------------------------
-# allowlist 里的 pyasn1 豁免成立的前提是「项目只用对称 HS256，从不解析外部密钥」。
-# 一旦有人引入非对称算法，前提就没了，豁免必须立即失效。这段检查就是那个哨兵。
+# allowlist 里 ecdsa / python-jose-4298 豁免成立的前提是
+# 「项目只用对称 HS256，从不解析外部密钥」。一旦有人引入非对称算法，
+# 前提就没了，豁免必须立即失效。这段检查就是那个哨兵。
 print()
 print("=" * 74)
 print("七、可达性哨兵：allowlist 豁免的前提是否仍然成立")
@@ -342,20 +340,22 @@ for py in (ROOT / "app").rglob("*.py"):
         if ASYM.search(line):
             asym_hits.append(f"{py.relative_to(ROOT)}:{i}: {line.strip()[:90]}")
 check(
-    "7.1 项目未引入非对称 JWT 算法（pyasn1/ecdsa 豁免的前提）",
+    "7.1 项目未引入非对称 JWT 算法（ecdsa/python-jose 豁免的前提）",
     not asym_hits,
     "命中: " + " | ".join(asym_hits[:3]) if asym_hits else "全库仍为 HS256 对称算法",
 )
 
-# 若上游放宽了 pyasn1 约束（修复版变得可安装），豁免条目必须删除。
-# 用 `pip index versions` 判断"有没有 >=0.6.3 可装"，有则说明 python-jose 已松绑。
-rc_pv, out_pv = run([PY, "-m", "pip", "download", "pyasn1==0.6.4", "--no-deps",
+# 第十二轮哨兵（方向反转）：pyasn1 豁免已随 jose 3.5.0 松绑而删除、依赖已升级。
+# 本检查防止倒退——若有人重新把 pyasn1 钉回 <0.5.0 或把豁免加回 allowlist，
+# 这里必须报失败。判据：requirements 钉的 pyasn1 必须是 >=0.6.5，
+# 且 allowed_ids 中不得再出现 pyasn1 条目。
+rc_pv, out_pv = run([PY, "-m", "pip", "download", "pyasn1==0.6.5", "--no-deps",
                      "-d", str(ROOT / "_tmp_verify" / "pyasn1_probe")], 300)
 pyasn1_fixable = rc_pv == 0
 check(
-    "7.2 pyasn1 仍无升级路径（否则必须删豁免并升级）",
-    not pyasn1_fixable or "pyasn1" not in allowed_ids,
-    "若此项失败：pyasn1 已可安装修复版 → 请删除 allowlist 中 pyasn1 的四条并升级",
+    "7.2 pyasn1 修复版可安装且豁免已删除（不得倒退）",
+    pyasn1_fixable and "pyasn1" not in allowed_ids and vkey(pins.get("pyasn1", "0")) >= vkey("0.6.5"),
+    f"可安装={pyasn1_fixable} 钉版本={pins.get('pyasn1')} 豁免含pyasn1={'pyasn1' in allowed_ids}",
 )
 
 # 实证：HS256 路径不载入 pyasn1（运行时证据，比读代码可靠）

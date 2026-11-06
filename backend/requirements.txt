@@ -31,14 +31,17 @@ pydantic-settings==2.5.2
 email-validator==2.1.0
 
 # ---- 认证 ----
-# python-jose 3.3.0 → 3.4.0：修复 JWT bomb DoS + 算法混淆。
-# 注：本项目已用 `algorithms=[ALGORITHM]` 显式白名单（HS256）规避算法混淆，
-#     且从不调用 jwe，因此实际影响低——但仍应升级以消除维护风险。
-# ⚠️ 代价（第十一轮实测）：python-jose 3.4.0 **硬约束 `pyasn1<0.5.0`**，
-#    使 pyasn1 无法升到修复版（0.6.3/0.6.4）。已通过运行时实证确认 pyasn1
-#    在本项目 JWT 路径上**从未被载入**，故登记豁免而非强行升级（会破坏依赖闭包）。
-#    详见 security-allowlist.txt 中 PYSEC-2026-2263 / -3455 / -3456 / -3457 条目。
-python-jose[cryptography]==3.4.0
+# python-jose 3.3.0 → 3.4.0 → 3.5.0：3.4.0 修复 JWT bomb DoS + 算法混淆；
+# 3.5.0 把 `pyasn1<0.5.0` 放宽为 `pyasn1>=0.5.0`——这正是第十一轮锁死
+# pyasn1 修复版的硬约束。2026-11-06 CI 门禁红在 OSV 新披露的 4 项 pyasn1
+# 二次方复杂度 DoS（CVE-2026-119194~119197，fix 0.6.5）上，根因即 3.4.0
+# 的锁。约束一经上游放宽，allowlist 的复查条件 2 立即触发：升级并删除豁免。
+# 注：PYSEC-2026-4298 影响范围 ≤3.5.0 且暂无修复版，仍按"本项目不可达"
+#     登记豁免（见 security-allowlist.txt）。
+python-jose[cryptography]==3.5.0
+# pyasn1 显式钉 0.6.5：修复全部 8 项 ASN.1 解码 DoS（4 项旧 PYSEC + 4 项新 CVE）。
+# 第十一轮因 jose 约束只能留在 0.4.8 并登记豁免；本轮随 jose 3.5.0 解锁。
+pyasn1==0.6.5
 bcrypt==4.0.1
 # cryptography 43.0.1 → 50.0.1：修复 OpenSSL 6 项 + PKCS7 解密结果误报（PYSEC-2026-3552，fix 50.0.0）
 cryptography==50.0.1
