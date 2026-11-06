@@ -4,6 +4,7 @@ MVP 落盘到 `settings.LOCAL_STORAGE_PATH`，按租户分子目录；
 对象存储接入后替换 `_write` 实现即可，调用方无需改动。
 """
 import os
+import re
 import uuid
 from typing import Optional
 
@@ -23,8 +24,12 @@ def _safe_name(filename: str) -> str:
     ⚠️ 保留扩展名是为了可检索/可预览，但**必须**是"从净化后的 basename 取 ext"，
     绝不能把原始文件名整段拼进路径 —— 否则 `../../etc/passwd` 就能落到存储根之外。
     """
-    base = os.path.basename(filename or "")
+    # 先把反斜杠归一成 `/`：Linux 上 `\` 不是分隔符，`..\..\x\sam` 会被
+    # basename 整段保留、splitext 又把 `\...` 当成扩展名，最终污染落盘名。
+    base = os.path.basename((filename or "").replace("\\", "/"))
     ext = os.path.splitext(base)[1].lower()
+    if not re.fullmatch(r"\.[a-z0-9]+", ext):
+        ext = ""
     return f"{uuid.uuid4().hex}{ext}"
 
 
@@ -40,6 +45,10 @@ def _resolve_under_root(*parts: str) -> str:
     ⇒ 落盘前必须 `abspath` + `commonpath` 验证，否则就是一条静默的目录穿越
     （不报错、文件照写，只是写到了别人的目录里）。
     """
+    # 归一反斜杠：Linux 上 `\` 不是分隔符，`tenant_id="..\..\windows"` 会被
+    # 当成一个普通目录名留在根内，commonpath 校验形同虚设（逃逸静默通过）。
+    # 落盘名是 uuid hex、合法租户名不含 `\`，故归一只影响攻击者输入。
+    parts = tuple(p.replace("\\", "/") for p in parts)
     root = os.path.abspath(settings.LOCAL_STORAGE_PATH)
     target = os.path.abspath(os.path.join(root, *parts))
     try:

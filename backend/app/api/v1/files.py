@@ -48,8 +48,12 @@ def _resolve_abs_path(rel_path: str, tenant_root: Optional[str] = None) -> str:
     字面量的 `..` 会被 httpx 规范化掉，但 `%2e%2e` 不会）。
     由 `tests/test_file_download_endpoint.py::D5` 钉住。
     """
+    # 归一反斜杠：Linux 上 `\` 不是分隔符，`..\..\windows\win.ini` 会被当成
+    # 一个普通文件名留在根内，前缀校验形同虚设（逃逸静默通过）。落盘名是
+    # uuid hex、合法租户/子目录名不含 `\`，故归一只影响攻击者输入。
+    rel_path = rel_path.replace("\\", "/")
     root = os.path.realpath(os.path.abspath(settings.LOCAL_STORAGE_PATH))
-    candidate = os.path.realpath(os.path.join(root, rel_path.lstrip("/\\")))
+    candidate = os.path.realpath(os.path.join(root, rel_path.lstrip("/")))
     if candidate != root and not candidate.startswith(root + os.sep):
         raise PermissionDeniedError("非法的文件路径", code=ErrorCode.PERMISSION_DENIED)
     if tenant_root is not None:
