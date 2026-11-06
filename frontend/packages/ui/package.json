@@ -15,7 +15,7 @@
     "tailwind-merge": "^2.5.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "next": "15.5.24",
+    "next": "15.5.28",
     "@nlaw/sdk": "workspace:*",
     "@nlaw/types": "workspace:*"
   },
