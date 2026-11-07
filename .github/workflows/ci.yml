@@ -1,14 +1,14 @@
 name: CI
 
 # 触发策略：
-# - PR 到 main：全量门禁（这是门禁的主战场——不让问题进主干）
-# - push 到 main：全量门禁（保证主干始终绿）
+# - PR 到 master：全量门禁（这是门禁的主战场——不让问题进主干）
+# - push 到 master：全量门禁（保证主干始终绿）
 # - 手动触发：便于排查
 on:
   pull_request:
-    branches: [main, master]
+    branches: [master]
   push:
-    branches: [main, master]
+    branches: [master]
   workflow_dispatch:
 
 # 同一分支的新推送取消旧运行，避免排队浪费（保留最新一次的结果即可）
@@ -414,7 +414,7 @@ jobs:
   #   双向钉住。手写第二份清单一定会漂移（坑 64）。
   browser-admin:
     name: Browser (admin · real assertions)
-    # 🚨 **只在 main / 手动触发**：本 job 要装 pnpm + 生产构建 + 起两个服务，
+    # 🚨 **只在 master / 手动触发**：本 job 要装 pnpm + 生产构建 + 起两个服务，
     #   是**分钟级**的，挂在每个 PR 上会拖慢反馈回路。但它**必须真的跑** ——
     #   「写了不跑」正是坑 65 的形状，所以主干每次 push 都跑。
     if: github.event_name != 'pull_request'
@@ -593,7 +593,7 @@ jobs:
   #   与**判据 6**（下面那行命令必须逐字出现在本 job 块里）双向钉住。
   browser-all:
     name: Browser (all 4 apps · real assertions)
-    # 与 `browser-admin` 同一条判据：`on.push.branches` 只有 main/master
+    # 与 `browser-admin` 同一条判据：`on.push.branches` 只有 master
     # ⇒ `!= 'pull_request'` 等价于「**push 到主干 + 手动触发**」。
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
