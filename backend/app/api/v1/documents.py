@@ -16,6 +16,8 @@ from app.core.errors import ErrorCode, NotFoundError
 from app.core.metrics import metrics
 from app.core.moderation import ContentBlockedError
 from app.core.pagination import ok
+from app.core.rbac import Role
+from app.models.case import Case
 from app.models.document import ContractReview, Document
 from app.models.enums import (
     ContractReviewSource,
@@ -37,8 +39,18 @@ from app.services.moderation_service import ModerationService
 router = APIRouter(prefix="/documents", tags=["文书与合同"])
 
 
-async def _document_or_404(db: AsyncSession, doc_id: int, tenant_id: str) -> Document:
-    """加载文书并校验租户归属（`collect` / `render` / 详情必须经此守卫）。
+async def _case_or_404(db: AsyncSession, case_id: int, ctx) -> Case:
+    """与 `cases.py:_case_or_404` **同口径**：租户 + 客户归属双重校验。"""
+    case = await db.get(Case, case_id)
+    if case is None or case.tenant_id != ctx.tenant_id:
+        raise NotFoundError("案件不存在", code=ErrorCode.CASE_NOT_FOUND)
+    if ctx.role == Role.CLIENT and case.client_user_id != ctx.user_id:
+        raise NotFoundError("案件不存在", code=ErrorCode.CASE_NOT_FOUND)
+    return case
+
+
+async def _document_or_404(db: AsyncSession, doc_id: int, ctx) -> Document:
+    """加载文书并校验**租户 + 案件归属**（collect / render / 详情必须经此守卫）。
 
     历史缺陷（2026-09-21 由 `tests/test_document_endpoint_layer.py::W4/W5/W5b` 坐实）：
     `collect_variables` 与 `render_document` 直接 `DocumentService(db).collect/render(doc_id)`，
@@ -51,11 +63,16 @@ async def _document_or_404(db: AsyncSession, doc_id: int, tenant_id: str) -> Doc
       而且 `BillingService.consume` 用的是 `ctx.tenant_id`
       ⇒ **读别人的东西，记自己租户的账**（实测流水 2 → 3）。
 
-    与 `dispatches._dispatch_or_404`（§3.28.1）是同一个形状：
-    「服务层不收 `tenant_id`」这个缺口会按模块复现。
+    A4：同租户的其他客户此前也不受限——只校验 tenant 时，客户 A 可读/改/渲染
+    客户 B 的文书。现按文书所属案件走 `_case_or_404`；未挂案件的文书按
+    `created_by` 收口（客户只能操作自己创建的文书）。
     """
     d = await db.get(Document, doc_id)
-    if d is None or d.tenant_id != tenant_id:
+    if d is None or d.tenant_id != ctx.tenant_id:
+        raise NotFoundError("文书不存在", code=ErrorCode.DOCUMENT_NOT_FOUND)
+    if d.case_id is not None:
+        await _case_or_404(db, d.case_id, ctx)
+    elif ctx.role == Role.CLIENT and d.created_by != ctx.user_id:
         raise NotFoundError("文书不存在", code=ErrorCode.DOCUMENT_NOT_FOUND)
     return d
 
@@ -86,6 +103,8 @@ async def start_document(
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
 ):
+    if payload.case_id is not None:
+        await _case_or_404(db, payload.case_id, ctx)
     doc = await DocumentService(db).start(
         payload.template_id, tenant_id=ctx.tenant_id, user_id=ctx.user_id, case_id=payload.case_id
     )
@@ -100,7 +119,7 @@ async def collect_variables(
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
 ):
-    await _document_or_404(db, doc_id, ctx.tenant_id)
+    await _document_or_404(db, doc_id, ctx)
     doc = await DocumentService(db).collect(doc_id, payload.variables)
     await db.commit()
     return ok(DocumentOut.model_validate(doc).model_dump())
@@ -113,7 +132,7 @@ async def render_document(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    await _document_or_404(db, doc_id, ctx.tenant_id)
+    await _document_or_404(db, doc_id, ctx)
     doc = await DocumentService(db).render(doc_id)
 
     # —— 输出审核（P0-13 第十四条「停止传输」）——
@@ -160,7 +179,7 @@ async def get_document(
     # 收敛到与 `collect` / `render` **同一个**守卫：此前这里是内联的重复判据，
     # 与另两个端点各写一份、且那两份还是缺失的（`conversation_access.py`
     # 收敛前的同款问题）。判据分散必然漂移。
-    d = await _document_or_404(db, doc_id, ctx.tenant_id)
+    d = await _document_or_404(db, doc_id, ctx)
     return ok(DocumentOut.model_validate(d).model_dump())
 
 

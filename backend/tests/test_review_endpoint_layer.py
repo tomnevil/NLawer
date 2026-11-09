@@ -113,6 +113,7 @@ def seeded(engine):
             s.add_all([lawyer_a, lawyer_b, client_a, client_b])
             await s.flush()
 
+            from app.models.analysis import CaseAnalysis
             from app.models.case import Case
             from app.models.enums import CaseStatus
 
@@ -125,6 +126,31 @@ def seeded(engine):
             )
             s.add(case_client)
             await s.flush()
+
+            case_b = Case(
+                tenant_id=TENANT_B,
+                case_no=f"CASE-REV-B-{uuid.uuid4().hex[:6]}",
+                title="租户乙的案件",
+                status=CaseStatus.ACCEPTED,
+            )
+            s.add(case_b)
+            await s.flush()
+
+            # A5（`ReviewService._target_case_id`）起，`ensure` 的复核目标必须
+            # **真实存在且同租户**。夹具此前用裸 target_id（如 8001）直接调
+            # `ensure`，A5 上线后整片 404 —— 那是**夹具不真实**，不是产品缺陷。
+            # 这里按用例里出现过的 target_id 预先播入 CaseAnalysis（显式主键）。
+            target_ids = [8001, 8002, 8003, 9001, 9200, 9300, 9400, 9500,
+                          9600, 9601, 9602, 9603, 9700, 9702, 9703]
+            for tid in target_ids:
+                s.add(CaseAnalysis(
+                    id=tid, tenant_id=TENANT_A, case_id=case_client.id, version=1,
+                ))
+            # 跨租户幂等用例需要一条**租户 B 自己的**目标（主键全局唯一，
+            # 同一个 target_id 不可能同时属于两个租户）。
+            s.add(CaseAnalysis(
+                id=9011, tenant_id=TENANT_B, case_id=case_b.id, version=1,
+            ))
 
             def _review(tid, target_id, assignee_id):
                 # ⚠️ **必须带承办人**：2026-09-30 起复核端点加了「可见性门禁」
@@ -344,10 +370,12 @@ def test_ensure_is_idempotent_and_tenant_scoped(app_factory, seeded, engine):
         second = _data(_ensure(c, tid))
         assert first["id"] == second["id"], "ensure 不幂等 ⇒ 一次调用一条脏数据"
 
-    # 租户 B 用**同一个 target_id** ensure ⇒ 必须是另一条，不能复用 A 的
+    # 租户 B 用**自己的**目标 ensure ⇒ 必须是另一条，不能复用 A 的
+    # （A5 起同一个 target_id 只能属于一个租户，故这里换用 B 的目标 9011，
+    #   判据仍钉「跨租户不复用」这一性质）。
     app_b = app_factory(seeded["b"])
     with _client(app_b) as c:
-        other = _data(_ensure(c, tid))
+        other = _data(_ensure(c, 9011))
         assert other["id"] != first["id"], "跨租户复用了同一条复核任务 ⇒ 串号"
 
 

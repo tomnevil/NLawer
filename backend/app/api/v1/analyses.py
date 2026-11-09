@@ -22,10 +22,16 @@ from app.services.job_handlers import trigger_case_analysis
 router = APIRouter(prefix="/analyses", tags=["AI 办案"])
 
 
-async def _load_or_404(db: AsyncSession, analysis_id: int, tenant_id: str) -> CaseAnalysis:
+async def _load_or_404(db: AsyncSession, analysis_id: int, ctx) -> CaseAnalysis:
+    """加载分析并执行**租户 + 案件归属**校验。
+
+    A4：此前只按 `analysis_id + tenant_id` 取，同租户的其他客户可读/改/迭代
+    他人案件的分析；统一收口到 `_case_or_404`，与案件详情同一口径。
+    """
     a = await db.get(CaseAnalysis, analysis_id)
-    if a is None or a.tenant_id != tenant_id:
+    if a is None or a.tenant_id != ctx.tenant_id:
         raise NotFoundError("分析不存在", code=ErrorCode.ANALYSIS_NOT_FOUND)
+    await _case_or_404(db, a.case_id, ctx)
     return a
 
 
@@ -51,6 +57,7 @@ async def get_case_analysis(
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
 ):
+    await _case_or_404(db, case_id, ctx)  # 租户 + 客户归属（A4：此前缺失，可读他人案件分析）
     a = (
         (
             await db.execute(
@@ -97,7 +104,7 @@ async def update_analysis(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    a = await _load_or_404(db, analysis_id, ctx.tenant_id)
+    a = await _load_or_404(db, analysis_id, ctx)
     # 记录哪些字段被律师改过（字段名，不落正文，避免卷宗内容进审计表）
     changed = [f for f in ("summary", "legal_analysis", "related_laws", "similar_cases", "suggestions", "missing_info")
                if getattr(payload, f) is not None]
@@ -148,7 +155,7 @@ async def iterate_analysis(
     ctx=Depends(get_tenant_context),
     user=Depends(get_current_user),
 ):
-    a = await _load_or_404(db, analysis_id, ctx.tenant_id)
+    a = await _load_or_404(db, analysis_id, ctx)
     updated = await CaseCopilot(db).generate(a.case_id, trigger="LAWYER_ITERATE", note=payload.note)
     # 迭代会覆盖分析版本，属「谁驱动了这次重生成」的关键证据
     await record(
@@ -170,7 +177,7 @@ async def analysis_decisions(
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
 ):
-    a = await _load_or_404(db, analysis_id, ctx.tenant_id)
+    a = await _load_or_404(db, analysis_id, ctx)
     rows = list(
         (await db.execute(select(AiDecision).where(AiDecision.run_id == a.run_id))).scalars().all()
     )
@@ -188,7 +195,7 @@ async def analysis_versions(
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
 ):
-    await _load_or_404(db, analysis_id, ctx.tenant_id)
+    await _load_or_404(db, analysis_id, ctx)
     rows = list(
         (
             await db.execute(

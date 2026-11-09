@@ -33,6 +33,39 @@ class ReviewService:
         self.db = db
 
     # ---------------- 创建 / 查询 ----------------
+    async def _target_case_id(
+        self, *, target_type: ReviewTargetType, target_id: int, tenant_id: str
+    ) -> Optional[int]:
+        """校验复核目标存在且属于当前租户，返回其所属案件（若有）。
+
+        A5：此前 `ensure()` 只按 `target_type + target_id` 建复核，不校验目标归属，
+        任何租户都能对他租户的分析/报告建复核，随后 `_on_confirmed()` 会把
+        对方的分析、案件改成 CONFIRMED。现在在创建前统一收口。
+        """
+        if target_type == ReviewTargetType.CASE_ANALYSIS:
+            obj = await self.db.get(CaseAnalysis, target_id)
+        elif target_type == ReviewTargetType.CONSULT_REPORT:
+            from app.models.consult_report import ConsultReport
+
+            obj = await self.db.get(ConsultReport, target_id)
+        elif target_type == ReviewTargetType.DOCUMENT:
+            from app.models.document import Document
+
+            obj = await self.db.get(Document, target_id)
+        elif target_type == ReviewTargetType.EVIDENCE_LIST:
+            from app.models.evidence import Evidence
+
+            obj = await self.db.get(Evidence, target_id)
+        elif target_type == ReviewTargetType.COMPLIANCE_REPORT:
+            from app.models.knowledge import ComplianceScan
+
+            obj = await self.db.get(ComplianceScan, target_id)
+        else:
+            obj = None
+        if obj is None or obj.tenant_id != tenant_id:
+            raise NotFoundError("复核目标不存在", code=ErrorCode.REVIEW_NOT_FOUND)
+        return getattr(obj, "case_id", None)
+
     async def ensure(
         self,
         *,
@@ -45,6 +78,14 @@ class ReviewService:
         assignee_id: Optional[int] = None,
     ) -> Review:
         """幂等取得或创建复核任务（强制复核命中时升级要求级别）。"""
+        target_case_id = await self._target_case_id(
+            target_type=target_type, target_id=target_id, tenant_id=tenant_id
+        )
+        if case_id is not None and target_case_id is not None and target_case_id != case_id:
+            raise NotFoundError("复核目标不属于该案件", code=ErrorCode.REVIEW_NOT_FOUND)
+        if case_id is None:
+            case_id = target_case_id
+
         existing = (
             (
                 await self.db.execute(

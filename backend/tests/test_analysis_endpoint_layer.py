@@ -253,16 +253,16 @@ def test_all_routes_respond(app_factory, seeded):
 
 
 def test_get_case_analysis_cross_tenant_is_404(app_factory, seeded):
-    """A2：`GET /case/{id}` 跨租户 ⇒ 404。
+    """A2/A4：`GET /case/{id}` 跨租户 ⇒ 404。
 
-    注意这里的判据是**查询本身带租户过滤**（`CaseAnalysis.tenant_id == ctx.tenant_id`），
-    不是先取后判 ⇒ 跨租户表现为「尚未生成分析」，与无数据同形。
+    A4 之后先过 `_case_or_404`（租户 + 客户归属），跨租户案件在查分析之前
+    就以 `CASE_NOT_FOUND` 拒绝；这与「案件不存在」同形，不泄露案件/分析是否存在。
     """
     app = app_factory(seeded["a"])
     with _client(app) as c:
         r = c.get(f"/api/v1/analyses/case/{seeded['case_b']}")
         assert r.status_code == 404, r.text
-        assert _code(r) == "ANALYSIS_NOT_FOUND", r.text
+        assert _code(r) == "CASE_NOT_FOUND", r.text
 
 
 def test_generate_cross_tenant_is_404(app_factory, seeded):
