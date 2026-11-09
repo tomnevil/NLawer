@@ -14,8 +14,8 @@ from app.core.errors import (
 from app.core.pagination import Page, PaginationParams, count_bounded, ok
 from app.core.rbac import Role
 from app.models.case import Case
-from app.models.enums import ReviewDecision, ReviewTargetType
-from app.models.identity import User
+from app.models.enums import ReviewDecision, ReviewLevel, ReviewTargetType
+from app.models.identity import LawyerProfile, User
 from app.models.review import Review
 from app.schemas.review import ReviewAction, ReviewOut, ReviewRecordOut
 from app.services.review_service import ReviewService
@@ -28,12 +28,29 @@ def _is_admin(ctx) -> bool:
     return ctx.role in (Role.PLATFORM_ADMIN, Role.FIRM_ADMIN)
 
 
-def _can_triage(ctx, user) -> bool:
-    """具备调度/分派资格：管理员，或拥有 L3 高级复核资格（可兜底未分配池）。"""
-    return _is_admin(ctx) or bool(getattr(user, "can_l3_review", False))
+async def _can_triage(db: AsyncSession, ctx) -> bool:
+    """具备调度/分派资格：管理员，或持有 L3 资格的律师（可兜底未分配池）。
+
+    A6：L3 资格存放在 `LawyerProfile.can_l3_review`，**`User` 上没有这个字段**。
+    旧实现 `getattr(user, "can_l3_review", False)` 恒为 False ⇒ 非管理员的 L3
+    律师既看不到待分配池、也无法认领池内复核，L3 资格形同虚设。
+    """
+    if _is_admin(ctx):
+        return True
+    if ctx.role != Role.LAWYER:
+        return False
+    prof = (
+        await db.execute(
+            select(LawyerProfile).where(
+                LawyerProfile.user_id == ctx.user_id,
+                LawyerProfile.tenant_id == ctx.tenant_id,
+            )
+        )
+    ).scalars().first()
+    return bool(prof is not None and prof.can_l3_review)
 
 
-def _assert_review_access(r: Review, ctx, user) -> None:
+async def _assert_review_access(db: AsyncSession, r: Review, ctx, user) -> None:
     """复核任务可见性门禁（最小权限 + 数据最小化）。
 
     - 客户（CLIENT）：禁止访问任何复核（咨询内容属敏感，且客户不参内部复核）。
@@ -45,7 +62,7 @@ def _assert_review_access(r: Review, ctx, user) -> None:
         raise PermissionDeniedError("客户不可访问复核任务", code=ErrorCode.PERMISSION_DENIED)
     if r.assignee_id == user.id or _is_admin(ctx):
         return
-    if r.assignee_id is None and _can_triage(ctx, user):
+    if r.assignee_id is None and await _can_triage(db, ctx):
         return
     raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
 
@@ -61,7 +78,7 @@ async def _review_or_404(db: AsyncSession, review_id: int, ctx, user) -> Review:
     r = await db.get(Review, review_id)
     if r is None or r.tenant_id != ctx.tenant_id:
         raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
-    _assert_review_access(r, ctx, user)
+    await _assert_review_access(db, r, ctx, user)
     return r
 
 
@@ -95,7 +112,7 @@ async def list_reviews(
     if ctx.role == Role.CLIENT:
         raise PermissionDeniedError("客户不可访问复核队列", code=ErrorCode.PERMISSION_DENIED)
 
-    triage = _can_triage(ctx, user)
+    triage = await _can_triage(db, ctx)
     base = select(Review).where(Review.tenant_id == ctx.tenant_id)
 
     if scope == "pool":
@@ -174,7 +191,6 @@ async def ensure_review(
     - 幂等命中一条**本就无承办人**的旧复核时，一并认领给本次调用者
       （否则「建完读不到」的坑会在旧数据上继续复现）。
     """
-    from app.models.enums import ReviewLevel
 
     try:
         tt = ReviewTargetType(target_type)
@@ -183,6 +199,16 @@ async def ensure_review(
         # Q-V（2026-09-21 裁定）：参数不合法属 422 语义，报 `REVIEW_INVALID_PARAM`，
         # 不再借用 404 `REVIEW_NOT_FOUND`（调用方无法区分「我传错了」与「东西不存在」）。
         raise UnprocessableEntityError("参数不合法", code=ErrorCode.REVIEW_INVALID_PARAM)
+
+    # A6：L3 要求级别只能由具备 L3 资格者创建（管理员或档案 can_l3_review=True）。
+    # 否则普通律师/客户可以「建出一条自己批不了的 L3 复核」，把终审责任架空。
+    if lv == ReviewLevel.L3:
+        actor_level = await ReviewService(db).resolve_actor_level(user)
+        if actor_level != ReviewLevel.L3:
+            raise PermissionDeniedError(
+                "无 L3 复核资格，不能创建 L3 复核",
+                code=ErrorCode.REVIEW_LEVEL_INSUFFICIENT,
+            )
 
     if case_id is not None:
         await _case_or_404(db, case_id, ctx)
@@ -240,7 +266,7 @@ async def get_review(
     r = await db.get(Review, review_id)
     if r is None or r.tenant_id != ctx.tenant_id:
         raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
-    _assert_review_access(r, ctx, user)
+    await _assert_review_access(db, r, ctx, user)
     data = ReviewOut.model_validate(r).model_dump()
     # 咨询报告草稿：随复核任务一并返回四段式 + 引用，供律师复核台展示/编辑
     if r.target_type == ReviewTargetType.CONSULT_REPORT:
@@ -280,7 +306,7 @@ async def review_records(
     r = await db.get(Review, review_id)
     if r is None or r.tenant_id != ctx.tenant_id:
         raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
-    _assert_review_access(r, ctx, user)
+    await _assert_review_access(db, r, ctx, user)
     rows = await ReviewService(db).records(review_id)
     return ok([ReviewRecordOut.model_validate(x).model_dump() for x in rows])
 
@@ -303,7 +329,7 @@ async def review_transcript(
     r = await db.get(Review, review_id)
     if r is None or r.tenant_id != ctx.tenant_id:
         raise NotFoundError("复核任务不存在", code=ErrorCode.REVIEW_NOT_FOUND)
-    _assert_review_access(r, ctx, user)
+    await _assert_review_access(db, r, ctx, user)
 
     if r.target_type != ReviewTargetType.CONSULT_REPORT:
         return ok([])

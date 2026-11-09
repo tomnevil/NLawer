@@ -621,16 +621,15 @@ def test_review_decided_truncates_long_comment(db_ctx):
     _run(_go())
 
 
-def test_partial_approval_does_not_notify(db_ctx):
-    """**信噪比核心用例**：`APPROVED` 但级别不足时**不发**通知。
+def test_l2_cannot_approve_l3_review_and_does_not_notify(db_ctx):
+    """A6：非 L3 对 L3 复核 `APPROVED` ⇒ 拒绝，且不产生通知、状态不变。
 
-    走 `decide()` 全流程（而非直接调 `_notify_decided`），因为「部分通过
-    不通知」这个决策点在 `decide()` 的分支里，而不是在通知函数内部。
-
-    理由：L2 通过、还等 L3 终审时，承办律师**无事可做**。一条不需要
-    任何行动的通知，代价不是它占的那一行，而是它稀释了「待接单」
-    「待复核」这些真通知的注意力。
+    原用例（`test_partial_approval_does_not_notify`）测的是「L2 部分通过后
+    静默等待 L3」；2026-11-09 的 A6 收紧为**非 L3 不得批 L3**——L2 律师
+    即便被指派，也只能请求修改/作废，不能把 L3 终审降级成 L2 自批。
+    因此这里断言的是**拒绝**，而不是「通过但不通知」。
     """
+    from app.core.errors import PermissionDeniedError
     from app.core.rbac import Role
     from app.models.enums import ReviewDecision, ReviewLevel, ReviewStatus
     from app.services.review_service import ReviewService
@@ -642,14 +641,22 @@ def test_partial_approval_does_not_notify(db_ctx):
             reviewer = await _make_user(s, username="rev2", full_name="钱律师", role=Role.LAWYER)
             case = await _make_case(s, case_no="C-11", title="需 L3 终审", lawyer_id=lawyer.id)
             r = await _make_review(s, case_id=case.id, required_level=ReviewLevel.L3)
+            rid = r.id
 
-            out = await ReviewService(s).decide(
-                r.id, actor=reviewer, decision=ReviewDecision.APPROVED, comment="我这边没问题"
-            )
-            await s.commit()
+            with pytest.raises(PermissionDeniedError):
+                await ReviewService(s).decide(
+                    r.id, actor=reviewer, decision=ReviewDecision.APPROVED, comment="我这边没问题"
+                )
+            # 门禁在状态流转**之前**抛错，故无需回滚（回滚会把未提交的夹具也删掉）
 
-            assert out.status == ReviewStatus.PENDING_CONFIRM  # 未定稿，等 L3
-            assert await _all_notifications(s) == [], "部分通过不该产生通知"
+            from sqlalchemy import select
+
+            from app.models.review import Review
+
+            status = (await s.execute(
+                select(Review.status).where(Review.id == rid))).scalar_one()
+            assert status == ReviewStatus.PENDING_CONFIRM  # 未被批掉
+            assert await _all_notifications(s) == [], "被拒绝的 L3 批复不该产生通知"
 
     _run(_go())
 

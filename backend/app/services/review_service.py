@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ErrorCode, NotFoundError
+from app.core.errors import ErrorCode, NotFoundError, PermissionDeniedError
 from app.core.rbac import Role
 from app.models.analysis import CaseAnalysis
 from app.models.case import Case
@@ -176,9 +176,24 @@ class ReviewService:
         APPROVED 时按「已满足级别」判定：
         - 达到要求级别 -> CONFIRMED（可定稿）
         - 未达到       -> 保持 PENDING_CONFIRM，等待更高级别复核（L2 -> L3 升级）
+
+        A6 例外：`required_level=L3` 的复核**只能由 L3 资格者批准**，非 L3
+        即便「部分通过」也不再允许（否则 L3 终审可被 L2 自批架空）⇒ 403。
         """
         r = await self.get(review_id)
         actor_level = await self.resolve_actor_level(actor)
+
+        # A6：L3 复核的「通过」只能由 L3 资格者作出。L2 律师即便被指派，
+        # 也只能请求修改/作废，不能把 L3 终审责任降级成 L2 自批。
+        if (
+            decision == ReviewDecision.APPROVED
+            and r.required_level == ReviewLevel.L3
+            and actor_level != ReviewLevel.L3
+        ):
+            raise PermissionDeniedError(
+                "仅具备 L3 复核资格者可批准 L3 复核",
+                code=ErrorCode.REVIEW_LEVEL_INSUFFICIENT,
+            )
 
         if decision == ReviewDecision.REVISION_REQUESTED:
             cur = r.status
@@ -347,14 +362,26 @@ class ReviewService:
         - CONSULT_REPORT：咨询报告定稿（律师署名/时间戳），并**推回客户 IM 会话**。
         """
         if r.target_type == ReviewTargetType.CASE_ANALYSIS:
-            a = await self.db.get(CaseAnalysis, r.target_id)
+            a = (
+                (
+                    await self.db.execute(
+                        select(CaseAnalysis).where(
+                            CaseAnalysis.id == r.target_id,
+                            CaseAnalysis.tenant_id == r.tenant_id,
+                        )
+                    )
+                ).scalars().first()
+            )
             if a is not None:
-                a.status = ReviewStatus.CONFIRMED
-                a.confirmed_by = r.decided_by
-                a.confirmed_at = _now()
+                # 幂等：目标已 CONFIRMED 时不再改写署名/时间戳，避免重复决定
+                # 让 confirmed_at 漂移（正常路径由 FSM 阻断重复 decide，此处为纵深防御）
+                if a.status != ReviewStatus.CONFIRMED:
+                    a.status = ReviewStatus.CONFIRMED
+                    a.confirmed_by = r.decided_by
+                    a.confirmed_at = _now()
                 # 分析定稿后案件进入「已确认定稿」，方可归档
                 case = await self.db.get(Case, a.case_id)
-                if case is not None:
+                if case is not None and case.tenant_id == r.tenant_id:
                     case.status = CaseStatus.CONFIRMED
         elif r.target_type == ReviewTargetType.CONSULT_REPORT:
             await self._finalize_consult_report(r)
@@ -370,8 +397,22 @@ class ReviewService:
         from app.models.consult_report import ConsultReport, ConsultReportStatus
         from app.models.conversation import Message, MessageSender, MessageType
 
-        cr = await self.db.get(ConsultReport, r.target_id)
+        cr = (
+            (
+                await self.db.execute(
+                    select(ConsultReport).where(
+                        ConsultReport.id == r.target_id,
+                        ConsultReport.tenant_id == r.tenant_id,
+                    )
+                )
+            ).scalars().first()
+        )
         if cr is None:
+            return
+        if cr.status == ConsultReportStatus.APPROVED:
+            # 幂等：已定稿不再重复署名，更不重复向客户会话推送卡片/通知。
+            # 正常路径由 FSM 阻断重复 decide；此处防止手动或未来路径重复调用
+            # 造成二次客户侧副作用。
             return
 
         cr.status = ConsultReportStatus.APPROVED
