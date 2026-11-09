@@ -6,6 +6,7 @@ AI 在 BOT 态处理咨询直答、判断是否进派单；进入 WAITING_HUMAN 
 import re
 from typing import Optional
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -207,7 +208,22 @@ class ConversationEngine:
     async def _save_consult_report(
         self, conv: Conversation, question: str, answer: str, draft: dict, citations: list
     ) -> Optional[int]:
-        """best-effort：草稿入 ConsultReport 并自动建 Review 派单；返回 review_id（失败/无律师为 None）。"""
+        """草稿入 ConsultReport 并自动建 Review 派单；返回 review_id（失败/无律师为 None）。
+
+        **事务边界（B3）**：与 `QAService` 同一纪律——服务层只 flush，
+        **不 commit**。IM 的 HTTP（`/conversations/{id}/messages`）
+        与 WebSocket 两条调用路径都在请求/消息边界统一提交（WS 侧失败会
+        整体 rollback）。此前这里自行 commit，会把同一事务里已 flush 的
+        来信与 AI 回复提前提交，后续步骤失败时无法整体回滚。
+
+        失败不阻断客户回复，但记录日志，避免「草稿没生成」无声无息。
+        空草稿直接返回 None，不落库、不建 CONSULT_REPORT 复核（与 `/qa` 同一口径，
+        避免律师复核队列里出现无法复核的空单）。
+        """
+        from app.services.qa_service import _has_draft_content
+
+        if not _has_draft_content(draft):
+            return None
         try:
             from app.models.consult_report import ConsultReport, ConsultReportStatus
             from app.services.consult_review import dispatch_consult_report_review
@@ -225,9 +241,9 @@ class ConversationEngine:
             self.db.add(report)
             await self.db.flush()
             review_id = await dispatch_consult_report_review(self.db, report, conv.tenant_id)
-            await self.db.commit()
             return review_id
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - 草稿落库失败不影响客户回复
+            logger.warning("IM 咨询草稿落库失败（不阻断回复）：{}", exc)
             return None
 
     async def _add_message(

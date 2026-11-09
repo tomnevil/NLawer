@@ -282,6 +282,89 @@ def test_templates_include_own_and_platform_only(app_factory, seeded):
         assert seeded["tpl_b"] not in ids, "其他租户的模板泄漏了"
 
 
+# ═══════════════════════ W2b 模板/案件归属（B2） ═══════════════════════
+
+
+def _count_documents(engine) -> int:
+    from sqlalchemy import func as _f
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.models.document import Document
+
+    f = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def _run() -> int:
+        async with f() as s:
+            n = int((await s.execute(
+                select(_f.count()).select_from(Document))).scalar_one())
+        # 关键：本 helper 用独立的 asyncio.run 循环。aiosqlite 连接会留在池里，
+        # 后续 TestClient（新的事件循环）复用到「旧循环」的连接就会报
+        # `'NoneType' object has no attribute 'send'`。用完即 dispose 断开池。
+        await engine.dispose()
+        return n
+
+    return asyncio.run(_run())
+
+
+def _add_case(engine, tenant_id: str, case_no: str) -> int:
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.models.case import Case
+    from app.models.enums import CaseStatus
+
+    f = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def _run() -> int:
+        async with f() as s:
+            case = Case(tenant_id=tenant_id, case_no=case_no, title=case_no, status=CaseStatus.INTAKE)
+            s.add(case)
+            await s.commit()
+            cid = case.id
+        await engine.dispose()  # 断开绑定到本 asyncio.run 循环的连接池
+        return cid
+
+    return asyncio.run(_run())
+
+
+def test_start_with_other_tenant_template_is_404_and_writes_nothing(app_factory, seeded, engine):
+    """B2：`start` 传**他租户模板 id** ⇒ 404，且不产生任何文书行。
+
+    修复前 `get_template` 只按主键取、不看租户，`list_templates` 的可见范围
+    形同虚设：知道 id 就能用别人的模板建文书。
+    """
+    before = _count_documents(engine)
+    app = app_factory(seeded["a"])
+    with _client(app) as c:
+        r = c.post("/api/v1/documents/start", json={"template_id": seeded["tpl_b"]})
+        assert r.status_code == 404, r.text
+        assert _code(r) == "TEMPLATE_NOT_FOUND", r.text
+    assert _count_documents(engine) == before, "他租户模板仍然建出了文书"
+
+
+def test_start_with_platform_template_is_allowed(app_factory, seeded):
+    """B2：`platform` 模板属于共享可见范围，必须仍可用。"""
+    app = app_factory(seeded["a"])
+    with _client(app) as c:
+        r = c.post("/api/v1/documents/start", json={"template_id": seeded["tpl_p"]})
+        assert r.status_code == 200, r.text
+        assert _data(r)["id"]
+
+
+def test_start_with_other_tenant_case_id_is_404(app_factory, seeded, engine):
+    """B2：`case_id` 必须先过案件守卫——他租户案件 ⇒ 404 且不落文书。"""
+    case_b = _add_case(engine, TENANT_B, f"B2-{uuid.uuid4().hex[:6]}")
+    before = _count_documents(engine)
+    app = app_factory(seeded["a"])
+    with _client(app) as c:
+        r = c.post(
+            "/api/v1/documents/start",
+            json={"template_id": seeded["tpl_a"], "case_id": case_b},
+        )
+        assert r.status_code == 404, r.text
+        assert _code(r) == "CASE_NOT_FOUND", r.text
+    assert _count_documents(engine) == before, "他租户 case_id 仍然建出了文书"
+
+
 # ═══════════════════════ W3 start 落在本租户 ═══════════════════════
 
 

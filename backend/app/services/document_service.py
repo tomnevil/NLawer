@@ -61,15 +61,22 @@ class DocumentService:
         stmt = stmt.order_by(DocumentTemplate.id.asc()).limit(self.TEMPLATE_LIST_MAX)
         return list((await self.db.execute(stmt)).scalars().all())
 
-    async def get_template(self, template_id: int) -> DocumentTemplate:
+    async def get_template(self, template_id: int, *, tenant_id: str) -> DocumentTemplate:
+        """按 id 取模板，并限定 `platform OR 当前租户`。
+
+        `list_templates` 早已按此范围过滤，但取单条此前只按主键 —— 只要知道
+        id，`POST /documents/start` 就能用他租户的模板建文书，`collect` /
+        `render` 也会把他租户模板的正文渲染进自己的文书（B2）。
+        模板不在可见范围时按「不存在」处理（404），不确认其是否存在。
+        """
         t = await self.db.get(DocumentTemplate, template_id)
-        if t is None:
+        if t is None or t.tenant_id not in (tenant_id, "platform"):
             raise NotFoundError("模板不存在", code=ErrorCode.TEMPLATE_NOT_FOUND)
         return t
 
     # ---------------- 创建与变量收集 ----------------
     async def start(self, template_id: int, *, tenant_id: str, user_id: int, case_id: Optional[int] = None) -> Document:
-        tpl = await self.get_template(template_id)
+        tpl = await self.get_template(template_id, tenant_id=tenant_id)
         doc = Document(
             tenant_id=tenant_id,
             template_id=tpl.id,
@@ -88,7 +95,7 @@ class DocumentService:
         doc = await self._get(doc_id)
         merged = {**(doc.variables or {}), **variables}
         doc.variables = merged
-        tpl = await self.get_template(doc.template_id) if doc.template_id else None
+        tpl = await self.get_template(doc.template_id, tenant_id=doc.tenant_id) if doc.template_id else None
         spec = tpl.variables if tpl else []
         doc.missing_variables = self._missing(spec or [], merged)
         doc.status = DocumentStatus.COLLECTING if doc.missing_variables else DocumentStatus.DRAFT
@@ -103,7 +110,7 @@ class DocumentService:
                 code=ErrorCode.DOCUMENT_VARIABLES_INCOMPLETE,
                 details={"missing": doc.missing_variables},
             )
-        tpl = await self.get_template(doc.template_id) if doc.template_id else None
+        tpl = await self.get_template(doc.template_id, tenant_id=doc.tenant_id) if doc.template_id else None
         body = tpl.body if tpl else ""
         doc.content = _render(body, doc.variables or {})
         doc.status = DocumentStatus.GENERATED

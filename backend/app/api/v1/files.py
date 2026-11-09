@@ -6,12 +6,13 @@
 最严重的越权数据泄露（违反《律师法》保密义务与《个人信息保护法》）。
 
 现改为显式接口：路径首段必须是当前请求所属租户 ID，再做文件存在性校验。
-可选 `?token=` 查询参数用于 `<img>` / 新窗口下载等无法携带 Header 的场景。
+鉴权**只走 Authorization 头**（前端所有下载均走同源请求，可正常带 token）；
+不再接受 `?token=`（B4：旧参数从未被读取，留着只会让人误以为直链已鉴权）。
 """
 import os
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 from loguru import logger
 from sqlalchemy import select
@@ -68,7 +69,6 @@ async def download_file(
     tenant_id: str,
     subdir: str,
     filename: str,
-    token: Optional[str] = Query(None, description="可选：浏览器直链场景的访问令牌"),
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
     ctx: TenantContext = Depends(get_tenant_context),
