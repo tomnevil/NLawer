@@ -38,15 +38,37 @@ pnpm --filter app-im     dev    # 模拟IM客户端 http://localhost:3003
 
 默认 SQLite 零依赖即可运行；Postgres 模式同样已验证通过（含 pgvector 真实向量检索）。
 
-1. 安装依赖并启动数据库：
+1. 安装依赖并启动数据库（**必须先设 `POSTGRES_PASSWORD`**，缺失时 compose 会直接报错退出）：
 
-```bash
+```powershell
 cd backend
 pip install -r requirements.txt -r requirements-postgres.txt
-cd .. && docker compose up -d db      # pgvector/pgvector:pg16，账号 nlawer/nlawer，宿主端口 5433
+cd ..
+$env:POSTGRES_PASSWORD="nlawer"
+$env:SECRET_KEY="dev-only-secret-0123456789abcdef"   # 仅本地；compose 会校验必填
+docker compose up -d db               # pgvector/pgvector:pg16，账号 nlawer/nlawer
+docker compose ps db                  # 确认 127.0.0.1:5433->5432 且 healthy
 ```
 
-2. 配置 `backend/.env`：
+```bash
+# bash / macOS / Linux 等价写法
+POSTGRES_PASSWORD=nlawer SECRET_KEY=dev-only-secret-0123456789abcdef docker compose up -d db
+```
+
+> compose 会解析所有服务，即使只起 `db` 也要求 `SECRET_KEY` 已设置；否则直接报
+> `required variable SECRET_KEY is missing a value`。`LLM_GATEWAY_API_KEY` 未设置只会告警，可忽略。
+
+端口约定（避免再次「照 README 跑全红」）：
+
+- compose 默认把容器 `5432` 映射到宿主 **5433**，`backend/.env` 必须写 5433；
+  5433 被占用时可用 `NLAWER_DB_PORT` 覆盖，并同步修改 `.env` 的两条 `DATABASE_URL`。
+- 本机 **5434** 属于另一个容器 `dev-postgres-nlaw`，**不是本项目**：它没有 pgvector，
+  且本环境经 wslrelay 的宿主端口转发可能握手失败（`asyncpg: unexpected connection_lost()`），
+  不要把 `DATABASE_URL` 指到 5434。
+- 长时间运行的容器若宿主连不上，先 `docker restart nlawer-db`
+  （或 `docker compose up -d --force-recreate db`）重建端口转发，而不是改 `.env` 乱猜端口。
+
+2. 配置 `backend/.env`（与上面的端口保持一致）：
 
 ```bash
 # 宿主端口需与 docker-compose.yml 映射一致（默认 5433，避免与本机已在跑的 5432 冲突）
@@ -56,7 +78,7 @@ VECTOR_BACKEND=auto        # auto 会在 Postgres+pgvector 下自动启用；也
 EMBEDDING_API_KEY=         # 留空则只走 BM25，不启用向量召回
 ```
 
-3. 初始化（建表时会自动 `CREATE EXTENSION IF NOT EXISTS vector`）：
+3. 初始化并启动：
 
 ```bash
 cd backend
@@ -65,6 +87,13 @@ uvicorn app.main:app --port 8000
 ```
 
 说明：
+- 只有 `VECTOR_BACKEND=pgvector`（含 `auto` 在 Postgres 下解析出的 pgvector）才会尝试
+  `CREATE EXTENSION IF NOT EXISTS vector`；`memory` / `none` 完全不碰扩展。
+- **标准 `postgres:16-alpine`（无 pgvector）也能启动**：扩展缺失或无权限时只记录明确
+  错误，并把 `knowledge_embeddings.embedding` 降级为 JSON 文本、向量检索回退内存/BM25，
+  不会整体启动失败。用这种镜像时建议显式 `VECTOR_BACKEND=memory`。
+- 若服务端已装扩展但 Python 侧缺包，迁移会直接报「缺少 pgvector Python 包」，
+  而不是 `TypeError: 'NoneType' object is not callable`。
 - 未配置 `EMBEDDING_API_KEY` 时向量检索自动关闭，由 BM25 兜底，不影响主流程。
 - SQLite 下 `VECTOR_BACKEND=pgvector` 不生效（自动降级），保证开发态不被破坏。
 - 向量召回需要 embedding 服务提供查询向量；当前 `VectorStore.search(None)` 返回空。
@@ -73,12 +102,13 @@ uvicorn app.main:app --port 8000
 
 | 验证项 | 结果 |
 | --- | --- |
-| pgvector 扩展 | `pgvector=0.8.6`（建表时自动 `CREATE EXTENSION IF NOT EXISTS vector`） |
-| `knowledge_embeddings.embedding` 列 | `vector(1536)` |
+| pgvector 扩展 | `VECTOR_BACKEND=pgvector/auto` 时按需创建；`memory`/`none` 不尝试建扩展 |
+| `knowledge_embeddings.embedding` 列 | pgvector 可用时 `vector(1536)`；不可用时降级 `text` |
+| 标准 `postgres:16-alpine`（无 pgvector） | 应用正常启动（42 张表，readyz 200），向量检索回退内存/BM25 |
 | 种子数据 | 法条 12 / 类案 6 / 模板 23 / 账号 9 / 材料清单 22 |
 | 端到端冒烟 `smoke_test.py` | 6/6 通过（Postgres 与 SQLite 双方言均通过） |
 | 向量检索 | 余弦排序正确（doc-A 0.9939 > doc-B 0.0），租户隔离生效 |
-| `pytest tests` | **219 passed** |
+| `pytest tests` | **903 passed**（含 A8/A9/A10/B2/B3/B4 新增用例） |
 
 > **方言差异（本次修复）**：SQLite 把布尔存成整数，故 `Boolean == 1` 能跑；Postgres 要求
 > `column.is_(True)`。已修正 `dispatch_service` 中的忙闲过滤，其余 `enabled/urgent` 等列本身是
@@ -114,6 +144,95 @@ cd backend
 python -m pytest tests -q     # 单元测试：复核状态机 / 强制复核 / 引用校验 / 派单规则 / Job 模型
                               #          + 越权 / 并发扣减 / 审计保留期 / 内容审核 / 可观测性 / 分页语义
 python smoke_test.py          # 端到端冒烟：接待→派单→接单→L3复核定稿→归档+材料包→四段式问答→合规扫描
+```
+
+### 运行测试前必须导出的环境变量
+
+**全量单测默认跑 SQLite**（快、零依赖；本机 `.env` 若指向 Postgres 会被下面这条覆盖）：
+
+```powershell
+cd backend
+$env:SECRET_KEY="dev-only-secret-0123456789abcdef"   # 必填；缺失时鉴权相关用例无法启动
+$env:DATABASE_URL="sqlite+aiosqlite:///./nlawer_test.db"   # 覆盖 .env 里的 Postgres 地址
+$env:VECTOR_BACKEND="memory"                          # SQLite/无 pgvector 时必须 memory
+```
+
+```bash
+# bash / macOS / Linux 等价写法
+export SECRET_KEY=dev-only-secret-0123456789abcdef
+export DATABASE_URL="sqlite+aiosqlite:///./nlawer_test.db"
+export VECTOR_BACKEND=memory
+```
+
+> 已有 `backend/.env` 且指向 compose 的 Postgres（5433）时，`backend/.env` 会为**应用启动/冒烟**
+> 提供连接串；跑全量单测请用上面的 `DATABASE_URL` 覆盖为 SQLite。Postgres 下 `asyncpg` 连接池
+> 与每个用例的独立事件循环不兼容，会出现 `'NoneType' object has no attribute 'send'` 的假失败
+> （测试基建问题，不是功能回归）。关键路径的 Postgres 验证走下面的临时库脚本单独跑。
+
+> ⚠️ **不要设 `AUTH_COOKIE_ENABLED=false` / `RATE_LIMIT_ENABLED=false`。**
+> 这两个开关本身就是安全判据的测试对象：关掉后鉴权、CSRF、限流相关用例会「变绿」，
+> 但它们验证的恰恰是「开关打开时的行为」，等于把门禁自己关掉。CI 与本地都必须
+> 保持默认（开启）；测试若因这两个开关变红，应当修复代码，而不是关开关。
+
+### 本次新增的运维脚本（默认 dry-run）
+
+| 脚本 | 用途 | dry-run 命令 |
+| --- | --- | --- |
+| `backfill_case_tenant.py` | 回填 `dispatches` / `case_events` 缺失的 `tenant_id` | `python backfill_case_tenant.py --dsn "$env:DATABASE_URL_SYNC"` |
+| `reconcile_review_consistency.py` | 复核一致性对账（非法跨租户、复核已完成但目标仍 DRAFT） | `python reconcile_review_consistency.py --dsn "$env:DATABASE_URL_SYNC"` |
+
+两者默认 **dry-run**，只打印待修复行数与样例；必须显式 `--apply` 才写库（单事务）。
+目标疑似生产库（含 `prod`/`production`）时 `--apply` 直接拒绝；疑似 `nlaw` 开发库
+`--apply` 需再加 `--confirm-nlaw`。建议同时传 `--backup "<临时目录>/xxx.json"` 导出
+变更前快照。推荐顺序：先 `reconcile_review_consistency.py`，再 `backfill_case_tenant.py`，
+最后两者各跑一次 dry-run 确认待修复数归零。
+
+### 本轮接口变更（作废 / 问答降级 / 草稿异步）
+
+#### `POST /api/v1/cases/{case_id}/void` — 案件作废
+
+请求体：`{"reason": "作废原因（可选，≤500 字）"}`。
+
+| 维度 | 约定 |
+| --- | --- |
+| 权限 | 本所管理员（`FIRM_ADMIN`）可作废本所任意案件；承办律师只能作废**本人承办**案件；其他律师按「不存在」返回 404（团队只读授权 ≠ 处置权）；客户 / 助理无 `case:close` ⇒ 403 |
+| 跨租户 | 一律 404（不泄露案件是否存在） |
+| 状态机 | `INTAKE / PENDING_DISPATCH / DISPATCHED / ACCEPTED / IN_REVIEW / CONFIRMED → VOIDED`；`ARCHIVED / CLOSED` 为归档终态 ⇒ 409 `CASE_INVALID_STATE` |
+| 幂等 | 已 `VOIDED` 再调用返回 200 + `already_voided=true`，**不**二次回减在手案件数、**不**重复写事件/审计 |
+| 连带处理 | `PENDING` 派单置 `EXPIRED`（退出抢单池）并记 `decided_at`；未完成复核置 `VOIDED` 并写一条 `ReviewRecord(action="VOID")`；承办律师在手案件数 -1（`adjust_active_case_count`，条件 UPDATE 不会减成负数） |
+| 审计 | `CaseEvent(event_type="VOID")` + `AuditLog(action="CASE_VOID", detail={previous_status, reason_len, expired_dispatches, voided_reviews})` |
+
+#### `POST /api/v1/qa` — 引用缺失不再对客户报 400
+
+`CITATION_MISSING`（模型草稿里出现无法溯源的引用）此前以 400 返回给客户。现在由
+后端兜底：仍返回 **200**，`data.degraded=true`、`data.degrade_reason="CITATION_MISSING"`、
+`data.billable=false`，`answer` 换成友好话术（`FALLBACK_ANSWER`），`sections` 四段置空；
+**不扣费、不落草稿、不建复核**。原始原因保留在日志与 `AuditLog(action="QA_DEGRADED")`。
+
+> 律师侧 `/analyses`（`CaseCopilot`）仍会抛 `CITATION_MISSING` 400，因此该错误码**不是死分支**；
+> 客户侧 `/qa`、`/qa/stream` 与 IM 转案件（IM 路径本就不做引用强校验）语义一致：不向客户暴露错误码。
+
+#### `POST /api/v1/qa/stream` — 回答先行，草稿后台生成
+
+- 流内只做「回答专用」模型调用；`done` 事件新增 `degraded` / `degrade_reason` / `draft_deferred`。
+- 回答成功即计费一次；后台草稿任务失败**不退款、不重复扣费**；`done.failed=true` 不计费。
+- 草稿任务在 `BackgroundTasks` 中运行，用 `db.bind` 新建 session + 独立事务，不复用请求会话；
+  失败仅 `logger.warning`，不影响已经返回的客户回答。
+- 真实模型（qwen3-30b，12 条法律提问）实测：首字节（status）≈ 0 ms；首个正文 ≈ 3.3 s
+  （p50 3.2 s / p90 4.2 s）；草稿后台落库 ≈ 3.8 s；草稿落库率 **12/12 = 100%**；
+  同一批问题的同步 `/qa` 基线 ≈ 6.6 s。
+
+### 针对本轮修复的定向用例
+
+```bash
+cd backend
+python -m pytest tests/test_qa_stream_endpoint_layer.py -q     # A8 流式计费（成功/阻断/中断）+ 草稿异步
+python -m pytest tests/test_dispatch_active_case_count.py -q   # A9 在手案件数增减
+python -m pytest tests/test_case_void.py -q                    # A9 案件作废（权限/幂等/状态机/连带清理）
+python -m pytest tests/test_compliance_endpoint_layer.py -q    # A10 合规维度枚举 422
+python -m pytest tests/test_document_endpoint_layer.py -q      # B2 模板/案件归属
+python -m pytest tests/test_qa_draft_consistency.py -q         # B3 引用兜底 + 草稿同源 + 异步
+python -m pytest tests/test_file_download_endpoint.py -q       # B4 下载鉴权（无 ?token=）
 ```
 
 单元测试覆盖 PRD 硬约束：非法复核流转拒绝、未确认不可定稿/不可归档、复核级别不足拒绝、
