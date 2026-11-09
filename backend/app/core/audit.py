@@ -79,6 +79,10 @@ class AuditAction:
     # 投诉举报（《暂行办法》第十五条：建立健全投诉举报机制）
     COMPLAINT_SUBMIT = "COMPLAINT_SUBMIT"        # 公众/用户提交投诉举报
     COMPLAINT_HANDLE = "COMPLAINT_HANDLE"        # 管理员处理投诉（含办结与不予受理）
+    # 案件全生命周期（作废是责任终止动作，必须可还原是谁、为何作废）
+    CASE_VOID = "CASE_VOID"
+    # 问答生成降级（模型不可用 / 引用校验失败兜底，技术失败不得静默）
+    QA_DEGRADED = "QA_DEGRADED"
     # 审计自身治理（审计的删除也必须被审计，否则无法回答"谁清掉了哪段日志"）
     AUDIT_RETENTION_PURGE = "AUDIT_RETENTION_PURGE"  # 按保留期清理审计日志（含归档校验信息）
 

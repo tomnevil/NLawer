@@ -9,14 +9,24 @@ import json
 import re
 from typing import Any, AsyncIterator, Optional
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import BadRequestError
 from app.models.citation import CasePrecedent, LawArticle
 from app.models.knowledge import KnowledgeDoc
 from app.services.citation_service import validate_citations
 
 DISCLAIMER = "本内容由 AI 生成，仅供参考，不构成正式法律意见。"
+
+# 生成失败时给客户的兜底话术（B3）：不再用 400 把技术错误甩给客户。
+# 与流式 `failed` 分支共用同一段文本，保证 REST / SSE 两条链路对客户语义一致。
+FALLBACK_ANSWER = (
+    "抱歉，这次没能给出可靠的分析结果。为避免误导您，我先不展开结论。"
+    "您可以稍后再试一次，或者补充一些关键事实（发生时间、金额、对方主体、手上有哪些证据），"
+    "我马上重新帮您梳理；也可以直接联系人工律师为您解答。"
+)
 
 # 已被新法替代的旧法提示（演示用，真实场景应维护法规版本表）
 _SUPERSEDED_HINT = {
@@ -141,74 +151,248 @@ class QAService:
         ]
 
     # ---------------- 自然对话 + 后台四段式草稿 ----------------
-    async def build(self, question: str, tenant_id: str, user_id: Optional[int] = None) -> dict[str, Any]:
-        """生成咨询回复：客户侧为自然对话；四段式作为草稿落库（不直接展示）。
-
-        模型单次调用返回 JSON：{answer: 自然回复, draft: 四段式要点}。
-        `answer` 流式推送给客户；`draft` 存入 `ConsultReport`(草稿态)，供律师复核。
-        模型不可用时降级为模板（仍可答，且仍生成草稿）。
-        """
-        from app.ai.router import ModelRouter, TaskType
-
+    async def _grounding(self, question: str, tenant_id: str):
+        """检索 + 组装引用与上下文（REST / 流式 / 后台草稿共用）。"""
         laws, precedents = await self._retrieve(question, tenant_id)
         knowledge = await self._tenant_knowledge(question, tenant_id)
         citations = _build_citations(laws, precedents, knowledge)
         context = _format_context(laws, precedents, knowledge)
+        return laws, precedents, knowledge, citations, context
+
+    async def build(self, question: str, tenant_id: str, user_id: Optional[int] = None) -> dict[str, Any]:
+        """生成咨询回复：客户侧为自然对话；四段式作为草稿落库（不直接展示）。
+
+        模型单次调用返回 JSON：{answer: 自然回复, draft: 四段式要点}。
+        `answer` 直接返回给客户；`draft` 存入 `ConsultReport`(草稿态)，供律师复核。
+
+        **B3 兜底语义**：草稿引用校验失败（`CITATION_MISSING`）不再抛 400。
+        改为返回正常响应 + `FALLBACK_ANSWER`，并带上 `degraded` / `degrade_reason`；
+        `billable=False` 供请求边界跳过计费。此时不落草稿、不建复核、不留空单。
+        """
+        from app.ai.router import ModelRouter, TaskType
+
+        laws, precedents, knowledge, citations, context = await self._grounding(question, tenant_id)
 
         # 寒暄 / 纯咨询意图：自然回复，不调模型、不编造法条、不生成草稿
         if _is_small_talk(question):
             answer = _smalltalk_reply(question)
             return {
                 "answer": answer,
-                "sections": {"conclusion": answer, "legal_basis": "", "advice": "", "risk": ""},
+                # 没有草稿 ⇒ 四段式必须为空，避免「sections 有内容但 draft_saved=False」
+                "sections": _normalize_draft(None),
                 "citations": [],
                 "disclaimer": DISCLAIMER,
                 "structured": False,
                 "draft_saved": False,
+                "degraded": False,
+                "degrade_reason": "",
+                "billable": True,
             }
 
         answer: Optional[str] = None
         draft: Optional[dict] = None
+        degraded = False
+        degrade_reason = ""
         try:
             result = await ModelRouter().complete(
-                TaskType.QA, _build_consult_prompt(question, context), max_tokens=1500
+                TaskType.QA,
+                # 有检索来源时要求四段式必须写满；无来源时保持旧口径（草稿可空）。
+                # 无来源时强制出草稿会撞引用强校验，把可用的客户回复直接降级。
+                _build_consult_prompt(question, context, has_sources=bool(citations)),
+                max_tokens=1500,
             )
             answer, draft = _parse_consult(result.text)
-        except Exception:
-            pass  # 模型失败 → 降级模板
+        except Exception as exc:  # noqa: BLE001 - 模型失败 → 模板兜底
+            degrade_reason = "MODEL_FALLBACK"
+            logger.warning("咨询模型调用失败，回落模板：{}", exc)
 
         if answer is None or draft is None:
             tmpl = _template_sections(laws, precedents, knowledge)
             answer = answer or (tmpl["conclusion"] + "\n\n" + tmpl["advice"])
             draft = draft or tmpl
+            degraded = True
+            degrade_reason = degrade_reason or "MODEL_FALLBACK"
 
-        # 引用强校验作用于「四段式草稿」（正式分析部分），而非客户自然回复；
-        # 校验失败仅影响草稿质量，绝不能阻断客户的自然回复。
-        if citations and draft:
+        # N2：/qa 返回的 sections 必须与落库的 draft_sections 完全同源。
+        draft = _normalize_draft(draft)
+        draft_saved = False
+        billable = True
+        if _has_draft_content(draft):
+            # 引用强校验作用于「四段式草稿」（正式分析部分），而非客户自然回复。
             try:
                 validate_citations(
-                    {"summary": draft.get("conclusion", ""), "legal_analysis": draft.get("legal_basis", "")},
+                    {
+                        "summary": draft.get("conclusion", ""),
+                        "legal_analysis": draft.get("legal_basis", ""),
+                    },
                     [c["id"] for c in citations],
                 )
-            except Exception:
-                pass
-
-        draft_saved = await self._save_consult_report(
-            question, answer, draft, citations, tenant_id, user_id
-        )
+            except BadRequestError as exc:
+                # B3：引用缺失 = 草稿生成失败。对客户不暴露错误码：
+                # 返回 200 + 友好话术；不落空草稿、不建复核、不计费。
+                await self._note_degraded(question, tenant_id, user_id, "CITATION_MISSING", exc)
+                draft = _normalize_draft(None)
+                answer = FALLBACK_ANSWER
+                draft_saved = False
+                billable = False
+                degraded = True
+                degrade_reason = "CITATION_MISSING"
+            else:
+                draft_saved = await self._save_consult_report(
+                    question, answer, draft, citations, tenant_id, user_id
+                )
         return {
             "answer": answer,
-            "sections": {"conclusion": answer, "legal_basis": "", "advice": "", "risk": ""},
+            "sections": draft,
             "citations": citations,
             "disclaimer": DISCLAIMER,
             "structured": False,
             "draft_saved": draft_saved,
+            "degraded": degraded,
+            "degrade_reason": degrade_reason,
+            "billable": billable,
         }
+
+    async def _note_degraded(
+        self,
+        question: str,
+        tenant_id: str,
+        user_id: Optional[int],
+        reason: str,
+        exc: Exception,
+    ) -> None:
+        """降级必须可观测：日志 + 独立事务审计（主事务回滚也不丢）。"""
+        message = getattr(exc, "message", None) or str(exc)
+        logger.warning(
+            "咨询生成降级（{}）：{} | tenant={} user={} question_len={}",
+            reason,
+            message,
+            tenant_id,
+            user_id,
+            len(question or ""),
+        )
+        try:
+            from app.core.audit import AuditAction, log_detached_ctx
+
+            await log_detached_ctx(
+                AuditAction.QA_DEGRADED,
+                "qa",
+                actor_id=user_id,
+                tenant_id=tenant_id,
+                success=False,
+                # 只留原因与长度，不落提问原文（客户咨询内容属敏感信息）
+                detail={"reason": reason, "code": reason, "question_len": len(question or "")},
+            )
+        except Exception as audit_exc:  # noqa: BLE001 - 留痕失败不阻断回复
+            logger.warning("咨询降级审计写入失败：{}", audit_exc)
+
+    # ---------------- 流式：回答先行，草稿后台生成 ----------------
+    async def answer_only(
+        self, question: str, tenant_id: str, user_id: Optional[int] = None
+    ) -> dict[str, Any]:
+        """只生成客户自然回复（流式用），不产草稿。
+
+        草稿由调用方在响应结束后用**独立会话**交给 `generate_draft` 生成，
+        这样客户不必等草稿（实测草稿占 completion 的一半以上）。
+        本方法永不抛异常：失败返回 `ok=False`，由流式走安抚分支。
+        """
+        from app.ai.router import ModelRouter, TaskType
+
+        try:
+            laws, precedents, knowledge, citations, context = await self._grounding(question, tenant_id)
+        except Exception as exc:  # noqa: BLE001 - 检索失败也走安抚分支
+            logger.warning("流式问答检索失败：{}", exc)
+            return {"ok": False, "answer": "", "citations": [], "disclaimer": DISCLAIMER,
+                    "degraded": True, "degrade_reason": "RETRIEVAL_FAILED"}
+
+        if _is_small_talk(question):
+            return {
+                "ok": True,
+                "answer": _smalltalk_reply(question),
+                "citations": [],
+                "disclaimer": DISCLAIMER,
+                "degraded": False,
+                "degrade_reason": "",
+            }
+
+        try:
+            result = await ModelRouter().complete(
+                TaskType.QA,
+                _build_answer_prompt(question, context, has_sources=bool(citations)),
+                max_tokens=800,
+            )
+            answer = _parse_answer(result.text)
+        except Exception as exc:  # noqa: BLE001 - 流式必须收尾成 done
+            logger.warning("流式问答生成失败：{}", exc)
+            return {"ok": False, "answer": "", "citations": citations, "disclaimer": DISCLAIMER,
+                    "degraded": True, "degrade_reason": "MODEL_UNAVAILABLE"}
+
+        if not answer:
+            logger.warning("流式问答模型输出不可解析：{}", (result.text or "")[:80])
+            return {"ok": False, "answer": "", "citations": citations, "disclaimer": DISCLAIMER,
+                    "degraded": True, "degrade_reason": "UNPARSABLE"}
+
+        return {
+            "ok": True,
+            "answer": answer,
+            "citations": citations,
+            "disclaimer": DISCLAIMER,
+            "degraded": False,
+            "degrade_reason": "",
+        }
+
+    async def generate_draft(
+        self, question: str, answer: str, tenant_id: str, user_id: Optional[int] = None
+    ) -> bool:
+        """后台生成四段式草稿（`/qa/stream` 专用），返回是否已落库。
+
+        调用方必须给它**独立 session 与独立事务**（不复用请求会话），
+        失败只留痕、不影响已返回给客户的回答，也不触发任何计费。
+        """
+        from app.ai.router import ModelRouter, TaskType
+
+        if _is_small_talk(question):
+            return False
+        try:
+            laws, precedents, knowledge, citations, context = await self._grounding(question, tenant_id)
+            result = await ModelRouter().complete(
+                TaskType.QA,
+                _build_draft_prompt(question, context, has_sources=bool(citations)),
+                max_tokens=900,
+            )
+            draft = _normalize_draft(_parse_draft(result.text))
+            if not _has_draft_content(draft):
+                logger.warning("后台草稿为空，跳过落库（tenant={} user={}）", tenant_id, user_id)
+                return False
+            validate_citations(
+                {"summary": draft.get("conclusion", ""), "legal_analysis": draft.get("legal_basis", "")},
+                [c["id"] for c in citations],
+            )
+        except BadRequestError as exc:
+            await self._note_degraded(question, tenant_id, user_id, "CITATION_MISSING", exc)
+            return False
+        except Exception as exc:  # noqa: BLE001 - 后台任务失败不影响客户回答
+            await self._note_degraded(question, tenant_id, user_id, "MODEL_UNAVAILABLE", exc)
+            return False
+
+        return await self._save_consult_report(question, answer, draft, citations, tenant_id, user_id)
 
     async def _save_consult_report(
         self, question: str, answer: str, draft: dict, citations: list, tenant_id: str, user_id: Optional[int]
     ) -> bool:
-        """best-effort 落库四段式草稿（CONSULT_REPORT 草稿态，客户不可见），并自动入复核。"""
+        """落库四段式草稿（CONSULT_REPORT 草稿态，客户不可见），并自动入复核。
+
+        **事务边界（B3）**：本方法只 `flush`，**不 commit**。
+        由 `/qa`、`/qa/stream` 的请求边界统一提交，保证「草稿 + 复核任务 +
+        计费流水」在同一事务里要么全成、要么全不成。此前服务层自行 commit，
+        调用方无法把后续步骤（如计费）纳入同一事务，失败时留下半截数据。
+
+        失败不阻断客户回复，但**记录日志**，不再无声无息。
+        空草稿不落库、不建复核：`draft_saved=False` 必须与「没有复核工单」一致，
+        否则律师复核台会收到无法复核的空单（N2）。
+        """
+        if not _has_draft_content(draft):
+            return False
         try:
             from app.models.consult_report import ConsultReport, ConsultReportStatus
             from app.services.consult_review import dispatch_consult_report_review
@@ -225,55 +409,58 @@ class QAService:
             self.db.add(report)
             await self.db.flush()  # 先拿到 report.id 再建复核任务
             await dispatch_consult_report_review(self.db, report, tenant_id)
-            await self.db.commit()
             return True
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - 草稿落库失败不影响客户回复
+            logger.warning("咨询草稿落库失败（不阻断回复）：{}", exc)
             return False
 
     # ---------------- SSE 流式 ----------------
     async def stream(self, question: str, tenant_id: str, user_id: Optional[int] = None) -> AsyncIterator[str]:
         """按 `data: {json}\n\n` 逐包推送（对齐 AIAcquisition SSE 协议）。
 
-        客户侧始终为自然对话（`structured: false`，不渲染四段式骨架）；
-        四段式草稿已落库，不在本流中回传。
+        **回答先行、草稿后置**：本流只做一次「回答专用」模型调用（不产草稿），
+        草稿由端点拿到 `draft_deferred=True` 后用独立会话在后台生成。
+        客户不必再等草稿那半份 completion，首字与完成都更早。
 
-        为什么先发 `status` + 心跳：`build()` 会同步等待模型（实测偶发数十秒）。
-        若这段时间一个字节都不发，浏览器 / 反向代理会把「长时间无数据」的连接
-        判定为断流——用户看到的正是「生成中断 / network error」。因此这里：
-        ① 首包立即发「正在分析」（首字延迟也为 0）；
-        ② 等待期间每 8s 发一个 SSE 注释包（`: keep-alive`，前端解析器会忽略，
-           仅用于保活）；超过 60s 再补一句更体面的进度提示。
-        ③ `build` 抛出的意外（检索/落库等）一律降级为一段自然的安抚回复，
-           保证流始终以 `done` 正常收尾，绝不把技术异常甩给客户。
+        为什么先发 `status` + 心跳：模型调用实测偶发数十秒。若这段时间
+        一个字节都不发，浏览器 / 反向代理会把「长时间无数据」判为断流——
+        用户看到的正是「生成中断 / network error」。因此：
+        ① 首包立即发「正在分析」（首字延迟为 0）；
+        ② 等待期间每 8s 发一个 SSE 注释包（`: keep-alive`）保活，超过 60s
+           再补一句更体面的进度提示；
+        ③ 任何意外都收尾为 `done(failed=True)` + 安抚话术，绝不甩技术异常。
         """
         import asyncio
         import time as _time
 
         yield _sse({"type": "status", "message": "正在为您分析…"})
 
-        task = asyncio.create_task(self.build(question, tenant_id, user_id=user_id))
+        task = asyncio.create_task(self.answer_only(question, tenant_id, user_id=user_id))
         start = _time.monotonic()
         slow_notified = False
         while not task.done():
-            await asyncio.sleep(8)
-            if task.done():
+            # 必须「等答案或等 8s，先到先返回」：直接 sleep(8) 会让**每一次**
+            # 问答都至少多等 8 秒（模型 2s 就答完也照样空等），把首字延迟
+            # 从「模型耗时」劣化成「8s + 模型耗时」，与流式的意义相反。
+            try:
+                await asyncio.wait_for(asyncio.shield(task), timeout=8)
+            except asyncio.TimeoutError:
+                if not slow_notified and _time.monotonic() - start > 60:
+                    slow_notified = True
+                    yield _sse({"type": "status", "message": "这个问题稍复杂，我正在仔细梳理，请再稍等片刻…"})
+                else:
+                    yield ": keep-alive\n\n"
+            except Exception:  # noqa: BLE001 - 任务异常留到下方统一收尾为 done(failed)
                 break
-            if not slow_notified and _time.monotonic() - start > 60:
-                slow_notified = True
-                yield _sse({"type": "status", "message": "这个问题稍复杂，我正在仔细梳理，请再稍等片刻…"})
-            else:
-                yield ": keep-alive\n\n"
 
         try:
             payload = task.result()
         except Exception:
             payload = None
 
-        if payload is None:
-            answer = (
-                "抱歉，刚才这一步没能顺利完成。您可以稍后再试一次，"
-                "或者把问题描述得更具体一些（比如涉及的时间、金额、对方情况），我马上帮您分析。"
-            )
+        failed = payload is None or not payload.get("ok", False)
+        if failed:
+            answer = FALLBACK_ANSWER
             citations: list = []
             disclaimer = DISCLAIMER
         else:
@@ -287,6 +474,13 @@ class QAService:
             {
                 "type": "done",
                 "structured": False,
+                # 供请求边界决定是否计费：失败降级的安抚回复不算成功生成
+                "failed": failed,
+                # 降级标记沿用 `degraded` 口径，供前端/运维识别
+                "degraded": bool(failed or (payload or {}).get("degraded")),
+                "degrade_reason": "" if failed else (payload or {}).get("degrade_reason", ""),
+                # 由端点据此在响应结束后调度后台草稿任务（失败/寒暄不生成）
+                "draft_deferred": (not failed) and not _is_small_talk(question),
                 "sections": {"conclusion": answer},
                 "citations": citations,
                 "disclaimer": disclaimer,
@@ -335,15 +529,36 @@ def _format_context(laws, precedents, knowledge) -> str:
     return "\n".join(parts) if parts else "（无可用法条/类案，请基于一般法律原则回答）"
 
 
-def _build_consult_prompt(question: str, context: str) -> str:
+def _build_consult_prompt(question: str, context: str, has_sources: Optional[bool] = None) -> str:
+    """构造咨询提示词。
+
+    `has_sources` 控制草稿口径：
+    - True（有检索来源）：四段式必须写满，避免模型把「信息不足」当成整段留空的借口；
+    - False（无来源）：允许草稿留空，避免强制出草稿后撞引用强校验。
+    """
+    if has_sources is None:
+        has_sources = bool(context.strip()) and not context.lstrip().startswith("（无可用法条")
+    draft_rule = (
+        "同时作为内部工作草稿，整理一份**完整**的四段式要点（结论/法律依据/行动建议/风险提示），"
+        "它不会直接展示给用户。四段都必须有内容：事实不全时给出条件式判断"
+        "（例如「若…则可主张…」），并注明还需补充的关键事实；"
+        "legal_basis 只能引用参考材料中出现过的法条，不得编造条号。\n"
+        if has_sources
+        else "同时作为内部工作草稿，严谨整理一份四段式要点（结论/法律依据/行动建议/风险提示），"
+        "它不会直接展示给用户。\n"
+    )
+    empty_rule = (
+        ""
+        if has_sources
+        else "若信息明显不足，draft 各字段可留空字符串，但在 answer 中温和地请对方补充关键事实。"
+    )
     return (
         f"用户法律问题：{question}\n\n"
         f"参考材料（如有）：\n{context}\n\n"
         "你是一位耐心、亲切的中国执业律师助手，正和当事人面对面沟通。\n"
         "请先给用户一段自然、口语化的对话式回复（像律师朋友在聊天）：先共情、正面回应诉求，"
         "再给可操作的初步思路；不要使用「结论：」「法律依据：」这类标题。\n"
-        "同时作为内部工作草稿，严谨整理一份四段式要点（结论/法律依据/行动建议/风险提示），"
-        "它不会直接展示给用户。\n"
+        f"{draft_rule}"
         "仅输出如下 JSON，不要任何额外文字：\n"
         "{\n"
         '  "answer": "给当事人的自然对话回复",\n'
@@ -354,8 +569,68 @@ def _build_consult_prompt(question: str, context: str) -> str:
         '    "risk": "时效/证据等风险提示"\n'
         "  }\n"
         "}\n"
-        "若信息明显不足，draft 各字段可留空字符串，但在 answer 中温和地请对方补充关键事实。"
+        f"{empty_rule}"
     )
+
+
+def _build_answer_prompt(question: str, context: str, has_sources: bool) -> str:
+    """流式专用：只要求自然回复，不产草稿（草稿由后台任务另生成）。"""
+    basis_rule = (
+        "如需引用法条，只能引用参考材料中出现过的条文，不得编造条号。\n"
+        if has_sources
+        else "参考材料中没有可用法条，请基于一般法律原则回答，不要编造具体条号。\n"
+    )
+    return (
+        f"用户法律问题：{question}\n\n"
+        f"参考材料（如有）：\n{context}\n\n"
+        "你是一位耐心、亲切的中国执业律师助手，正和当事人面对面沟通。\n"
+        "请给出一段自然、口语化的对话式回复：先共情、正面回应诉求，再给可操作的初步思路；"
+        "不要使用「结论：」「法律依据：」这类标题。\n"
+        f"{basis_rule}"
+        "仅输出如下 JSON，不要任何额外文字：\n"
+        '{"answer": "给当事人的自然对话回复"}'
+    )
+
+
+def _build_draft_prompt(question: str, context: str, has_sources: bool) -> str:
+    """后台草稿专用：只要四段式，不要自然回复（回答已经在流里发过了）。"""
+    fill_rule = (
+        "四段都必须有内容：事实不全时给出条件式判断（例如「若…则可主张…」），"
+        "并注明还需补充的关键事实；legal_basis 只能引用参考材料中出现过的法条，不得编造条号。\n"
+        if has_sources
+        else "信息不足的段落可留空字符串。\n"
+    )
+    return (
+        f"用户法律问题：{question}\n\n"
+        f"参考材料（如有）：\n{context}\n\n"
+        "你是执业律师，请为这个问题整理一份内部四段式工作草稿（不会直接展示给客户）。\n"
+        f"{fill_rule}"
+        "仅输出如下 JSON，不要任何额外文字：\n"
+        "{\n"
+        '  "draft": {\n'
+        '    "conclusion": "一句结论性判断",\n'
+        '    "legal_basis": "对应法条要点",\n'
+        '    "advice": "可执行的行动建议",\n'
+        '    "risk": "时效/证据等风险提示"\n'
+        "  }\n"
+        "}"
+    )
+
+
+def _normalize_draft(draft: Any) -> dict[str, str]:
+    """把草稿统一成四段式固定键，供返回与落库共用同一对象。"""
+    raw = draft if isinstance(draft, dict) else {}
+    return {
+        key: str(raw.get(key, "") or "").strip()
+        for key in ("conclusion", "legal_basis", "advice", "risk")
+    }
+
+
+def _has_draft_content(draft: Any) -> bool:
+    """四段全空视为空草稿：不落库、不建复核（N2）。"""
+    if not isinstance(draft, dict):
+        return False
+    return any(str(draft.get(key, "") or "").strip() for key in ("conclusion", "legal_basis", "advice", "risk"))
 
 
 def _parse_consult(text: str) -> tuple[Optional[str], Optional[dict]]:
@@ -373,16 +648,45 @@ def _parse_consult(text: str) -> tuple[Optional[str], Optional[dict]]:
     except Exception:
         return None, None
     answer = str(obj.get("answer") or "").strip()
-    draft_raw = obj.get("draft") or {}
-    draft = {
-        "conclusion": str(draft_raw.get("conclusion", "") or ""),
-        "legal_basis": str(draft_raw.get("legal_basis", "") or ""),
-        "advice": str(draft_raw.get("advice", "") or ""),
-        "risk": str(draft_raw.get("risk", "") or ""),
-    }
+    draft = _normalize_draft(obj.get("draft") or {})
     if not answer:
         return None, None
     return answer, draft
+
+
+def _parse_answer(text: str) -> Optional[str]:
+    """解析回答专用输出；JSON 解析失败时把纯文本原样当作回答（容错）。"""
+    answer, _ = _parse_consult(text)
+    if answer:
+        return answer
+    t = (text or "").strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```[a-zA-Z]*\s*", "", t)
+        t = re.sub(r"\s*```$", "", t).strip()
+    # 明显的半截 JSON 不当作回答，交给上层走降级
+    if not t or t.startswith("{") or t.startswith("["):
+        return None
+    return t
+
+
+def _parse_draft(text: str) -> Optional[dict]:
+    """解析草稿专用输出：既接受 {"draft": {...}}，也接受直接给出的四段对象。"""
+    t = (text or "").strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```[a-zA-Z]*\s*", "", t)
+        t = re.sub(r"\s*```$", "", t).strip()
+    start = t.find("{")
+    end = t.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    try:
+        obj = json.loads(t[start : end + 1])
+    except Exception:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    nested = obj.get("draft")
+    return nested if isinstance(nested, dict) else obj
 
 
 def _template_sections(laws, precedents, knowledge) -> dict[str, str]:
