@@ -4,9 +4,15 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import AuditAction, record
-from app.core.deps import get_current_user, get_db, get_tenant_context
+from app.core.deps import (
+    get_current_user,
+    get_db,
+    get_tenant_context,
+    require_roles,
+)
 from app.core.errors import ErrorCode, NotFoundError
 from app.core.pagination import Page, PaginationParams, count_bounded, ok
+from app.core.rbac import Role
 from app.models.case import Case, Dispatch
 from app.models.enums import DispatchStatus
 from app.schemas.case import CaseBriefOut, DispatchOut
@@ -151,7 +157,7 @@ async def accept_dispatch(
     dispatch_id: int,
     background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    ctx=Depends(get_tenant_context),
+    ctx=Depends(require_roles(Role.LAWYER)),   # A2：仅律师可接单（CLIENT/ENTERPRISE 403）
     user=Depends(get_current_user),
 ):
     await _dispatch_or_404(db, dispatch_id, ctx.tenant_id)
@@ -177,7 +183,7 @@ async def grab_dispatch(
     dispatch_id: int,
     background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    ctx=Depends(get_tenant_context),
+    ctx=Depends(require_roles(Role.LAWYER)),   # A2：仅律师可抢单（CLIENT/ENTERPRISE 403）
     user=Depends(get_current_user),
 ):
     await _dispatch_or_404(db, dispatch_id, ctx.tenant_id)

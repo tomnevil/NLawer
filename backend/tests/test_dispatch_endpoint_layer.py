@@ -21,7 +21,7 @@
 | **P5** | **跨租户 `grab` ⇒ 404** |
 | **P6** | 反向量：跨租户接单**不得改动对方**的 dispatch / case |
 | P7 | 同租户接单**正常工作**（防止修完把功能焊死） |
-| P8 | 同租户但不是指定律师 ⇒ 400 `DISPATCH_RULE_CONFLICT`（规则仍生效） |
+| P8 | 同租户但不是指定律师 ⇒ 403 `DISPATCH_RULE_CONFLICT`（规则仍生效） |
 | P9 | AST：接单/抢单把 `ctx.tenant_id` 交给守卫（带命中数下限自检） |
 
 ⚠️ **刻意不覆盖 `get_tenant_context`**（`methodology.md` 82）。
@@ -72,7 +72,7 @@ def seeded(engine):
         DispatchStatus,
         UserStatus,
     )
-    from app.models.identity import Tenant, User
+    from app.models.identity import LawyerProfile, Tenant, User
 
     async def _seed():
         async with engine.begin() as conn:
@@ -104,6 +104,17 @@ def seeded(engine):
             lawyer_c = _user("lawyerC", TENANT_A)  # 同租户另一律师（非指定）
             lawyer_b = _user("lawyerB", TENANT_B)
             s.add_all([lawyer_a, lawyer_c, lawyer_b])
+            await s.flush()
+
+            # 2026-11-09（A3(c)）：接单要求存在**可用**的律师档案，
+            # 无档案的 LAWYER 一律 403。夹具必须补档案，否则 P7「正常接单」会被焊死。
+            s.add_all(
+                [
+                    LawyerProfile(user_id=lawyer_a.id, tenant_id=TENANT_A, available=True),
+                    LawyerProfile(user_id=lawyer_c.id, tenant_id=TENANT_A, available=True),
+                    LawyerProfile(user_id=lawyer_b.id, tenant_id=TENANT_B, available=True),
+                ]
+            )
             await s.flush()
 
             def _case(tid, tag):
@@ -369,11 +380,15 @@ def test_same_tenant_accept_works(app_factory, seeded, engine):
 
 
 def test_designated_dispatch_rejects_other_lawyer(app_factory, seeded):
-    """P8：指定派单 ⇒ 非指定律师接单被拒（业务规则仍生效）。"""
+    """P8：指定派单 ⇒ 非指定律师接单被拒（业务规则仍生效）。
+
+    2026-11-09 起统一为 **403 `DISPATCH_RULE_CONFLICT`**（原 400）：
+    这是「你不是这单指派的人」的授权失败，不是请求体不合法。
+    """
     app = app_factory(seeded["a"])  # 律师甲，但派单指定的是律师丙
     with _client(app) as c:
         r = c.post(f"/api/v1/dispatches/{seeded['desig_a']}/accept")
-        assert r.status_code == 400, r.text
+        assert r.status_code == 403, r.text
         assert _code(r) == "DISPATCH_RULE_CONFLICT", r.text
 
 

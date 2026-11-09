@@ -6,7 +6,8 @@
 """
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import case as sql_case
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import (
@@ -15,6 +16,7 @@ from app.core.errors import (
     ErrorCode,
     InvalidStateError,
     NotFoundError,
+    PermissionDeniedError,
 )
 from app.models.case import Case, CaseEvent, Dispatch
 from app.models.enums import (
@@ -82,7 +84,12 @@ class DispatchService:
 
         case.status = CaseStatus.PENDING_DISPATCH if lawyer_id is None else CaseStatus.DISPATCHED
         if lawyer_id is not None:
+            # A9：只在「案件责任人真正发生变化」时调整在手案件数。
+            # 以 case.lawyer_id 前后值为准（而不是 dispatch 次数），
+            # 同一律师重复派单 +0；改派时旧律师 -1、新律师 +1。
+            previous = case.lawyer_id
             case.lawyer_id = lawyer_id
+            await self._sync_lawyer_load(previous, lawyer_id)
             await self._on_assigned(case, disp, lawyer_id)
         else:
             await self._notify_pool(case, disp)
@@ -119,22 +126,91 @@ class DispatchService:
 
     # ---------------- 接单 / 抢单 ----------------
     async def accept(self, dispatch_id: int, lawyer_id: int) -> Dispatch:
+        """律师接单（三种策略的统一收口，A2 / A3 / B1）。
+
+        授权与规则（2026-11-09 收紧）：
+
+        - **律师档案必须存在且可用**：`LawyerProfile` 缺失（A3(c)：无档案的
+          `LAWYER` 账号）或 `available=False` 一律 403。缺档案的律师接单后
+          会在 `_on_assigned` 里找不到档案、在手案件数永远不记，等于责任链
+          断点，因此必须在写入前拒绝。
+        - `POOL`：仅当 `lawyer_id IS NULL`（尚无归属）时允许抢单；已有归属
+          说明这单不再属于池子 ⇒ 409。
+        - `AUTO` / `DESIGNATED`：仅允许**被指派的律师本人**接单，其余人 403。
+          旧实现只拦 `DESIGNATED`，`AUTO` 的律师一栏可被任意律师覆盖。
+        - **并发**：以条件更新 `UPDATE ... WHERE status='PENDING'` 抢占，
+          `rowcount == 0` 即已被他人接走 ⇒ 409。仅靠先读后写会出现两个律师
+          同时读到 `PENDING`、两次写都“成功”（B1）。
+        """
         disp = await self._get(dispatch_id)
         if disp.status != DispatchStatus.PENDING:
             raise ConflictError("该派单已被处理", code=ErrorCode.CONFLICT)
-        case = await self._case(disp.case_id)
-        if disp.mode == DispatchMode.DESIGNATED and disp.lawyer_id != lawyer_id:
-            raise BadRequestError("非指定律师无法接此单", code=ErrorCode.DISPATCH_RULE_CONFLICT)
+
+        # A3(c)：律师档案必须存在且可接单
+        prof = (
+            await self.db.execute(
+                select(LawyerProfile).where(
+                    LawyerProfile.user_id == lawyer_id,
+                    LawyerProfile.tenant_id == disp.tenant_id,
+                )
+            )
+        ).scalars().first()
+        if prof is None:
+            raise PermissionDeniedError(
+                "当前账号没有律师档案，无法接单", code=ErrorCode.GRAB_NOT_ALLOWED
+            )
+        if not prof.available:
+            raise PermissionDeniedError(
+                "当前律师档案不可用（已停用或暂停接单）", code=ErrorCode.GRAB_NOT_ALLOWED
+            )
+
+        # A2 / A3：指派规则收紧
+        if disp.mode == DispatchMode.POOL:
+            if disp.lawyer_id is not None:
+                raise ConflictError(
+                    "该派单已指定律师，不能抢单", code=ErrorCode.DISPATCH_RULE_CONFLICT
+                )
+        elif disp.lawyer_id != lawyer_id:
+            raise PermissionDeniedError(
+                "该派单已指派给其他律师，不能接单",
+                code=ErrorCode.DISPATCH_RULE_CONFLICT,
+                details={"dispatch_mode": str(disp.mode)},
+            )
+
+        # B1：条件更新是唯一写入口，输家拿不到行
+        result = await self.db.execute(
+            update(Dispatch)
+            .where(Dispatch.id == disp.id, Dispatch.status == DispatchStatus.PENDING)
+            .values(lawyer_id=lawyer_id, status=DispatchStatus.ACCEPTED)
+            .execution_options(synchronize_session=False)
+        )
+        if result.rowcount == 0:
+            raise ConflictError("该派单已被其他律师接单", code=ErrorCode.CONFLICT)
+
         disp.lawyer_id = lawyer_id
         disp.status = DispatchStatus.ACCEPTED
+        case = await self._case(disp.case_id)
+        # A9：接单是「案件责任人落定」的时点。以 case.lawyer_id 前后值同步计数：
+        #   POOL（此前无归属）→ +1；AUTO/DESIGNATED（派单时已记过）→ 前后同人，+0。
+        # 这样「派单 + 接单」整条链路只会让在手案件数 +1。
+        previous = case.lawyer_id
         case.lawyer_id = lawyer_id
         case.status = CaseStatus.ACCEPTED
-        await self._on_assigned(case, disp, lawyer_id)
+        await self._sync_lawyer_load(previous, lawyer_id)
+        # POOL 到接单这一刻才建立归属，事件/通知需补记一次；
+        # AUTO / DESIGNATED 在创建派单时已由 `_on_assigned` 记过。
+        if disp.mode == DispatchMode.POOL:
+            await self._on_assigned(case, disp, lawyer_id)
         await self._notify_accepted(case, lawyer_id)
         return disp
 
     async def grab(self, dispatch_id: int, lawyer_id: int) -> Dispatch:
-        """抢单池接单（POOL 模式通用入口，复用 accept 逻辑）。"""
+        """抢单池专用入口：仅 `POOL` 派单可抢（其余规则由 `accept` 统一收口）。"""
+        disp = await self._get(dispatch_id)
+        if disp.mode != DispatchMode.POOL:
+            raise ConflictError(
+                "该派单不是抢单池派单", code=ErrorCode.GRAB_NOT_ALLOWED
+            )
         return await self.accept(dispatch_id, lawyer_id)
 
     async def _notify_accepted(self, case: Case, lawyer_id: int) -> None:
@@ -185,19 +261,25 @@ class DispatchService:
                 ref_type="case",
                 ref_id=case.id,
             )
-            # 维护律师在手案件数
-            prof = (
-                await self.db.execute(
-                    select(LawyerProfile).where(LawyerProfile.user_id == lawyer_id)
-                )
-            ).scalars().first()
-            if prof is not None:
-                prof.active_case_count = (prof.active_case_count or 0) + 1
+
+    async def _sync_lawyer_load(self, previous: Optional[int], new: Optional[int]) -> None:
+        """按案件责任人「前后值」增减在手案件数（A9 唯一计数入口）。
+
+        幂等：`previous == new` 时不做任何事，因此重复派单 / 重复接单都不会双计数。
+        改派（old -> new）一次调用即完成旧律师 -1、新律师 +1。
+        """
+        if previous == new:
+            return
+        if previous is not None:
+            await adjust_active_case_count(self.db, previous, -1)
+        if new is not None:
+            await adjust_active_case_count(self.db, new, 1)
 
     async def _notify_pool(self, case: Case, disp: Dispatch) -> None:
         # 通知全所可接单律师（演示：不逐个查，写一条事件）
         self.db.add(
             CaseEvent(
+                tenant_id=case.tenant_id,
                 case_id=case.id,
                 event_type="DISPATCH",
                 title="进入抢单池",
@@ -216,3 +298,24 @@ class DispatchService:
         if case is None:
             raise NotFoundError("案件不存在", code=ErrorCode.CASE_NOT_FOUND)
         return case
+
+
+async def adjust_active_case_count(
+    db: AsyncSession, lawyer_id: Optional[int], delta: int
+) -> None:
+    """原子增减律师在手案件数（A9）。
+
+    用单条条件 UPDATE 而不是「读-改-写」ORM 属性：并发派单 / 结案时不会因
+    丢失更新把计数算错；同时用 `CASE` 表达式保证不会减到负数。
+    无律师归属或变化量为 0 时直接返回。
+    """
+    if lawyer_id is None or delta == 0:
+        return
+    base = func.coalesce(LawyerProfile.active_case_count, 0)
+    next_value = base + delta
+    await db.execute(
+        update(LawyerProfile)
+        .where(LawyerProfile.user_id == lawyer_id)
+        .values(active_case_count=sql_case((next_value < 0, 0), else_=next_value))
+        .execution_options(synchronize_session=False)
+    )
