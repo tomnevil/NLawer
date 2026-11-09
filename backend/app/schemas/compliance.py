@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.enums import ComplianceDimension
+
 
 class ComplianceScanOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -39,7 +41,9 @@ class ComplianceScanCreate(BaseModel):
     # ⚠️ **本类在 `document.py` 里还有一份同名定义**，两边必须同步改 ——
     # 否则门禁的去重会按文件顺序取先出现者，扫描结果**随文件排序抖动**。
     title: str = Field(..., max_length=100)
-    dimensions: Optional[list[str]] = None
+    # A10：服务层 `ComplianceDimension(d)` 遇到未知维度会抛 ValueError，导致
+    # 「创建成功但 job 反复失败」。改在请求边界用枚举校验，非法值直接 422。
+    dimensions: Optional[list[ComplianceDimension]] = None
     scope: Optional[str] = Field(None, max_length=500)
     input_summary: Optional[str] = Field(None, max_length=2000)
     is_external: bool = False

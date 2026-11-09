@@ -3,8 +3,9 @@
 内容安全（P0-13）：输入侧与输出侧都过审——对应《生成式人工智能服务
 管理暂行办法》第十四条的「停止生成」与「停止传输」两个动作。
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
+from loguru import logger
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -66,7 +67,12 @@ async def ask(
 
     # —— 输出审核：命中即「停止传输」，不把违规内容返回给用户
     if settings.MODERATION_CHECK_OUTPUT:
-        out_text = " ".join(str(v) for v in result.get("sections", {}).values())
+        # N2 之后 `sections` 是后台四段式草稿，客户实际看到的自然回复在 `answer`；
+        # 两处都必须过审，否则「草稿合规、回复违规」会漏检。
+        out_text = " ".join(
+            [str(result.get("answer") or "")]
+            + [str(v) for v in (result.get("sections") or {}).values()]
+        )
         verdict = await ModerationService(db).check(
             out_text,
             side="output",
@@ -77,14 +83,18 @@ async def ask(
         if verdict.blocked:
             raise ContentBlockedError(verdict)
 
-    # 用原子扣减（条件 UPDATE）替代"读-判-写"，避免并发下丢失更新导致少计费
-    usage = await BillingService(db).consume_atomic(
-        tenant_id=ctx.tenant_id,
-        user_id=ctx.user_id,
-        usage_type=UsageType.QA,
-        period=_period(),
-        ref_type="qa",
-    )
+    # 用原子扣减（条件 UPDATE）替代"读-判-写"，避免并发下丢失更新导致少计费。
+    # B3：草稿引用校验失败时后端已兜成友好话术（`billable=False`），
+    # 这属于「生成失败」，不扣费，响应仍为 200。
+    usage = None
+    if result.get("billable", True):
+        usage = await BillingService(db).consume_atomic(
+            tenant_id=ctx.tenant_id,
+            user_id=ctx.user_id,
+            usage_type=UsageType.QA,
+            period=_period(),
+            ref_type="qa",
+        )
     await db.commit()
     return ok({**result, "usage": usage})
 
@@ -92,6 +102,7 @@ async def ask(
 @router.post("/stream", summary="四段式问答（SSE 流式）")
 async def ask_stream(
     payload: QARequest,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     ctx=Depends(get_tenant_context),
 ):
@@ -101,6 +112,10 @@ async def ask_stream(
     因此用 `StreamModerator` 的滑动窗口做跨片段校验，一旦命中立即
     发 `blocked` 事件并终止流（而不是静默截断，否则用户看到半句话
     会以为系统故障）。
+
+    **草稿异步生成**：流里只发客户回答；`done.draft_deferred=True` 时把
+    四段式草稿交给 BackgroundTasks，用独立 session/事务生成。请求会话
+    在响应结束后即关闭，后台任务不复用它；失败只留痕，不影响已发送的回答。
     """
     svc = QAService(db)
     mod_svc = ModerationService(db)
@@ -142,12 +157,14 @@ async def ask_stream(
 
         try:
             async for chunk in svc.stream(payload.question, ctx.tenant_id, user_id=ctx.user_id):
+                obj = _sse_object(chunk)
                 # 从 SSE 包里取出实际内容做跨片段校验
-                content = _extract_sse_content(chunk)
+                content = _content_of(obj)
                 if stream_mod is not None and content:
                     allow, res = stream_mod.prepare(content)
                     if not allow:
-                        # 「停止传输」：明确告知用户已拦截，而非静默截断
+                        # 「停止传输」：明确告知用户已拦截，而非静默截断。
+                        # 被阻断的回复不构成一次成功问答 ⇒ 不计费（A8）。
                         await mod_svc.check(
                             stream_mod.head + content,
                             side="output",
@@ -170,6 +187,34 @@ async def ask_stream(
                         )
                         return
                     stream_mod.committed(content)
+                if obj is not None and obj.get("type") == "done":
+                    # A8：与 `/qa` 同一计费口径——回复真正生成完毕才扣减。
+                    # 模型异常降级为安抚回复时 `failed=True`，不扣；流中断/阻断
+                    # 时走不到这里，也不扣。
+                    if obj.get("failed"):
+                        yield chunk
+                        continue
+                    usage = await BillingService(db).consume_atomic(
+                        tenant_id=ctx.tenant_id,
+                        user_id=ctx.user_id,
+                        usage_type=UsageType.QA,
+                        period=_period(),
+                        ref_type="qa_stream",
+                    )
+                    await db.commit()
+                    obj["usage"] = usage
+                    # 计费只按「客户回答成功生成」一次；草稿后台生成不再计费。
+                    if obj.get("draft_deferred"):
+                        background.add_task(
+                            _run_draft_job,
+                            db.bind,
+                            payload.question,
+                            str((obj.get("sections") or {}).get("conclusion") or ""),
+                            ctx.tenant_id,
+                            ctx.user_id,
+                        )
+                    yield "data: " + _json.dumps(obj, ensure_ascii=False) + "\n\n"
+                    continue
                 yield chunk
         except Exception as exc:  # 流中途异常也必须给前端一个终止事件
             _msg = str(exc)[:200]
@@ -183,11 +228,26 @@ async def ask_stream(
         event_gen(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        background=background,
     )
 
 
-def _extract_sse_content(chunk: str) -> str:
-    """从 `data: {json}\\n\\n` 中取出 delta/正文文本，供输出审核使用。"""
+async def _run_draft_job(bind, question: str, answer: str, tenant_id: str, user_id: int | None) -> None:
+    """后台草稿任务：独立 session/事务，失败只留痕，不影响已返回的回答。"""
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    factory = async_sessionmaker(bind, expire_on_commit=False)
+    async with factory() as session:
+        try:
+            saved = await QAService(session).generate_draft(question, answer, tenant_id, user_id)
+            await session.commit()
+            logger.info("后台草稿生成结束 saved={} tenant={} user={}", saved, tenant_id, user_id)
+        except Exception as exc:  # noqa: BLE001 - 后台任务绝不能把异常抛回请求
+            logger.warning("后台草稿任务失败（不影响已返回的回答）：{}", exc)
+
+
+def _sse_object(chunk: str) -> dict | None:
+    """从 `data: {json}` 包里取出对象；非数据行返回 None。"""
     import json as _json
 
     for line in (chunk or "").splitlines():
@@ -197,9 +257,18 @@ def _extract_sse_content(chunk: str) -> str:
             obj = _json.loads(line[5:].strip())
         except Exception:
             continue
-        if obj.get("type") == "delta":
-            return str(obj.get("content") or "")
-        if obj.get("type") == "done":
-            secs = obj.get("sections") or {}
-            return " ".join(str(v) for v in secs.values())
+        if isinstance(obj, dict):
+            return obj
+    return None
+
+
+def _content_of(obj: dict | None) -> str:
+    """取出 delta/正文文本，供输出审核使用。"""
+    if not obj:
+        return ""
+    if obj.get("type") == "delta":
+        return str(obj.get("content") or "")
+    if obj.get("type") == "done":
+        secs = obj.get("sections") or {}
+        return " ".join(str(v) for v in secs.values())
     return ""

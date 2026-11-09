@@ -73,7 +73,11 @@ async def create_scan(
         tenant_id=ctx.tenant_id,
         detail={
             "title": payload.title,
-            "dimensions": payload.dimensions,
+            "dimensions": (
+                [getattr(d, "value", str(d)) for d in payload.dimensions]
+                if payload.dimensions
+                else None
+            ),
             "is_external": payload.is_external,
             "job_id": job_id,
         },

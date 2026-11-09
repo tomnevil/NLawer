@@ -17,6 +17,7 @@ from app.models.archive import Archive, ArchiveVersion, HearingPack
 from app.models.case import Case, CaseEvent
 from app.models.enums import CaseStatus, NotificationType
 from app.models.evidence import Evidence
+from app.services.dispatch_service import adjust_active_case_count
 from app.services.notification_service import notify
 
 
@@ -69,8 +70,19 @@ class ArchiveService:
             )
         )
         case.status = CaseStatus.ARCHIVED
+        # A9：归档 = 案件终结，承办律师的在手案件数同步回减。
+        # 重复归档会在上面的 CONFIRMED 状态检查处被拒绝（此时已是 ARCHIVED），
+        # 走不到这里，因此不会重复扣减。
+        await adjust_active_case_count(self.db, case.lawyer_id, -1)
         self.db.add(
-            CaseEvent(case_id=case_id, event_type="ARCHIVE", title="案件归档", description=f"卷宗号 {archive.archive_no}", actor_user_id=actor_id)
+            CaseEvent(
+                tenant_id=tenant_id,
+                case_id=case_id,
+                event_type="ARCHIVE",
+                title="案件归档",
+                description=f"卷宗号 {archive.archive_no}",
+                actor_user_id=actor_id,
+            )
         )
         # 通知客户与承办律师
         targets = [u for u in (case.client_user_id, case.lawyer_id) if u]

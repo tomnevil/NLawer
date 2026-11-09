@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.enums import ComplianceDimension
+
 
 class TemplateOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -65,7 +67,8 @@ class ContractReviewAsyncRequest(BaseModel):
 class ComplianceScanCreate(BaseModel):
     # ⚠️ 与 `compliance.py` 的同名类**必须同步**（门禁去重取先出现者，不同步会让扫描结果抖动）。
     title: str = Field(..., max_length=100)
-    dimensions: Optional[list[str]] = None
+    # A10：维度必须走枚举校验，非法值请求边界即 422（不再创建成功后 job 失败）。
+    dimensions: Optional[list[ComplianceDimension]] = None
     scope: Optional[str] = Field(None, max_length=500)
     input_summary: Optional[str] = Field(None, max_length=2000)
     is_external: bool = False

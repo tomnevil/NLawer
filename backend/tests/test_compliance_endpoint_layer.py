@@ -195,6 +195,69 @@ def test_all_three_routes_respond(app_factory, seeded):
 # ═══════════════════════ K2 列表租户隔离 ═══════════════════════
 
 
+def test_invalid_dimension_is_422_and_nothing_persisted(app_factory, seeded, engine):
+    """A10：非法维度在请求边界直接 422，且不落库（不再「创建成功后 job 反复失败」）。"""
+    before = _scan_titles(engine, TENANT_A)
+    with _client(app_factory(seeded["admin_a"])) as c:
+        r = c.post(
+            "/api/v1/compliance/scans",
+            json={"title": "非法维度扫描", "dimensions": ["LABOR", "NOT_A_DIMENSION"]},
+        )
+        assert r.status_code == 422, r.text
+    assert _scan_titles(engine, TENANT_A) == before, "非法维度的扫描任务仍被创建了"
+
+
+def test_valid_dimensions_are_persisted_as_strings(app_factory, seeded, engine):
+    """A10（正向臂）：合法枚举正常通过并落库为字符串。"""
+    with _client(app_factory(seeded["admin_a"])) as c:
+        r = c.post(
+            "/api/v1/compliance/scans",
+            json={"title": "合法维度扫描", "dimensions": ["LABOR", "DATA_PRIVACY"]},
+        )
+        assert r.status_code == 200, r.text
+        scan_id = _data(r)["id"]
+    dims = _scan_dimensions(engine, scan_id)
+    assert dims == ["LABOR", "DATA_PRIVACY"], f"维度落库异常：{dims}"
+
+
+def _scan_titles(engine, tenant_id):
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.models.knowledge import ComplianceScan
+
+    async def _q():
+        f = async_sessionmaker(engine, expire_on_commit=False)
+        async with f() as s:
+            rows = (
+                await s.execute(
+                    select(ComplianceScan.id).where(ComplianceScan.tenant_id == tenant_id)
+                )
+            ).scalars().all()
+            return set(rows)
+
+    return asyncio.run(_q())
+
+
+def _scan_dimensions(engine, scan_id):
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.models.knowledge import ComplianceScan
+
+    async def _q():
+        f = async_sessionmaker(engine, expire_on_commit=False)
+        async with f() as s:
+            return (
+                await s.execute(
+                    select(ComplianceScan.dimensions).where(ComplianceScan.id == scan_id)
+                )
+            ).scalar_one()
+
+    return asyncio.run(_q())
+
+
+# ═══════════════════════ K2 列表租户隔离 ═══════════════════════
+
+
 def test_list_is_tenant_scoped_both_directions(app_factory, seeded):
     """K2：列表双向租户隔离。"""
     app_a = app_factory(seeded["a"])
@@ -234,7 +297,7 @@ def test_create_lands_in_callers_tenant(app_factory, seeded):
     app = app_factory(seeded["admin_a"])
     with _client(app) as c:
         r = c.post("/api/v1/compliance/scans",
-                   json={"title": "A 新建的广告营销扫描", "dimensions": ["AD"]})
+                   json={"title": "A 新建的广告营销扫描", "dimensions": ["ADVERTISING"]})
         assert r.status_code == 200, r.text
         new_id = _data(r)["id"]
 

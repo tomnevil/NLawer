@@ -13,10 +13,10 @@ from app.core.deps import (
     get_tenant_context,
     require_permissions,
 )
-from app.core.errors import ErrorCode, NotFoundError, PermissionDeniedError
+from app.core.errors import ErrorCode, InvalidStateError, NotFoundError, PermissionDeniedError
 from app.core.pagination import Page, PaginationParams, count_bounded, ok
 from app.core.rbac import Role
-from app.models.case import Case, CaseEvent
+from app.models.case import Case, CaseEvent, Dispatch
 from app.models.case_access import (
     GRANT_SCOPE_TEAM_READ,
     GRANT_STATUS_APPROVED,
@@ -24,9 +24,10 @@ from app.models.case_access import (
     GRANT_STATUS_REJECTED,
     CaseAccessGrant,
 )
-from app.models.enums import DispatchMode
+from app.models.enums import CaseStatus, DispatchMode, DispatchStatus, ReviewStatus
+from app.models.review import Review, ReviewRecord
 from app.schemas.case import CaseOut, DispatchOut, DispatchRequest
-from app.services.dispatch_service import DispatchService
+from app.services.dispatch_service import DispatchService, adjust_active_case_count
 
 
 def _now_db() -> datetime:
@@ -405,3 +406,137 @@ async def dispatch_case(
     )
     await db.commit()
     return ok(DispatchOut.model_validate(disp).model_dump())
+
+
+class VoidCaseRequest(BaseModel):
+    reason: str = Field(default="", max_length=500)
+
+
+# 归档终态：已归档（已回减在手数）、已结案都不允许再作废，避免责任链出现二次终止
+_VOID_BLOCKED_STATUSES = {CaseStatus.ARCHIVED, CaseStatus.CLOSED}
+
+
+@router.post(
+    "/{case_id}/void",
+    response_model=dict,
+    summary="作废案件",
+    # 与结案共用 case:close：律所管理员 / 律师持有，客户与助理不具备
+    dependencies=[Depends(require_permissions("case:close"))],
+)
+async def void_case(
+    case_id: int,
+    payload: VoidCaseRequest,
+    db: AsyncSession = Depends(get_db),
+    ctx=Depends(get_tenant_context),
+    user=Depends(get_current_user),
+):
+    """作废案件（幂等）。
+
+    - **权限**：本所管理员可作废本所任意案件；承办律师仅可作废本人承办案件。
+      其他律师即使持有团队只读授权也不可作废（只读授权 ≠ 处置权），按
+      「不存在」处理防探测；跨租户一律 404；客户无 `case:close` 权限。
+    - **状态机**：允许 INTAKE / PENDING_DISPATCH / DISPATCHED / ACCEPTED /
+      IN_REVIEW / CONFIRMED → VOIDED；ARCHIVED / CLOSED 为归档终态，拒绝。
+    - **幂等**：已作废直接返回 `already_voided=true`，不重复回减、不重复记事件。
+    - **连带处理**：未接单派单置 EXPIRED（避免继续挂在抢单池）；未完成复核置
+      VOIDED 并写 ReviewRecord（避免复核台永久挂单）；承办律师在手案件数 -1。
+    """
+    case = await _case_or_404(db, case_id, ctx)
+    if ctx.role == Role.LAWYER and case.lawyer_id != ctx.user_id:
+        raise NotFoundError("案件不存在", code=ErrorCode.CASE_NOT_FOUND)
+
+    if case.status == CaseStatus.VOIDED:
+        return ok({"id": case.id, "status": case.status.value, "already_voided": True})
+
+    if case.status in _VOID_BLOCKED_STATUSES:
+        raise InvalidStateError(
+            f"案件当前状态为 {case.status.value}，已归档/已结案不可作废",
+            code=ErrorCode.CASE_INVALID_STATE,
+        )
+
+    previous_status = case.status.value
+    case.status = CaseStatus.VOIDED
+    # 回减在手案件数：lawyer_id 为空（未指派）时函数内部直接返回，
+    # 已归档状态已被拦截，因此这里不会出现二次回减。
+    await adjust_active_case_count(db, case.lawyer_id, -1)
+
+    pending_dispatches = list(
+        (
+            await db.execute(
+                select(Dispatch).where(
+                    Dispatch.case_id == case.id,
+                    Dispatch.status == DispatchStatus.PENDING,
+                )
+            )
+        ).scalars().all()
+    )
+    for disp in pending_dispatches:
+        disp.status = DispatchStatus.EXPIRED
+        disp.decided_at = _now_db().isoformat(timespec="seconds")
+
+    open_reviews = list(
+        (
+            await db.execute(
+                select(Review).where(
+                    Review.case_id == case.id,
+                    Review.tenant_id == ctx.tenant_id,
+                    Review.status.notin_(
+                        [ReviewStatus.CONFIRMED, ReviewStatus.ARCHIVED, ReviewStatus.VOIDED]
+                    ),
+                )
+            )
+        ).scalars().all()
+    )
+    for rv in open_reviews:
+        from_status = rv.status.value
+        rv.status = ReviewStatus.VOIDED
+        db.add(
+            ReviewRecord(
+                tenant_id=ctx.tenant_id,
+                review_id=rv.id,
+                action="VOID",
+                actor_id=ctx.user_id,
+                actor_role=getattr(ctx.role, "value", ctx.role),
+                from_status=from_status,
+                to_status=ReviewStatus.VOIDED.value,
+                comment=(payload.reason or "")[:500] or "案件作废",
+            )
+        )
+
+    db.add(
+        CaseEvent(
+            tenant_id=ctx.tenant_id,
+            case_id=case.id,
+            event_type="VOID",
+            title="案件已作废",
+            # 作废原因可能含当事人信息，仅存 500 字以内摘要
+            description=(payload.reason or "")[:500] or None,
+            occurred_at=_now_db().isoformat(timespec="seconds"),
+            actor_user_id=ctx.user_id,
+            payload={"previous_status": previous_status},
+        )
+    )
+    await record(
+        db,
+        AuditAction.CASE_VOID,
+        "case",
+        case.id,
+        actor=user,
+        tenant_id=ctx.tenant_id,
+        detail={
+            "previous_status": previous_status,
+            "reason_len": len(payload.reason or ""),
+            "expired_dispatches": len(pending_dispatches),
+            "voided_reviews": len(open_reviews),
+        },
+    )
+    await db.commit()
+    return ok(
+        {
+            "id": case.id,
+            "status": case.status.value,
+            "already_voided": False,
+            "expired_dispatches": len(pending_dispatches),
+            "voided_reviews": len(open_reviews),
+        }
+    )
