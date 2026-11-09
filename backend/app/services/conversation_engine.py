@@ -105,7 +105,13 @@ class ConversationEngine:
         self.db.add(case)
         await self.db.flush()
         self.db.add(
-            CaseEvent(case_id=case.id, event_type="INTAKE", title="咨询转案件", description=(text or "")[:300])
+            CaseEvent(
+                tenant_id=case.tenant_id,
+                case_id=case.id,
+                event_type="INTAKE",
+                title="咨询转案件",
+                description=(text or "")[:300],
+            )
         )
 
         mode = DispatchMode.DESIGNATED if conv.bind_lawyer_id else DispatchMode.AUTO

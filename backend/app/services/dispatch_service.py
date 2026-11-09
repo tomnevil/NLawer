@@ -69,6 +69,7 @@ class DispatchService:
             lawyer_id, score, reason = await self._auto_match(case, candidate_lawyer_ids)
 
         disp = Dispatch(
+            tenant_id=case.tenant_id,
             case_id=case.id,
             lawyer_id=lawyer_id,
             mode=mode,
@@ -165,6 +166,7 @@ class DispatchService:
     async def _on_assigned(self, case: Case, disp: Dispatch, lawyer_id: int) -> None:
         self.db.add(
             CaseEvent(
+                tenant_id=case.tenant_id,
                 case_id=case.id,
                 event_type="DISPATCH",
                 title="已派单",
