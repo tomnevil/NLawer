@@ -25,6 +25,10 @@ except ImportError:  # pragma: no cover - 未安装 pgvector 的降级路径
     HAS_PGVECTOR = False
     Vector = None  # type: ignore
 
+# 运行时状态：数据库里 pgvector 扩展是否已确认可用（由 database.init_db 探测）。
+# 仅 HAS_PGVECTOR（Python 包存在）不代表服务端扩展已安装，PgVectorStore 需以此为准。
+PGVECTOR_READY = False
+
 
 class JsonVector(TypeDecorator):
     """无 pgvector 时的向量列：Python `list[float]` <-> JSON 文本。

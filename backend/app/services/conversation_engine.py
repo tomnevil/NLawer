@@ -268,9 +268,17 @@ def _parse_amount(text: str) -> float:
 
 
 def _gen_case_no(tenant_id: str) -> str:
+    """生成租户内可读且并发安全的案号。
+
+    历史格式 `{tenant}-{YYYYmmddHHMMSS}` 只有秒级精度：同租户同秒建案会撞
+    `case_no` 唯一约束并返回 500。保留可读的时间前缀，追加**微秒 + 随机后缀**，
+    不依赖数据库序列，SQLite / Postgres 通用，同秒并发也能保持唯一。
+    历史案号不做改写，仍可按时间前缀追溯；新案号多一段后缀。
+    """
     import datetime
-    ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    return f"{tenant_id}-{ts}"
+    import secrets
+    ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")  # 微秒精度
+    return f"{tenant_id}-{ts}-{secrets.token_hex(3).upper()}"
 
 
 def _now() -> str:

@@ -16,6 +16,32 @@ try:
 except ImportError:  # pragma: no cover
     Vector = None
 
+
+def _embedding_column_type():
+    """按方言 + 扩展可用性选择 embedding 列类型。
+
+    历史缺陷：Postgres 下直接写 `Vector(1536)`，当 Python 包 pgvector 未安装
+    （`Vector=None`）时抛 `TypeError: 'NoneType' object is not callable`，
+    报错无法指向根因。现在：
+      - 服务端未安装扩展（标准 postgres 镜像 / VECTOR_BACKEND=memory）→ Text；
+      - 扩展已安装但缺 Python 包 → 明确提示安装 pgvector，而不是 TypeError。
+    """
+    bind = op.get_bind()
+    if bind.dialect.name != "postgresql":
+        return sa.Text()
+    installed = bool(
+        bind.execute(sa.text("SELECT count(*) FROM pg_extension WHERE extname = 'vector'")).scalar()
+    )
+    if not installed:
+        return sa.Text()
+    if Vector is None:
+        raise RuntimeError(
+            "Postgres 已启用 pgvector 扩展，但缺少 Python 包：请在 backend 目录执行 "
+            "`pip install pgvector`（或 `pip install -r requirements-postgres.txt`）"
+        )
+    return Vector(1536)
+
+
 revision: str = '031c74c6de97'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
@@ -325,7 +351,7 @@ def upgrade() -> None:
     sa.Column('doc_id', sa.String(length=128), nullable=False),
     sa.Column('source_type', sa.String(length=32), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
-    sa.Column('embedding', Vector(1536) if op.get_bind().dialect.name == 'postgresql' else sa.Text(), nullable=True),
+    sa.Column('embedding', _embedding_column_type(), nullable=True),
     sa.Column('tenant_id', sa.String(length=64), nullable=False, comment='租户标识，业务表按此字段逻辑隔离'),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),

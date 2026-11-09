@@ -10,9 +10,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请先设置 POSTGRES_PASSWORD 环境变量（或写入仓库根目录 .env）}
       POSTGRES_DB: nlawer
     ports:
-      # 宿主 5433：避免与本机其它 Postgres（5432）冲突；
+      # 宿主 5433（可用 NLAWER_DB_PORT 覆盖）：避免与本机其它 Postgres（5432/5434）冲突；
+      # 改端口时 backend/.env 的 DATABASE_URL 必须同步修改。
       # 仅绑定环回——裸暴露 5432 等于把数据库挂到外网（P1-4）
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:${NLAWER_DB_PORT:-5433}:5432"
     volumes:
       - nlawer-pgdata:/var/lib/postgresql/data
     healthcheck:

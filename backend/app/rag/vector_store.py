@@ -146,17 +146,18 @@ def build_vector_store():
     if backend == "pgvector":
         try:
             from app.database import async_session_factory
-            from app.models.embedding import HAS_PGVECTOR
+            from app.models.embedding import HAS_PGVECTOR, PGVECTOR_READY
         except Exception:  # pragma: no cover - 依赖缺失时降级
             return None
-        if HAS_PGVECTOR and settings.is_postgres:
+        if HAS_PGVECTOR and settings.is_postgres and PGVECTOR_READY:
             return PgVectorStore(async_session_factory)
-        # 声明了 pgvector 却不可用：降级内存实现并告警，避免向量召回整体消失
+        # 声明了 pgvector 却不可用（缺 Python 包 / 服务端扩展未安装）：降级内存并告警
         logger.warning(
-            "VECTOR_BACKEND=pgvector 但环境不满足（HAS_PGVECTOR={}, is_postgres={}），"
-            "已降级为内存向量库",
+            "VECTOR_BACKEND=pgvector 但环境不满足（HAS_PGVECTOR={}, is_postgres={}, "
+            "PGVECTOR_READY={}），已降级为内存向量库",
             HAS_PGVECTOR,
             settings.is_postgres,
+            PGVECTOR_READY,
         )
         return VectorStore()
 
